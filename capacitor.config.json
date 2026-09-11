@@ -1,0 +1,15 @@
+{
+  "appId": "com.omnicod.app",
+  "appName": "OmniCod",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0A0A0B"
+    }
+  }
+}

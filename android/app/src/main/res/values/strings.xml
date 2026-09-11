@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">OmniCod</string>
+    <string name="title_activity_main">OmniCod</string>
+    <string name="package_name">com.omnicod.app</string>
+    <string name="custom_url_scheme">com.omnicod.app</string>
+</resources>
