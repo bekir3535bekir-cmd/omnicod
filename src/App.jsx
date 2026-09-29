@@ -3,8 +3,8 @@ import { T, DARK_THEME, LIGHT_THEME, setGlobalTheme, makeCSS } from "./constants
 import { Ic } from "./constants/icons";
 import { fmt, fmtDate, todayStr, uid } from "./utils/helpers";
 import { INIT } from "./constants/initialData";
-import { sb, fromDB, toDB } from "./services/supabase";
-import { getSession, getClientId, saveSession, clearSession } from "./services/storage";
+import { sb, fromDB, toDB, IS_DEV } from "./services/supabase";
+import { getSession, getClientId, saveSession, clearSession, getLocalData, saveLocalData } from "./services/storage";
 import { getPlan, isProFeature } from "./services/plan";
 import { Logo } from "./components/common";
 import { ProGate } from "./components/common/ProGate";
@@ -34,7 +34,7 @@ import { SesliAsistan } from "./components/modules/SesliAsistan";
 import { HizliNot, HizliArama, GeceModu, IsAsistani, NotDefteri, MusteriPortali, LoginScreen } from "./components/modules/AppModals";
 
 export default function App() {
-  const [data, setData]       = useState(INIT);
+  const [data, setData]       = useState(() => getLocalData() || INIT);
   const [active, setActive]   = useState("dashboard");
   const [plan, setPlanState]  = useState(() => getPlan());
   const [darkMode, setDarkMode] = useState(true);
@@ -43,6 +43,13 @@ export default function App() {
   const [dbReady, setDbReady] = useState(false);
   const [role, setRole] = useState(() => getSession());
   const [showGece, setShowGece] = useState(false);
+
+  // Veri değişikliklerini anında yerel depolamaya kaydet
+  useEffect(() => {
+    if (dbReady) {
+      saveLocalData(data);
+    }
+  }, [data, dbReady]);
 
   useEffect(() => {
     const checkGece = () => {
@@ -82,9 +89,19 @@ export default function App() {
   };
   const handleLogout = () => { clearSession(); setRole(null); };
 
-  // Uygulama açılınca Supabase'den yükle
+  // Uygulama açılınca Supabase'den yükle (IS_DEV iken yerel veriyi koru!)
   useEffect(() => {
     const load = async () => {
+      if (IS_DEV) {
+        const local = getLocalData();
+        if (local) {
+          setData(local);
+        }
+        setDbReady(true);
+        setLoading(false);
+        return;
+      }
+
       try {
         const [clients, appointments, packages, incomes, expenses, reminders,
                contracts, team, shifts, gallery, quotes, messages, locations, notes] = await Promise.all([
@@ -93,6 +110,11 @@ export default function App() {
           sb.get("contracts"), sb.get("team"), sb.get("shifts"),
           sb.get("gallery"), sb.get("quotes"), sb.get("messages"), sb.get("locations"), sb.get("notes"),
         ]);
+
+        if (!clients && !appointments) {
+          setDbReady(true);
+          return;
+        }
 
         const loadedClients  = (clients||[]).map(fromDB.clients);
         const loadedIncomes  = (incomes||[]).map(fromDB.incomes);
@@ -104,10 +126,11 @@ export default function App() {
             .map(p=>({ id:p.id, clientName:c.name, amount:p.amount, type:"Ödeme", method:"Nakit", date:p.date||todayStr(), note:p.note||"", category:c.type||"Düğün" }))
         );
 
-        // Dev mode fallback
-        const useInit = !clients && (!loadedClients || loadedClients.length === 0);
+        const local = getLocalData();
+        const baseClients = (loadedClients && loadedClients.length > 0) ? loadedClients : (local?.clients || INIT.clients);
+
         setData({
-          clients:        useInit ? INIT.clients : loadedClients,
+          clients:        baseClients,
           appointments:   (appointments||[]).map(fromDB.appointments),
           packages:       (packages||[]).length > 0 ? (packages||[]).map(fromDB.packages) : INIT.packages,
           incomes:        [...loadedIncomes, ...missingIncomes],
@@ -115,7 +138,7 @@ export default function App() {
           reminders:      (reminders||[]).map(fromDB.reminders),
           contracts:      (contracts||[]).map(fromDB.contracts),
           messages:       (messages||[]).map(fromDB.messages),
-          deletedClients: [],
+          deletedClients: local?.deletedClients || [],
           team:           (team||[]).map(fromDB.team),
           shifts:         (shifts||[]).map(fromDB.shifts),
           gallery:        (gallery||[]).map(fromDB.gallery),
@@ -133,12 +156,13 @@ export default function App() {
     };
     load();
 
-    // Realtime polling: her 30 saniyede Supabase'den güncel veriyi çek
-    // isSaving flag ile kaydetme sırasında çakışmayı önle
-    const pollInterval = setInterval(() => {
-      if(!window._gesesSaving) load();
-    }, 30000);
-    return () => clearInterval(pollInterval);
+    // Realtime polling: yalnızca canlı Supabase modunda çalıştır (IS_DEV iken veriyi ezmesin!)
+    if (!IS_DEV) {
+      const pollInterval = setInterval(() => {
+        if(!window._gesesSaving) load();
+      }, 30000);
+      return () => clearInterval(pollInterval);
+    }
   }, []);
 
   // Geçmiş tarihli randevuları otomatik tamamlandı yap

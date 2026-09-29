@@ -3,7 +3,7 @@ import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/the
 import { Ic } from "../../constants/icons";
 import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
 import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE , initProcess, isComplete } from "../../constants/templates";
-import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
+import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo, Toast } from "../common";
 import { UsageBadge, ProGate } from "../common/ProGate";
 import { canAddClient } from "../../services/plan";
 import { sb, fromDB, toDB } from "../../services/supabase";
@@ -27,6 +27,15 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
   const [editClientForm, setEditClientForm] = useState(null);
   const [addError, setAddError] = useState(null);
   const [editError, setEditError] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (toast) {
+      const t = setTimeout(() => setToast(null), 3500);
+      return () => clearTimeout(t);
+    }
+  }, [toast]);
 
   // Başka sekmeden (Takvim) belirli bir müşteri kartı açılması istendiyse
   useEffect(() => {
@@ -124,9 +133,12 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
     });
     setShowEditClient(false);
     setEditClientForm(null);
+    setEditError(null);
+    setToast({ message: `✅ ${editClientForm.name} bilgileri güncellendi!`, type: "success" });
   };
 
   const save = () => {
+    if(saving) return;
     if(!form.name?.trim()) {
       setAddError("Lütfen müşteri Ad Soyad alanını doldurunuz.");
       return;
@@ -140,6 +152,8 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
       return;
     }
     setAddError(null);
+    setSaving(true);
+    const clientName = form.name.trim();
     const totalAmt = Number(form.totalAmount)||0;
     const kaporaAmt = Number(form.paid)||0;
     const newClientId = uid();
@@ -171,6 +185,8 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
     setData(p => {
       const newClient = {
         ...form, id: newClientId,
+        name: clientName,
+        phone: form.phone.trim(),
         totalAmount: totalAmt,
         paid: kaporaAmt,
         payments: kaporaPayment,
@@ -179,7 +195,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
       // Otomatik ajanda randevusu — tarih olmasa bile oluştur
       const newAppointment = {
         id: uid(),
-        clientName: form.name,
+        clientName: clientName,
         clientId: newClientId,
         date: form.date || "",
         extraDates: form.extraDates||[],
@@ -204,6 +220,8 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
     // Anında Supabase'e yaz — polling ezmesin
     const newClientObj = {
       ...form, id: newClientId,
+      name: clientName,
+      phone: form.phone.trim(),
       totalAmount: totalAmt,
       paid: kaporaAmt,
       payments: kaporaAmt > 0 ? [{id: kaporaPayment[0]?.id||uid(), amount:kaporaAmt, type:"Ödeme Alındı", date:todayStr(), note:"Kapora", done:false}] : [],
@@ -211,7 +229,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
     };
     sb.upsert("clients", toDB.clients(newClientObj)).catch(e=>console.error("Client kayıt hatası:",e));
     const newAptObj = {
-      id: uid(), clientName: form.name, clientId: newClientId,
+      id: uid(), clientName: clientName, clientId: newClientId,
       date: form.date||"", extraDates: form.extraDates||[], time:"", location:"",
       type: form.type||"Düğün", package: form.package||"Bronz Paket",
       notes: form.notes||"", reminderDays:3,
@@ -221,7 +239,11 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
     sb.upsert("appointments", toDB.appointments(newAptObj)).catch(e=>console.error("Randevu kayıt hatası:",e));
     if(kaporaIncome) sb.upsert("incomes", toDB.incomes(kaporaIncome)).catch(()=>{});
     anniversaryReminders.forEach(r => sb.upsert("reminders", toDB.reminders(r)).catch(()=>{}));
-    setShowAdd(false); setForm(F);
+    setShowAdd(false);
+    setForm(F);
+    setAddError(null);
+    setSaving(false);
+    setToast({ message: `🎉 ${clientName} başarıyla kaydedildi!`, type: "success" });
   };
 
   const savePayment = () => {
@@ -257,8 +279,9 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
     const updatedClient = {...detail, paid:newPaid, payments:[...(detail.payments||[]), payment]};
     sb.upsert("clients", toDB.clients(updatedClient)).catch(e=>console.error("Müşteri ödeme kayıt hatası:",e));
     if(newIncome) sb.upsert("incomes", toDB.incomes(newIncome)).catch(()=>{});
-    if(newReminder) sb.upsert("reminders", toDB.reminders(newReminder)).catch(()=>{});
-    setShowPayment(false); setPForm(FP);
+    setShowPayment(false);
+    setPForm(FP);
+    setToast({ message: `💰 ${fmt(amt)} ödeme başarıyla kaydedildi!`, type: "success" });
   };
 
   const saveEditPayment = () => {
@@ -388,6 +411,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
 
   return (
     <div className="fade-in">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={()=>setToast(null)}/>}
       {/* Header */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start",
         padding:"20px 20px 16px", borderBottom:`1px solid ${T.border}`, marginBottom:16 }}>
@@ -957,6 +981,7 @@ OmniCod 📸`;
                   }));
                   setConfirmDelete(false);
                   setDetailId(null);
+                  setToast({ message: `🗑️ ${detail.name} silindi.`, type: "success" });
                 }}
                   style={{ flex:1, background:T.red, border:"none", borderRadius:14,
                     padding:"14px", fontSize:15, fontWeight:700, color:"#fff" }}>
@@ -1130,7 +1155,7 @@ OmniCod 📸`;
         <BottomSheet
           title="Yeni Müşteri"
           onClose={()=>{ setShowAdd(false); setAddError(null); }}
-          footer={<GoldButton label="Müşteriyi Kaydet" icon="check" onClick={save} full/>}
+          footer={<GoldButton label={saving ? "Kaydediliyor..." : "Müşteriyi Kaydet"} icon="check" onClick={save} disabled={saving} full/>}
         >
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
             {addError && (

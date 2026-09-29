@@ -121,3 +121,19 @@ export const saveStudioProfile = (profile) => {
   } catch(e) {}
 };
 
+// ─── UYGULAMA VERİ YEDEKLEME & YEREL VERİTABANI ────────────────────────
+export const getLocalData = () => {
+  try {
+    const raw = localStorage.getItem(PREFIX + "app_data");
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+};
+
+export const saveLocalData = (data) => {
+  try {
+    if (!data) return;
+    localStorage.setItem(PREFIX + "app_data", JSON.stringify(data));
+  } catch(e) {}
+};
+
+

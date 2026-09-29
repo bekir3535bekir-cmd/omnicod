@@ -413,4 +413,58 @@ const Logo = ({ compact }) => (
   </div>
 );
 
-export { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo };
+// ─── TOAST NOTIFICATION ──────────────────────────────────────────────────
+const Toast = ({ message, type="success", onClose }) => {
+  if (!message) return null;
+  return (
+    <div style={{
+      position: "fixed",
+      top: 24,
+      left: "50%",
+      transform: "translateX(-50%)",
+      zIndex: 99999,
+      background: type === "success" 
+        ? "linear-gradient(135deg, rgba(18, 32, 22, 0.96) 0%, rgba(10, 20, 14, 0.98) 100%)"
+        : "linear-gradient(135deg, rgba(38, 20, 20, 0.96) 0%, rgba(24, 12, 12, 0.98) 100%)",
+      backdropFilter: "blur(28px) saturate(190%)",
+      WebkitBackdropFilter: "blur(28px) saturate(190%)",
+      border: `1.5px solid ${type === "success" ? "#25D366" : "#ff453a"}99`,
+      boxShadow: type === "success"
+        ? "0 16px 40px rgba(0,0,0,0.85), 0 0 25px rgba(37,211,102,0.25)"
+        : "0 16px 40px rgba(0,0,0,0.85), 0 0 25px rgba(255,69,58,0.25)",
+      borderRadius: 18,
+      padding: "12px 18px",
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      maxWidth: 380,
+      width: "calc(100% - 32px)",
+      animation: "fadeIn 0.25s ease-out",
+    }}>
+      <div style={{
+        width: 30,
+        height: 30,
+        borderRadius: 99,
+        background: type === "success" ? "rgba(37, 211, 102, 0.18)" : "rgba(255, 69, 58, 0.18)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 15,
+        color: type === "success" ? "#25D366" : "#ff453a",
+        flexShrink: 0
+      }}>
+        {type === "success" ? "✓" : "⚠️"}
+      </div>
+      <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#ffffff", lineHeight: 1.4 }}>
+        {message}
+      </div>
+      {onClose && (
+        <button onClick={onClose} style={{ background: "transparent", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: 14 }}>
+          ✕
+        </button>
+      )}
+    </div>
+  );
+};
+
+export { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo, Toast };
