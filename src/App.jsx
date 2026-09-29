@@ -278,13 +278,18 @@ export default function App() {
     <>
       <style>{CSS}</style>
       <div style={{ minHeight:"100vh", background:T.bg, paddingTop:56, paddingBottom:84, maxWidth:430, margin:"0 auto", position:"relative" }}>
-        {/* Top bar */}
-        <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:100, background:T.surface,
-          borderBottom:`1px solid ${T.border}`, maxWidth:430, margin:"0 auto" }}>
+        {/* Top bar (Apple Liquid Glass) */}
+        <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:100,
+          background:"rgba(10, 10, 14, 0.75)",
+          backdropFilter:"blur(24px) saturate(190%)",
+          WebkitBackdropFilter:"blur(24px) saturate(190%)",
+          borderBottom:`1px solid rgba(255, 255, 255, 0.08)`,
+          boxShadow:"0 4px 20px rgba(0,0,0,0.35)",
+          maxWidth:430, margin:"0 auto" }}>
           <div style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 16px" }}>
             {isSubScreen && (
               <button onClick={()=>setActive("more")}
-                style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:99, width:34, height:34,
+                style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${T.border}`, borderRadius:99, width:34, height:34,
                   display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                 <Ic n="back" s={16} c={T.text2}/>
               </button>
@@ -292,7 +297,7 @@ export default function App() {
             <Logo compact/>
             <div style={{ marginLeft:"auto", display:"flex", gap:8, alignItems:"center" }}>
               <button onClick={()=>setActive("hatirlatici")}
-                style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:99, width:34, height:34,
+                style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${T.border}`, borderRadius:99, width:34, height:34,
                   display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
                 <Ic n="bell" s={16} c={T.gold}/>
                 {data.reminders.filter(r=>!r.done).length>0 && (
@@ -320,19 +325,25 @@ export default function App() {
           <GeceModu data={data} onClose={()=>setShowGece(false)}/>
         )}
 
-        {/* Bottom Nav */}
-        <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:100, background:T.surface,
-          borderTop:`1px solid ${T.border}`, maxWidth:430, margin:"0 auto", paddingBottom:16 }}>
-          <div style={{ display:"flex" }}>
+        {/* Bottom Nav (Apple Liquid Glass Dock) */}
+        <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:100,
+          background:"rgba(12, 12, 16, 0.78)",
+          backdropFilter:"blur(32px) saturate(200%)",
+          WebkitBackdropFilter:"blur(32px) saturate(200%)",
+          borderTop:`1px solid rgba(255, 255, 255, 0.09)`,
+          boxShadow:"0 -12px 36px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12)",
+          maxWidth:430, margin:"0 auto", paddingBottom:16 }}>
+          <div style={{ display:"flex", padding:"4px 8px 0" }}>
             {NAV.map(n=>{
               const isOn = active===n.id||(n.id==="more"&&isSubScreen);
               return (
                 <button key={n.id} onClick={()=>setActive(n.id)}
                   style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center",
-                    gap:4, padding:"10px 0 6px", background:"transparent", position:"relative", border:"none", cursor:"pointer" }}>
-                  {isOn && <div style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
-                    width:26, height:3, borderRadius:99, background:T.gold }}/>}
-                  <Ic n={n.icon} s={21} c={isOn?T.goldL:T.text3}/>
+                    gap:4, padding:"8px 0 6px", background:isOn?"rgba(255,255,255,0.06)":"transparent",
+                    borderRadius:16, border:isOn?"1px solid rgba(255,255,255,0.1)":"1px solid transparent",
+                    boxShadow:isOn?"inset 0 1px 0 rgba(255,255,255,0.18)":"none",
+                    position:"relative", cursor:"pointer", transition:"all 0.2s cubic-bezier(0.16,1,0.3,1)" }}>
+                  <Ic n={n.icon} s={20} c={isOn?T.goldL:T.text3}/>
                   <span style={{ fontSize:11, fontWeight:isOn?700:500, color:isOn?T.goldL:T.text3, letterSpacing:"0.2px" }}>{n.label}</span>
                 </button>
               );

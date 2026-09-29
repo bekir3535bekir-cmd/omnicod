@@ -5,18 +5,39 @@ import { fmt, fmtDate, uid, MN } from "../../utils/helpers";
 
 // ─── BASE COMPONENTS ─────────────────────────────────────────────────────────
 const Card = ({ children, style={}, onClick, glow }) => (
-  <div onClick={onClick} className={onClick?"":""}
-    style={{ background:T.card, border:`1px solid ${glow?T.gold+"55":T.border}`,
-      borderRadius:18, padding:18, boxShadow:glow?`0 0 20px ${T.goldGlow}`:"none",
-      cursor:onClick?"pointer":"default", transition:"all 0.2s", ...style }}>
+  <div onClick={onClick}
+    style={{
+      background: glow
+        ? `linear-gradient(135deg, ${T.gold}18 0%, rgba(255,255,255,0.02) 100%)`
+        : (T.glassCard || T.card),
+      backdropFilter: T.glassBlur || "blur(24px) saturate(180%)",
+      WebkitBackdropFilter: T.glassBlur || "blur(24px) saturate(180%)",
+      border: `1px solid ${glow ? T.gold+"66" : T.border}`,
+      borderRadius: 20,
+      padding: 18,
+      boxShadow: glow
+        ? `0 0 25px ${T.goldGlow}, inset 0 1px 1px rgba(255,255,255,0.2)`
+        : `0 12px 32px -8px rgba(0,0,0,0.65), inset 0 1px 1px 0 rgba(255,255,255,0.16), inset 0 -1px 1px 0 rgba(0,0,0,0.4)`,
+      cursor: onClick ? "pointer" : "default",
+      transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+      ...style
+    }}>
     {children}
   </div>
 );
 
 const Pill = ({ label, color=T.gold }) => (
-  <span style={{ display:"inline-flex", alignItems:"center", background:color+"1A",
-    color, fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:99,
-    letterSpacing:"0.4px", whiteSpace:"nowrap" }}>
+  <span style={{
+    display: "inline-flex", alignItems: "center",
+    background: color === T.gold ? "rgba(245, 166, 35, 0.12)" : color + "1E",
+    color,
+    border: `1px solid ${color}33`,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15)",
+    backdropFilter: "blur(12px)",
+    WebkitBackdropFilter: "blur(12px)",
+    fontSize: 11, fontWeight: 600, padding: "3.5px 11px", borderRadius: 99,
+    letterSpacing: "0.3px", whiteSpace: "nowrap"
+  }}>
     {label}
   </span>
 );
@@ -30,46 +51,66 @@ const GoldButton = ({ label, icon, onClick, full, sm, variant="primary", style={
     <button onClick={onClick} style={{
       display:"flex", alignItems:"center", justifyContent:"center", gap:8,
       width:full?"100%":"auto",
-      background: isPrimary?`linear-gradient(135deg,${T.goldL},${T.goldD})`
-                : isDanger?T.red+"22"
-                : isGhost?"transparent"
-                : "transparent",
-      color: isPrimary?T.bg : isDanger?T.redL : isGhost?T.text2 : T.goldL,
-      border: isOutline?`1.5px solid ${T.gold}` : isDanger?`1px solid ${T.red}44` : "none",
-      borderRadius:14, padding: sm?"10px 18px":"14px 22px",
-      fontSize:sm?13:15, fontWeight:600, letterSpacing:"0.2px",
-      transition:"all 0.2s", ...style }}>
-      {icon && <Ic n={icon} s={sm?15:17} c={isPrimary?T.bg:isDanger?T.redL:isGhost?T.text2:T.goldL}/>}
+      background: isPrimary
+        ? `linear-gradient(135deg, ${T.goldL} 0%, ${T.gold} 50%, ${T.goldD} 100%)`
+        : isDanger ? "rgba(255, 69, 58, 0.14)"
+        : isGhost ? "transparent"
+        : "rgba(255, 255, 255, 0.04)",
+      color: isPrimary ? "#000000" : isDanger ? T.redL : isGhost ? T.text2 : T.goldL,
+      border: isOutline ? `1.5px solid ${T.gold}` : isDanger ? `1px solid ${T.red}44` : isPrimary ? "1px solid rgba(255,255,255,0.3)" : `1px solid ${T.border}`,
+      boxShadow: isPrimary ? `0 8px 24px -4px ${T.gold}50, inset 0 1px 1px rgba(255,255,255,0.6)` : isOutline ? `inset 0 1px 1px rgba(255,255,255,0.1)` : "none",
+      borderRadius: 16,
+      padding: sm ? "10px 18px" : "14px 22px",
+      fontSize: sm ? 13 : 15,
+      fontWeight: 600,
+      letterSpacing: "0.2px",
+      backdropFilter: !isPrimary ? "blur(16px)" : "none",
+      WebkitBackdropFilter: !isPrimary ? "blur(16px)" : "none",
+      transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+      ...style
+    }}>
+      {icon && <Ic n={icon} s={sm?15:17} c={isPrimary?"#000000":isDanger?T.redL:isGhost?T.text2:T.goldL}/>}
       {label}
     </button>
   );
 };
 
-const Field = ({ label, value, onChange, type="text", placeholder, textarea, options, rows=3, required, note }) => (
-  <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-    <div style={{ display:"flex", justifyContent:"space-between" }}>
-      {label && <span style={{ fontSize:12, color:T.text2, fontWeight:500, letterSpacing:"0.3px" }}>{label}{required&&<span style={{color:T.gold}}> *</span>}</span>}
-      {note && <span style={{ fontSize:11, color:T.text3 }}>{note}</span>}
+const Field = ({ label, value, onChange, type="text", placeholder, textarea, options, rows=3, required, note }) => {
+  const inputStyle = {
+    background: "rgba(255, 255, 255, 0.035)",
+    backdropFilter: "blur(16px)",
+    WebkitBackdropFilter: "blur(16px)",
+    border: `1px solid ${T.border}`,
+    boxShadow: "inset 0 1px 2px rgba(0,0,0,0.3)",
+    borderRadius: 14,
+    padding: "12px 14px",
+    color: T.text,
+    fontSize: 14,
+    width: "100%",
+    outline: "none",
+    transition: "border-color 0.2s"
+  };
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+      <div style={{ display:"flex", justifyContent:"space-between" }}>
+        {label && <span style={{ fontSize:12, color:T.text2, fontWeight:500, letterSpacing:"0.3px" }}>{label}{required&&<span style={{color:T.gold}}> *</span>}</span>}
+        {note && <span style={{ fontSize:11, color:T.text3 }}>{note}</span>}
+      </div>
+      {options ? (
+        <select value={value} onChange={e=>onChange(e.target.value)} style={inputStyle}>
+          {options.map(o => typeof o==="object"
+            ? <option key={o.value} value={o.value}>{o.label}</option>
+            : <option key={o} value={o}>{o}</option>)}
+        </select>
+      ) : textarea ? (
+        <textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows}
+          style={{ ...inputStyle, resize:"vertical" }}/>
+      ) : (
+        <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={inputStyle}/>
+      )}
     </div>
-    {options ? (
-      <select value={value} onChange={e=>onChange(e.target.value)}
-        style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:12,
-          padding:"12px 14px", color:T.text, fontSize:14 }}>
-        {options.map(o => typeof o==="object"
-          ? <option key={o.value} value={o.value}>{o.label}</option>
-          : <option key={o} value={o}>{o}</option>)}
-      </select>
-    ) : textarea ? (
-      <textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows}
-        style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:12,
-          padding:"12px 14px", color:T.text, fontSize:14, resize:"vertical" }}/>
-    ) : (
-      <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
-        style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:12,
-          padding:"12px 14px", color:T.text, fontSize:14 }}/>
-    )}
-  </div>
-);
+  );
+};
 
 const DatePicker = ({ label, value, onChange, required }) => {
   const [open, setOpen] = useState(false);
@@ -155,22 +196,24 @@ const DatePicker = ({ label, value, onChange, required }) => {
 const BottomSheet = ({ title, onClose, children }) => (
   <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
     {/* Backdrop */}
-    <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.75)", backdropFilter:"blur(6px)" }}/>
+    <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.8)", backdropFilter:"blur(16px)", WebkitBackdropFilter:"blur(16px)" }}/>
     {/* Modal Box */}
     <div className="modal-pop" style={{
       position:"relative", zIndex:1,
-      background:T.surface,
-      borderRadius:24,
-      border:`1px solid ${T.border}`,
-      boxShadow:`0 24px 64px rgba(0,0,0,0.85), inset 0 1px 0 ${T.gold}22`,
+      background:"linear-gradient(145deg, rgba(22, 22, 28, 0.94) 0%, rgba(14, 14, 18, 0.96) 100%)",
+      backdropFilter:"blur(36px) saturate(200%)",
+      WebkitBackdropFilter:"blur(36px) saturate(200%)",
+      borderRadius:28,
+      border:"1px solid rgba(255, 255, 255, 0.12)",
+      boxShadow:"0 32px 80px rgba(0,0,0,0.95), inset 0 1px 1px rgba(255,255,255,0.22)",
       maxWidth:440, width:"100%",
       maxHeight:"88vh", overflowY:"auto",
       display:"flex", flexDirection:"column",
       paddingBottom:24
     }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 20px 14px", borderBottom:`1px solid ${T.border}`, position:"sticky", top:0, background:T.surface, zIndex:10, borderRadius:"24px 24px 0 0" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 20px 14px", borderBottom:`1px solid ${T.border}`, position:"sticky", top:0, background:"transparent", zIndex:10, borderRadius:"28px 28px 0 0" }}>
         <span style={{ fontFamily:"Playfair Display", fontSize:19, fontWeight:700, color:T.goldL }}>{title}</span>
-        <button onClick={onClose} style={{ background:T.card2, border:`1px solid ${T.border}`,
+        <button onClick={onClose} style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${T.border}`,
           borderRadius:99, width:34, height:34, display:"flex", alignItems:"center", justifyContent:"center" }}>
           <Ic n="close" s={15} c={T.text2}/>
         </button>

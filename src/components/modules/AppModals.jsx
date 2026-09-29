@@ -1452,26 +1452,28 @@ export const LoginScreen = ({ onLogin, data }) => {
         </div>
       </div>
 
-      {/* Kart */}
-      <div style={{ position:"relative", zIndex:1, width:"100%", maxWidth:360 }}>
-        <div style={{ background:"rgba(18,18,22,0.92)", backdropFilter:"blur(24px)",
-          border:`1px solid ${T.gold}25`, borderRadius:24, padding:"26px 22px",
-          boxShadow:`0 24px 64px rgba(0,0,0,0.75), inset 0 1px 0 ${T.gold}20` }}>
+      {/* Kart (Apple Liquid Glass) */}
+      <div style={{ position:"relative", zIndex:1, width:"100%", maxWidth:364 }}>
+        <div style={{ background:"linear-gradient(145deg, rgba(24, 24, 32, 0.88) 0%, rgba(14, 14, 18, 0.94) 100%)",
+          backdropFilter:"blur(36px) saturate(200%)", WebkitBackdropFilter:"blur(36px) saturate(200%)",
+          border:"1px solid rgba(255, 255, 255, 0.12)", borderRadius:28, padding:"28px 22px",
+          boxShadow:"0 32px 80px -10px rgba(0,0,0,0.95), inset 0 1px 1px rgba(255,255,255,0.22), inset 0 -1px 1px rgba(0,0,0,0.5)" }}>
 
           {/* ─── 1. STÜDYO SAHİBİ GİRİŞ EKRANI (Varsayılan) ─── */}
           {mode === "login" && (
             <>
-              {/* Sekmeler: Giriş Yap / Kayıt Ol */}
-              <div style={{ display:"flex", background:"rgba(255,255,255,0.05)", borderRadius:14, padding:4, marginBottom:20 }}>
+              {/* Sekmeler: Giriş Yap / Kayıt Ol (Liquid Glass Pills) */}
+              <div style={{ display:"flex", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16, padding:4, marginBottom:20 }}>
                 <button onClick={()=>{ setMode("login"); setLoginErr(null); }}
-                  style={{ flex:1, padding:"9px 0", borderRadius:10, fontSize:13, fontWeight:700,
-                    background:`linear-gradient(135deg,${T.gold},${T.goldD})`, color:"#0A0A0B",
-                    boxShadow:`0 2px 10px ${T.gold}30` }}>
+                  style={{ flex:1, padding:"10px 0", borderRadius:12, fontSize:13, fontWeight:700,
+                    background:"linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 100%)",
+                    border:"1px solid rgba(255,255,255,0.25)", color:"#FFFFFF",
+                    boxShadow:"0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3)" }}>
                   Giriş Yap
                 </button>
                 <button onClick={()=>{ setMode("register"); setRegErr(null); }}
-                  style={{ flex:1.2, padding:"9px 0", borderRadius:10, fontSize:12, fontWeight:600,
-                    color:T.goldL, background:"transparent" }}>
+                  style={{ flex:1.2, padding:"10px 0", borderRadius:12, fontSize:12, fontWeight:600,
+                    color:T.goldL, background:"transparent", border:"1px solid transparent" }}>
                   👑 7 Gün Ücretsiz
                 </button>
               </div>
