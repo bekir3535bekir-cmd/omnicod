@@ -508,6 +508,34 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
                   </div>
                 ))}
               </div>)}
+
+              {c.phone && (
+                <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const ph = c.phone.replace(/\D/g, "").replace(/^0/, "");
+                      const msg = `Merhaba ${c.name}! StudyoApp üzerinden fotoğraf çekimi ve süreciniz hakkında bilgilendirme yapmak istedik. Nasıl yardımcı olabiliriz?`;
+                      window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`, "_blank");
+                    }}
+                    style={{
+                      background: "rgba(37, 211, 102, 0.12)",
+                      border: "1px solid rgba(37, 211, 102, 0.3)",
+                      color: "#25D366",
+                      borderRadius: 10,
+                      padding: "5px 12px",
+                      fontSize: 11.5,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6
+                    }}
+                  >
+                    <span>💬</span> WhatsApp
+                  </button>
+                </div>
+              )}
               {isAdmin && pendingPromise && (
                 <div style={{ marginTop:10, background:T.orange+"1A", border:`1px solid ${T.orange}33`,
                   borderRadius:10, padding:"8px 12px", display:"flex", gap:8, alignItems:"center" }}>

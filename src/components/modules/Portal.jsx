@@ -1,106 +1,312 @@
-import React, { useState, useEffect, useRef } from "react";
-import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
+import React, { useState } from "react";
+import { T } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
-import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
-import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
-import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
+import { fmtDate } from "../../utils/helpers";
+import { Card, Pill, GoldButton, Field, PageHeader } from "../common";
 
 export const Portal = ({ data }) => {
   const [selClient, setSelClient] = useState("");
   const [portalOpen, setPortalOpen] = useState(false);
   const [selections, setSelections] = useState({});
+  const [coverPhoto, setCoverPhoto] = useState(null);
+  const [quota, setQuota] = useState(40);
+  const [copied, setCopied] = useState(false);
 
-  const client = data.clients.find(c=>c.id===selClient);
-  const galleryPhotos = data.gallery.filter(g=>g.clientId===selClient || !g.clientId);
+  const client = data.clients.find(c => c.id === selClient);
+  const galleryPhotos = data.gallery.filter(g => g.clientId === selClient || !g.clientId);
 
-  const toggle = (id) => setSelections(p=>({...p,[id]:!p[id]}));
+  const toggleSelect = (id) => {
+    setSelections(p => ({ ...p, [id]: !p[id] }));
+  };
+
+  const toggleCover = (id) => {
+    setCoverPhoto(prev => (prev === id ? null : id));
+    if (!selections[id]) {
+      setSelections(p => ({ ...p, [id]: true }));
+    }
+  };
+
   const selectedCount = Object.values(selections).filter(Boolean).length;
 
+  const copyPhotoList = () => {
+    const selectedIds = Object.keys(selections).filter(id => selections[id]);
+    const names = selectedIds.map((id, i) => {
+      const ph = galleryPhotos.find(g => g.id === id);
+      return ph?.title || `IMG_${String(i + 1).padStart(4, "0")}.JPG`;
+    });
+    navigator.clipboard.writeText(names.join(", "));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const sendPortalLink = () => {
-    if(!client?.phone) return;
-    const phone = client.phone.replace(/\D/g,"").replace(/^0/,"");
-    const msg = `Merhaba ${client.name} hanım/bey 👋\n\nÇekimleriniz hazır! Aşağıdaki simülasyon üzerinden favori fotoğraflarınızı seçebilirsiniz.\n\nSeçimlerinizi yaptıktan sonra bize bildirmeniz yeterli.\n\nOmniCod 📸`;
+    if (!client?.phone) return;
+    const phone = client.phone.replace(/\D/g, "").replace(/^0/, "");
+    const selectedIds = Object.keys(selections).filter(id => selections[id]);
+    const msg = `Merhaba ${client.name} 👋\n\nÇekim fotoğraflarınız hazır! Toplam ${quota} adet albüm fotoğrafı seçebilirsiniz.\n\nŞu ana kadar seçilen: ${selectedIds.length}/${quota} adet.\n\nStudyoApp 📸`;
     window.open(`https://wa.me/90${phone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
   return (
-    <div className="fade-in">
-      <PageHeader title="Müşteri Portali" sub="Fotoğraf seçim sistemi"/>
-      <div style={{ padding:"0 20px" }}>
-        <div style={{ background:T.gold+"1A", border:`1px solid ${T.gold}33`, borderRadius:14, padding:16, marginBottom:20 }}>
-          <div style={{ fontSize:13, fontWeight:600, color:T.gold, marginBottom:6 }}>🔗 Nasıl Çalışır?</div>
-          <div style={{ fontSize:12, color:T.text2, lineHeight:1.7 }}>
-            Müşterinizi seç → Galeri fotoğraflarını göster → Müşteri ❤️ işaretler → WhatsApp ile bildir
+    <div className="fade-in" style={{ paddingBottom: 40 }}>
+      <PageHeader title="Müşteri Portali & Fotoğraf Seçimi" sub="Albüm fotoğraf eleme ve proofing yönetim sistemi" />
+      <div style={{ padding: "0 20px" }}>
+        
+        {/* Bilgi Kutusu */}
+        <div style={{
+          background: "rgba(232, 197, 71, 0.08)",
+          border: `1px solid ${T.gold}44`,
+          borderRadius: 16,
+          padding: 16,
+          marginBottom: 20
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: T.goldL, marginBottom: 6 }}>
+            💖 Tinder Tarzı Fotoğraf Seçimi (Proofing)
           </div>
-          <div style={{ marginTop:10, fontSize:11, color:T.text3 }}>
-            ⚠️ Gerçek link için Supabase + Vercel kurulumu gerekli
+          <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.6 }}>
+            Müşteriniz evinde telefonundan fotoğrafları inceler, albüme girmesini istediklerine <strong>❤️ Kalp</strong> koyar, kapak fotoğrafı için <strong>⭐ Yıldız</strong> seçer. Seçilen fotoğrafların dosya adlarını tek tıkla Lightroom'a aktarabilirsiniz.
           </div>
         </div>
 
-        <Field label="Müşteri Seç" value={selClient}
-          onChange={v=>{ setSelClient(v); setSelections({}); setPortalOpen(false); }}
-          options={["", ...data.clients.map(c=>c.id)]}/>
+        <Field 
+          label="Müşteri Seçin" 
+          value={selClient}
+          onChange={v => { setSelClient(v); setSelections({}); setCoverPhoto(null); setPortalOpen(false); }}
+          options={["", ...data.clients.map(c => c.id)]}
+        />
+
         {selClient && !portalOpen && (
-          <div style={{ marginTop:12 }}>
-            <div style={{ fontSize:13, color:T.text2, marginBottom:10 }}>
-              Seçilen: <strong>{client?.name}</strong>
-              {galleryPhotos.length>0 ? ` · ${galleryPhotos.length} fotoğraf` : " · Galeride fotoğraf yok"}
-            </div>
-            <GoldButton label="Portali Simüle Et" icon="eye" onClick={()=>setPortalOpen(true)} full/>
+          <div style={{ marginTop: 14 }}>
+            <Card glow style={{ padding: 16, marginBottom: 14 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{client?.name}</div>
+              <div style={{ fontSize: 12, color: T.text3, marginTop: 4 }}>
+                Paket: {client?.package} • Tarih: {fmtDate(client?.date)}
+              </div>
+              <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 12, color: T.text2 }}>Albüm Seçim Kotası:</span>
+                <input
+                  type="number"
+                  value={quota}
+                  onChange={e => setQuota(parseInt(e.target.value, 10) || 35)}
+                  style={{
+                    width: 60,
+                    background: "rgba(255,255,255,0.08)",
+                    border: `1px solid ${T.border}`,
+                    color: T.text,
+                    borderRadius: 8,
+                    padding: "4px 8px",
+                    fontSize: 13,
+                    textAlign: "center"
+                  }}
+                />
+                <span style={{ fontSize: 12, color: T.text3 }}>adet</span>
+              </div>
+            </Card>
+
+            <GoldButton 
+              label="Müşteri Seçim Portalini Aç" 
+              icon="eye" 
+              onClick={() => setPortalOpen(true)} 
+              full 
+            />
           </div>
         )}
 
         {/* MÜŞTERİ PORTAL SİMÜLASYONU */}
         {portalOpen && client && (
-          <div className="fade-in" style={{ marginTop:16 }}>
-            <div style={{ background:T.card, border:`1px solid ${T.gold}44`, borderRadius:16, overflow:"hidden" }}>
-              {/* Portal header */}
-              <div style={{ background:`linear-gradient(135deg,${T.goldD},${T.goldL})`, padding:"20px 16px" }}>
-                <div style={{ fontFamily:"Playfair Display", fontSize:20, fontWeight:700, color:T.bg }}>OmniCod</div>
-                <div style={{ fontSize:13, color:T.bg+"CC", marginTop:4 }}>Merhaba, {client.name} 👋</div>
-                <div style={{ fontSize:12, color:T.bg+"99", marginTop:2 }}>Favori fotoğraflarınızı seçin</div>
+          <div className="fade-in" style={{ marginTop: 20 }}>
+            <div style={{
+              background: "linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01))",
+              border: `1.5px solid ${T.gold}44`,
+              borderRadius: 22,
+              overflow: "hidden",
+              boxShadow: "0 12px 32px rgba(0,0,0,0.4)"
+            }}>
+              {/* Header */}
+              <div style={{
+                background: `linear-gradient(135deg, ${T.goldD}, ${T.gold})`,
+                padding: "20px 18px",
+                color: "#000"
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontFamily: "Playfair Display", fontSize: 20, fontWeight: 700 }}>
+                      StudyoApp
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 600, opacity: 0.9, marginTop: 2 }}>
+                      {client.name} — Albüm Fotoğraf Seçimi
+                    </div>
+                  </div>
+                  <Pill label={`${selectedCount} / ${quota} Seçildi`} color="#000" />
+                </div>
               </div>
-              {/* Photos */}
-              <div style={{ padding:14 }}>
-                {galleryPhotos.length===0 ? (
-                  <div style={{ textAlign:"center", padding:30, color:T.text3, fontSize:13 }}>
-                    Önce Portföy Galerisi'ne fotoğraf ekleyin
+
+              {/* Fotoğraflar Izgarası */}
+              <div style={{ padding: 16 }}>
+                {galleryPhotos.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: 30, color: T.text3, fontSize: 13 }}>
+                    Önce Portföy Galerisi'ne veya müşteriye ait fotoğrafları yükleyin.
                   </div>
                 ) : (
                   <>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:14 }}>
-                      {galleryPhotos.map((g,i)=>(
-                        <div key={g.id} onClick={()=>toggle(g.id)}
-                          style={{ aspectRatio:"1", borderRadius:10, overflow:"hidden", position:"relative", cursor:"pointer",
-                            background:selections[g.id]?T.green+"22":T.card2,
-                            border:`2px solid ${selections[g.id]?T.green:T.border}`, transition:"all 0.2s" }}>
-                          <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center",
-                            fontSize:24, background:g.color||T.card2 }}>
-                            {g.emoji||"📷"}
-                          </div>
-                          {selections[g.id] && (
-                            <div style={{ position:"absolute", top:4, right:4, background:T.green,
-                              borderRadius:99, width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                              <Ic n="check" s={11} c="#fff"/>
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 12,
+                      marginBottom: 16
+                    }}>
+                      {galleryPhotos.map((g, i) => {
+                        const isSelected = !!selections[g.id];
+                        const isCover = coverPhoto === g.id;
+
+                        return (
+                          <div
+                            key={g.id}
+                            style={{
+                              borderRadius: 16,
+                              overflow: "hidden",
+                              background: isSelected ? "rgba(76, 175, 80, 0.12)" : "rgba(255,255,255,0.03)",
+                              border: `2px solid ${isCover ? T.goldL : isSelected ? T.greenL : "rgba(255,255,255,0.08)"}`,
+                              transition: "all 0.2s ease",
+                              position: "relative"
+                            }}
+                          >
+                            <div style={{
+                              aspectRatio: "1",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 32,
+                              background: g.color || "rgba(255,255,255,0.05)"
+                            }}>
+                              {g.emoji || "📸"}
                             </div>
-                          )}
-                          <div style={{ position:"absolute", bottom:4, left:4, fontSize:9, color:T.text3,
-                            background:T.bg+"CC", borderRadius:4, padding:"2px 5px" }}>#{i+1}</div>
-                        </div>
-                      ))}
+
+                            {/* Badge row */}
+                            <div style={{
+                              position: "absolute",
+                              top: 6,
+                              left: 6,
+                              right: 6,
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center"
+                            }}>
+                              <span style={{
+                                fontSize: 9,
+                                background: "rgba(0,0,0,0.6)",
+                                color: "#fff",
+                                padding: "2px 6px",
+                                borderRadius: 6
+                              }}>
+                                #{i + 1}
+                              </span>
+
+                              {isCover && (
+                                <span style={{
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  background: T.gold,
+                                  color: "#000",
+                                  padding: "2px 6px",
+                                  borderRadius: 6
+                                }}>
+                                  ⭐ KAPAK
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div style={{
+                              display: "flex",
+                              gap: 4,
+                              padding: 6,
+                              background: "rgba(0,0,0,0.4)"
+                            }}>
+                              <button
+                                onClick={() => toggleSelect(g.id)}
+                                style={{
+                                  flex: 1,
+                                  background: isSelected ? T.greenL : "rgba(255,255,255,0.1)",
+                                  color: isSelected ? "#000" : "#fff",
+                                  border: "none",
+                                  borderRadius: 8,
+                                  padding: "6px 0",
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  cursor: "pointer"
+                                }}
+                              >
+                                {isSelected ? "❤️ Seçildi" : "🤍 Seç"}
+                              </button>
+
+                              <button
+                                onClick={() => toggleCover(g.id)}
+                                title="Kapak fotoğrafı yap"
+                                style={{
+                                  background: isCover ? T.goldL : "rgba(255,255,255,0.1)",
+                                  color: isCover ? "#000" : "#fff",
+                                  border: "none",
+                                  borderRadius: 8,
+                                  padding: "6px 8px",
+                                  fontSize: 11,
+                                  cursor: "pointer"
+                                }}
+                              >
+                                ⭐
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div style={{ background:T.card2, borderRadius:12, padding:"12px 14px", textAlign:"center" }}>
-                      <div style={{ fontSize:14, fontWeight:600, color:T.gold }}>{selectedCount} fotoğraf seçildi</div>
-                      <div style={{ fontSize:11, color:T.text3, marginTop:3 }}>Seçimlerinizi tamamladığınızda bildirin</div>
+
+                    {/* Alt İlerleme ve Kopyalama Çubuğu */}
+                    <div style={{
+                      background: "rgba(255,255,255,0.04)",
+                      borderRadius: 14,
+                      padding: "14px 16px",
+                      marginBottom: 14
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: T.goldL }}>
+                            {selectedCount} / {quota} Fotoğraf Seçildi
+                          </div>
+                          <div style={{ fontSize: 11, color: T.text3, marginTop: 2 }}>
+                            {coverPhoto ? "⭐ Kapak fotoğrafı belirlendi" : "Henüz kapak fotoğrafı seçilmedi"}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={copyPhotoList}
+                          style={{
+                            background: "rgba(232, 197, 71, 0.15)",
+                            border: `1px solid ${T.gold}55`,
+                            color: T.goldL,
+                            borderRadius: 10,
+                            padding: "6px 12px",
+                            fontSize: 11,
+                            fontWeight: 700,
+                            cursor: "pointer"
+                          }}
+                        >
+                          {copied ? "Kopyalandı! ✅" : "📋 İsimleri Kopyala"}
+                        </button>
+                      </div>
                     </div>
                   </>
                 )}
               </div>
             </div>
-            <div style={{ marginTop:12 }}>
-              <GoldButton label="WhatsApp ile Bildir" icon="send" onClick={sendPortalLink} full/>
+
+            <div style={{ marginTop: 14 }}>
+              <GoldButton
+                label="WhatsApp ile Seçimleri Müşteriye Gönder"
+                icon="send"
+                onClick={sendPortalLink}
+                full
+              />
             </div>
           </div>
         )}
@@ -108,7 +314,3 @@ export const Portal = ({ data }) => {
     </div>
   );
 };
-
-// ════════════════════════════════════════════════
-// RAPORLAR
-// ════════════════════════════════════════════════

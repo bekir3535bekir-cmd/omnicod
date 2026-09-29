@@ -47,6 +47,10 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
 
       {[
         {i:"users",   l:"Müşteriler",          d:"Müşteri CRM, paket ve bakiye takibi", s:"musteriler", c:T.goldL,    adminOnly:false},
+        {i:"calendar",l:"🌅 Altın Saat & Işık", d:"Dış çekim gün batımı ve ters ışık hesaplayıcı", s:"altinsaat", c:T.goldL, adminOnly:false},
+        {i:"camera",  l:"📸 Poz Rehberi",      d:"Görsel pozlar ve çifte komut rehberi", s:"pozrehberi", c:T.gold, adminOnly:false},
+        {i:"copy",    l:"📇 Dijital QR Kartvizit", d:"Düğün salonları için anında vCard paylaşımı", s:"kartvizit", c:T.blueL, adminOnly:false},
+        {i:"sparkle", l:"🎙️ Sesli Randevu",     d:"Konuşarak hızlı randevu ve not ekleme", s:"sesliasistan", c:"#C94C9F", adminOnly:false},
         {i:"notebook",l:"Notlarım",            d:"Hızlı ve etiketli notlar",            s:"notdefteri", c:T.gold,     adminOnly:true},
         {i:"calendar",l:"Takvim",              d:"Yıllık randevu takvimi",             s:"takvim",     c:T.blueL,    adminOnly:false},
         {i:"doc",     l:"Sözleşmeler",         d:"Müşteri sözleşmeleri & PDF",         s:"sozlesmeler", c:T.orange,   adminOnly:true, pro:true},

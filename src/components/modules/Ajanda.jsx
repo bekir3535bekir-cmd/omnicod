@@ -249,6 +249,69 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
               {a.status==="onaylı"&&d>=0 && <div style={{ marginTop:8 }}>
                 <Pill label={d===0?"Bugün!":d===1?"Yarın!":d<=7?`${d} gün kaldı`:`${d} gün kaldı`} color={d<=1?T.redL:d<=7?T.orangeL:T.text3}/>
               </div>}
+
+              {/* Hızlı Eylemler (WhatsApp & Altın Saat) */}
+              <div style={{ display: "flex", gap: 8, marginTop: 10, paddingTop: 8, borderTop: `1px solid ${T.border}` }} onClick={e => e.stopPropagation()}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const cl = data.clients.find(c => c.name.toLowerCase() === a.clientName.toLowerCase() || c.id === a.clientId);
+                    const rawPh = cl?.phone || "";
+                    const ph = rawPh.replace(/\D/g, "").replace(/^0/, "");
+                    const msg = `Merhaba ${a.clientName}! ${fmtDate(a.date)} tarihindeki saat ${a.time || "14:00"}'da gerçekleşecek ${a.type} çekiminiz için hatırlatmak istedik. Görüşmek üzere! — StudyoApp`;
+                    if (ph) {
+                      window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`, "_blank");
+                    } else {
+                      const ask = prompt(`${a.clientName} için telefon numarası girin:`, "05");
+                      if (ask) {
+                        const clean = ask.replace(/\D/g, "").replace(/^0/, "");
+                        window.open(`https://wa.me/90${clean}?text=${encodeURIComponent(msg)}`, "_blank");
+                      }
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    background: "rgba(37, 211, 102, 0.12)",
+                    border: "1px solid rgba(37, 211, 102, 0.3)",
+                    color: "#25D366",
+                    borderRadius: 10,
+                    padding: "6px 8px",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 5
+                  }}
+                >
+                  <span>💬</span> WhatsApp
+                </button>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (setActive) setActive("altinsaat");
+                  }}
+                  style={{
+                    flex: 1,
+                    background: "rgba(232, 197, 71, 0.12)",
+                    border: "1px solid rgba(232, 197, 71, 0.3)",
+                    color: T.goldL,
+                    borderRadius: 10,
+                    padding: "6px 8px",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 5
+                  }}
+                >
+                  <span>🌅</span> Altın Saat
+                </button>
+              </div>
             </Card>
           );
         })}
@@ -313,6 +376,48 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
               }}
               style={{ marginBottom:10 }}/>
           )}
+
+          {/* WhatsApp Butonu */}
+          {(() => {
+            const cl = data.clients.find(c => c.name.toLowerCase() === detail.clientName.toLowerCase() || c.id === detail.clientId);
+            const rawPh = cl?.phone || "";
+            const ph = rawPh.replace(/\D/g, "").replace(/^0/, "");
+            return (
+              <button
+                onClick={() => {
+                  const msg = `Merhaba ${detail.clientName}! ${fmtDate(detail.date)} tarihindeki saat ${detail.time || "14:00"}'da gerçekleşecek ${detail.type} çekiminiz için hatırlatmak istedik. Sorularınız için bize yazabilirsiniz! — StudyoApp`;
+                  if (ph) {
+                    window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`, "_blank");
+                  } else {
+                    const ask = prompt(`${detail.clientName} için telefon numarası girin:`, "05");
+                    if (ask) {
+                      const clean = ask.replace(/\D/g, "").replace(/^0/, "");
+                      window.open(`https://wa.me/90${clean}?text=${encodeURIComponent(msg)}`, "_blank");
+                    }
+                  }
+                }}
+                style={{
+                  width: "100%",
+                  background: "linear-gradient(135deg, #25D366, #128C7E)",
+                  color: "#fff",
+                  borderRadius: 14,
+                  padding: "13px",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  marginBottom: 10
+                }}
+              >
+                <span>💬</span> WhatsApp ile Hatırlat / Mesaj Gönder
+              </button>
+            );
+          })()}
+
           {/* Çekim Günü Modu */}
           <button onClick={()=>{ setCekimApt(detail); setShowCekim(true); setDetailId(null); }}
             style={{ width:"100%", background:`linear-gradient(135deg,${T.gold}22,${T.blue}22)`,

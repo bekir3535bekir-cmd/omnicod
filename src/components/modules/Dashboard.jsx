@@ -191,6 +191,179 @@ const getGreetingInfo = (hour) => {
   };
 };
 
+const PREP_ITEMS = [
+  { id: "batarya", label: "Kamera & Flaş bataryaları şarjda", icon: "🔋" },
+  { id: "hafiza", label: "Hafıza kartları boşaltılıp yedeklendi", icon: "💾" },
+  { id: "lens", label: "Lensler ve kamera sensörü temizlendi", icon: "🔍" },
+  { id: "flas", label: "Godox tetikleyici ve tepe flaş pilleri dolu", icon: "⚡" },
+  { id: "detay", label: "Çekim konumu ve çift istekleri incelendi", icon: "📝" },
+];
+
+const PreparationCard = ({ apt, isTmr, storageKey, onGoAltinSaat, onGoPoz }) => {
+  const [checkedMap, setCheckedMap] = useState(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : {};
+    } catch(e) { return {}; }
+  });
+
+  const toggle = (id) => {
+    setCheckedMap(prev => {
+      const next = { ...prev, [id]: !prev[id] };
+      try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch(e) {}
+      return next;
+    });
+  };
+
+  const doneCount = PREP_ITEMS.filter(it => checkedMap[it.id]).length;
+  const isAllDone = doneCount === PREP_ITEMS.length;
+
+  return (
+    <div style={{
+      marginBottom: 20,
+      borderRadius: 22,
+      padding: "16px 18px",
+      background: isAllDone
+        ? "linear-gradient(135deg, rgba(76, 175, 80, 0.12) 0%, rgba(255,255,255,0.02) 100%)"
+        : "linear-gradient(135deg, rgba(255, 140, 0, 0.12) 0%, rgba(255,255,255,0.02) 100%)",
+      backdropFilter: "blur(20px)",
+      WebkitBackdropFilter: "blur(20px)",
+      border: `1.5px solid ${isAllDone ? "rgba(76, 175, 80, 0.4)" : "rgba(255, 140, 0, 0.4)"}`,
+      boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+      position: "relative",
+      overflow: "hidden"
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 16 }}>{isAllDone ? "🎉" : "🎒"}</span>
+            <span style={{
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: "0.8px",
+              textTransform: "uppercase",
+              color: isAllDone ? T.greenL : T.orangeL
+            }}>
+              {isTmr ? "Yarın Çekim Var!" : "Bugün Çekim Var!"} • Ekipman Kontrolü
+            </span>
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginTop: 4 }}>
+            {apt.clientName} ({apt.type || "Çekim"})
+          </div>
+          <div style={{ fontSize: 11, color: T.text3, marginTop: 2 }}>
+            Saat: {apt.time || "14:00"} • {apt.location || "Mekan"}
+          </div>
+        </div>
+        <div style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: isAllDone ? T.greenL : T.orangeL,
+          background: "rgba(255,255,255,0.06)",
+          padding: "4px 8px",
+          borderRadius: 8
+        }}>
+          {doneCount} / {PREP_ITEMS.length} Hazır
+        </div>
+      </div>
+
+      {/* Progress line */}
+      <div style={{ height: 4, background: "rgba(255,255,255,0.08)", borderRadius: 99, margin: "10px 0 14px", overflow: "hidden" }}>
+        <div style={{
+          width: `${(doneCount / PREP_ITEMS.length) * 100}%`,
+          height: "100%",
+          background: isAllDone ? T.greenL : T.orangeL,
+          transition: "width 0.3s ease"
+        }} />
+      </div>
+
+      {/* Items */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {PREP_ITEMS.map(it => {
+          const checked = !!checkedMap[it.id];
+          return (
+            <div
+              key={it.id}
+              onClick={() => toggle(it.id)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "8px 10px",
+                borderRadius: 10,
+                background: checked ? "rgba(76, 175, 80, 0.08)" : "rgba(255,255,255,0.03)",
+                border: `1px solid ${checked ? "rgba(76, 175, 80, 0.25)" : "rgba(255,255,255,0.06)"}`,
+                cursor: "pointer",
+                transition: "all 0.2s ease"
+              }}
+            >
+              <div style={{
+                width: 18,
+                height: 18,
+                borderRadius: 6,
+                border: `1.5px solid ${checked ? T.greenL : T.text3}`,
+                background: checked ? T.greenL : "transparent",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 12,
+                color: "#000",
+                fontWeight: "bold",
+                flexShrink: 0
+              }}>
+                {checked ? "✓" : ""}
+              </div>
+              <span style={{ fontSize: 15 }}>{it.icon}</span>
+              <span style={{
+                fontSize: 12,
+                color: checked ? T.text3 : T.text,
+                textDecoration: checked ? "line-through" : "none"
+              }}>
+                {it.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Hızlı butonlar */}
+      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <button
+          onClick={onGoAltinSaat}
+          style={{
+            flex: 1,
+            background: "rgba(232, 197, 71, 0.12)",
+            border: "1px solid rgba(232, 197, 71, 0.3)",
+            color: T.goldL,
+            borderRadius: 10,
+            padding: "8px",
+            fontSize: 11,
+            fontWeight: 600,
+            cursor: "pointer"
+          }}
+        >
+          🌅 Altın Saati Gör
+        </button>
+        <button
+          onClick={onGoPoz}
+          style={{
+            flex: 1,
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            color: T.text2,
+            borderRadius: 10,
+            padding: "8px",
+            fontSize: 11,
+            fontWeight: 600,
+            cursor: "pointer"
+          }}
+        >
+          📸 Poz Rehberi
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export const Dashboard = ({ data, setActive, role, plan }) => {
   const isAdmin = role === "admin";
   const now     = new Date();
@@ -371,6 +544,65 @@ export const Dashboard = ({ data, setActive, role, plan }) => {
             </span>
           </div>
         </div>
+
+        {/* Hızlı Stüdyo Araçları (4 Sihirbaz) */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr 1fr",
+          gap: 8,
+          marginBottom: 20
+        }}>
+          {[
+            { id: "altinsaat", icon: "🌅", label: "Altın Saat", color: T.goldL },
+            { id: "pozrehberi", icon: "📸", label: "Poz Rehberi", color: "#E5A93C" },
+            { id: "kartvizit", icon: "📇", label: "QR Kart", color: T.blueL },
+            { id: "sesliasistan", icon: "🎙️", label: "Sesli Not", color: "#C94C9F" },
+          ].map(tool => (
+            <div
+              key={tool.id}
+              onClick={() => setActive(tool.id)}
+              style={{
+                borderRadius: 16,
+                padding: "12px 4px",
+                background: "linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))",
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
+                border: "1px solid rgba(255,255,255,0.09)",
+                textAlign: "center",
+                cursor: "pointer",
+                transition: "all 0.2s ease"
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}
+            >
+              <div style={{ fontSize: 22, marginBottom: 4 }}>{tool.icon}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.text, whiteSpace: "nowrap" }}>{tool.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Çekim Öncesi Ekipman & Batarya Bildirim / Kontrol Kartı */}
+        {(() => {
+          const todayIso = new Date().toISOString().split("T")[0];
+          const tmrDate = new Date(); tmrDate.setDate(tmrDate.getDate() + 1);
+          const tmrIso = tmrDate.toISOString().split("T")[0];
+          const upcomingShooting = data.appointments.find(a => (a.date === todayIso || a.date === tmrIso) && a.status !== "iptal");
+          
+          if (!upcomingShooting) return null;
+
+          const isTmr = upcomingShooting.date === tmrIso;
+          const storageKey = `studyo_prep_${upcomingShooting.id}`;
+          
+          return (
+            <PreparationCard 
+              apt={upcomingShooting} 
+              isTmr={isTmr} 
+              storageKey={storageKey}
+              onGoAltinSaat={() => setActive("altinsaat")}
+              onGoPoz={() => setActive("pozrehberi")}
+            />
+          );
+        })()}
 
         {/* Finance cards - sadece admin */}
         {isAdmin && (

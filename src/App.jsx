@@ -27,6 +27,10 @@ import { Teklif } from "./components/modules/Teklif";
 import { Portal } from "./components/modules/Portal";
 import { Raporlar } from "./components/modules/Raporlar";
 import { PlanYonetimi } from "./components/modules/PlanYonetimi";
+import { AltinSaat } from "./components/modules/AltinSaat";
+import { PozRehberi } from "./components/modules/PozRehberi";
+import { DijitalKartvizit } from "./components/modules/DijitalKartvizit";
+import { SesliAsistan } from "./components/modules/SesliAsistan";
 import { HizliNot, HizliArama, GeceModu, IsAsistani, NotDefteri, MusteriPortali, LoginScreen } from "./components/modules/AppModals";
 
 export default function App() {
@@ -245,7 +249,7 @@ export default function App() {
     {id:"muhasebe",  icon:"money",    label:"Muhasebe"},
     {id:"more",      icon:"more",     label:"Devamı"},
   ];
-  const subScreens = ["musteriler","notdefteri","paketler","sozlesmeler","mesajlar","hatirlatici","ekip","galeri","raporlar","sablonlar","takvim","teklif","portal","isasistani","planyonetimi"];
+  const subScreens = ["musteriler","notdefteri","paketler","sozlesmeler","mesajlar","hatirlatici","ekip","galeri","raporlar","sablonlar","takvim","teklif","portal","isasistani","planyonetimi","altinsaat","pozrehberi","kartvizit","sesliasistan"];
   const isSubScreen = subScreens.includes(active);
 
   const isFullAccess = plan === "pro" || plan === "trial";
@@ -270,6 +274,10 @@ export default function App() {
     isasistani:  !isFullAccess ? <ProGate proOnly featureLabel="İş Asistanı" onUpgrade={()=>setActive("planyonetimi")}/> : (role==="admin" ? <IsAsistani data={data} setData={setData} role={role}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>),
     notdefteri:  role==="admin" ? <NotDefteri data={data} setData={setData} role={role}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>,
     planyonetimi: <PlanYonetimi data={data} plan={plan} setPlanState={setPlanState} setActive={setActive}/>,
+    altinsaat:   <AltinSaat appointments={data.appointments}/>,
+    pozrehberi:  <PozRehberi/>,
+    kartvizit:   <DijitalKartvizit/>,
+    sesliasistan: <SesliAsistan data={data} setData={setData} setActive={setActive}/>,
   };
 
   const CSS = makeCSS(T);
