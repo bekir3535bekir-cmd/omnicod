@@ -5,9 +5,55 @@ import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yea
 import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE , initProcess, isComplete } from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo, Toast } from "../common";
 import { UsageBadge, ProGate } from "../common/ProGate";
+import { MusteriPortali } from "./AppModals";
 import { canAddClient } from "../../services/plan";
 import { sb, fromDB, toDB } from "../../services/supabase";
 import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
+
+// Canvas tabanlı hafifleştirilmiş resim sıkıştırma (localStorage taşmasını önler)
+const compressImage = (file) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+        const max = 1200;
+        if (width > max || height > max) {
+          if (width > height) {
+            height = Math.round((height * max) / width);
+            width = max;
+          } else {
+            width = Math.round((width * max) / height);
+            height = max;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.78));
+      };
+      img.onerror = () => resolve(e.target.result);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve("");
+    reader.readAsDataURL(file);
+  });
+};
+
+const SAMPLE_PROOFS = [
+  { title: "Gelin & Damat Portre 01", url: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80" },
+  { title: "Düğün Mekanı Geniş Açı 02", url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80" },
+  { title: "Gelinlik & Duvağı 03", url: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=800&q=80" },
+  { title: "Gelin Çiçeği Detayı 04", url: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=800&q=80" },
+  { title: "Damat Yaka Çiçeği 05", url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80" },
+  { title: "Göz Göze Gülümseme 06", url: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=800&q=80" },
+  { title: "Düğün İlk Dans 07", url: "https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&w=800&q=80" },
+  { title: "Gün Batımı Silüeti 08", url: "https://images.unsplash.com/photo-1544077960-604201fe74bc?auto=format&fit=crop&w=800&q=80" },
+];
 
 export const Musteriler = ({ data, setData, role, plan, setActive, initialClientId, onConsumeInitialClientId }) => {
   const isAdmin = role === "admin";
@@ -29,6 +75,10 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
   const [editError, setEditError] = useState(null);
   const [toast, setToast] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [showPhotoGallery, setShowPhotoGallery] = useState(false);
+  const [previewProof, setPreviewProof] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const photoInputRef = useRef(null);
 
   useEffect(() => {
     if (toast) {
@@ -138,6 +188,81 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
     setEditClientForm(null);
     setEditError(null);
     setToast({ message: `✅ ${editClientForm.name} bilgileri güncellendi!`, type: "success" });
+  };
+
+  // Müşteriye Fotoğraf Yükleme
+  const handlePhotoUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length || !detail) return;
+    setUploadingPhotos(true);
+    try {
+      const newItems = [];
+      for (const file of files) {
+        const base64 = await compressImage(file);
+        if (!base64) continue;
+        const newPhoto = {
+          id: uid(),
+          clientId: String(detail.id),
+          clientName: detail.name,
+          title: file.name.replace(/\.[^/.]+$/, ""),
+          category: detail.type || "Düğün",
+          url: base64,
+          emoji: "📷",
+          color: "",
+          uploadedAt: todayStr()
+        };
+        newItems.push(newPhoto);
+        sb.upsert("gallery", toDB.gallery(newPhoto)).catch(()=>{});
+      }
+      if (newItems.length > 0) {
+        setData(prev => ({
+          ...prev,
+          gallery: [...(prev.gallery || []), ...newItems]
+        }));
+        setToast({ message: `📸 ${newItems.length} fotoğraf başarıyla yüklendi!`, type: "success" });
+      }
+    } catch(err) {
+      console.error("Fotoğraf yükleme hatası:", err);
+      setToast({ message: "Fotoğraf yüklenirken bir hata oluştu.", type: "error" });
+    } finally {
+      setUploadingPhotos(false);
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
+  };
+
+  // Örnek Fotoğrafları Yükleme (Tek tıkla demo proofing)
+  const handleAddSamplePhotos = () => {
+    if (!detail) return;
+    const newItems = SAMPLE_PROOFS.map((sp) => {
+      const item = {
+        id: uid(),
+        clientId: String(detail.id),
+        clientName: detail.name,
+        title: `${detail.name} - ${sp.title}`,
+        category: detail.type || "Düğün",
+        url: sp.url,
+        emoji: "📷",
+        color: "",
+        uploadedAt: todayStr()
+      };
+      sb.upsert("gallery", toDB.gallery(item)).catch(()=>{});
+      return item;
+    });
+    setData(prev => ({
+      ...prev,
+      gallery: [...(prev.gallery || []), ...newItems]
+    }));
+    setToast({ message: `✨ ${newItems.length} örnek fotoğraf yüklendi!`, type: "success" });
+  };
+
+  // Fotoğrafı Silme
+  const handleDeletePhoto = (photoId) => {
+    setData(prev => ({
+      ...prev,
+      gallery: (prev.gallery || []).filter(g => g.id !== photoId)
+    }));
+    sb.delete("gallery", photoId).catch(()=>{});
+    setToast({ message: "🗑️ Fotoğraf silindi.", type: "success" });
   };
 
   const save = () => {
@@ -834,6 +959,297 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
           </div>
           </>
           )}
+
+          {/* FOTOĞRAFLAR & MÜŞTERİ SEÇİMİ (PROOFING) BÖLÜMÜ */}
+          {(() => {
+            const clientPhotos = (data.gallery || []).filter(g => String(g.clientId) === String(detail.id));
+            const proofUrl = `${window.location.origin}/?proof=${detail.id}`;
+            const clientSelectionsKey = `studyo_selections_${detail.id}`;
+            let savedSelections = {};
+            try {
+              savedSelections = JSON.parse(localStorage.getItem(clientSelectionsKey) || "{}");
+            } catch(e) {}
+            const selectedCount = Object.values(savedSelections).filter(v => v === "selected" || v === "cover").length;
+            const coverPhotoId = Object.keys(savedSelections).find(k => savedSelections[k] === "cover");
+            const coverPhoto = clientPhotos.find(p => p.id === coverPhotoId);
+
+            return (
+              <div style={{
+                background: "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)",
+                border: `1px solid ${T.gold}44`,
+                borderRadius: 18,
+                padding: 16,
+                marginBottom: 16,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
+              }}>
+                {/* Başlık ve Sayaç */}
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: 12 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <div style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      background: `linear-gradient(135deg, ${T.gold}33, ${T.gold}11)`,
+                      border: `1px solid ${T.gold}66`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 18
+                    }}>
+                      📸
+                    </div>
+                    <div>
+                      <div style={{ fontSize:15, fontWeight:700, color:T.goldL }}>Fotoğraflar & Proofing</div>
+                      <div style={{ fontSize:11, color:T.text3 }}>Müşteri seçim albümü ({clientPhotos.length} fotoğraf)</div>
+                    </div>
+                  </div>
+                  <Pill label={`${clientPhotos.length} Foto`} color={clientPhotos.length > 0 ? T.green : T.text3} />
+                </div>
+
+                {/* Müşteri Seçim Durumu Bildirimi */}
+                {selectedCount > 0 && (
+                  <div style={{
+                    background: "rgba(233, 30, 99, 0.12)",
+                    border: "1px solid rgba(233, 30, 99, 0.35)",
+                    borderRadius: 12,
+                    padding: "10px 14px",
+                    marginBottom: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between"
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 16 }}>💖</span>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "#ff80ab" }}>
+                        Müşteri {selectedCount} fotoğraf seçti!
+                        {coverPhoto && <span style={{ color: T.goldL, marginLeft: 6 }}>⭐ Kapak: {coverPhoto.title}</span>}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 11, background: "rgba(233,30,99,0.3)", padding: "2px 8px", borderRadius: 99, color: "#fff", fontWeight: 700 }}>
+                      ✓ Onaylandı
+                    </span>
+                  </div>
+                )}
+
+                {/* Fotoğraf Önizleme Izgarası */}
+                {clientPhotos.length > 0 ? (
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: 8,
+                    marginBottom: 14,
+                    maxHeight: 220,
+                    overflowY: "auto",
+                    padding: 2
+                  }}>
+                    {clientPhotos.map((photo) => {
+                      const isCover = savedSelections[photo.id] === "cover";
+                      const isSelected = savedSelections[photo.id] === "selected";
+                      return (
+                        <div key={photo.id} style={{
+                          position: "relative",
+                          borderRadius: 10,
+                          overflow: "hidden",
+                          aspectRatio: "1",
+                          background: "#000",
+                          border: isCover ? `2px solid ${T.gold}` : (isSelected ? "2px solid #e91e63" : `1px solid ${T.border}`)
+                        }}>
+                          <img
+                            src={photo.url}
+                            alt={photo.title}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            loading="lazy"
+                          />
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeletePhoto(photo.id); }}
+                            title="Fotoğrafı Sil"
+                            style={{
+                              position: "absolute",
+                              top: 4,
+                              right: 4,
+                              width: 22,
+                              height: 22,
+                              borderRadius: "50%",
+                              background: "rgba(0,0,0,0.75)",
+                              border: `1px solid ${T.red}66`,
+                              color: T.redL,
+                              fontSize: 11,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer"
+                            }}
+                          >
+                            ✕
+                          </button>
+                          {isCover && (
+                            <div style={{ position: "absolute", bottom: 4, left: 4, background: T.gold, color: "#000", padding: "2px 5px", borderRadius: 4, fontSize: 8, fontWeight: 800 }}>
+                              ⭐ KAPAK
+                            </div>
+                          )}
+                          {!isCover && isSelected && (
+                            <div style={{ position: "absolute", bottom: 4, left: 4, background: "#e91e63", color: "#fff", padding: "2px 5px", borderRadius: 4, fontSize: 8, fontWeight: 800 }}>
+                              ❤️ SEÇİLDİ
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{
+                    background: "rgba(0,0,0,0.25)",
+                    border: `1px dashed ${T.border}`,
+                    borderRadius: 14,
+                    padding: "16px 12px",
+                    textAlign: "center",
+                    marginBottom: 14
+                  }}>
+                    <div style={{ fontSize: 26, marginBottom: 6 }}>🖼️</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: T.text2 }}>Henüz Fotoğraf Yüklenmedi</div>
+                    <div style={{ fontSize: 11, color: T.text3, marginTop: 4, lineHeight: 1.5 }}>
+                      Cihazınızdan çekim fotoğraflarını seçip yükleyin veya test etmek için tek tıkla 8 örnek fotoğraf ekleyin.
+                    </div>
+                  </div>
+                )}
+
+                {/* Gizli file input */}
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={handlePhotoUpload}
+                />
+
+                {/* Yükleme Butonları */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom: 10 }}>
+                  <button
+                    onClick={() => photoInputRef.current?.click()}
+                    disabled={uploadingPhotos}
+                    style={{
+                      background: `linear-gradient(135deg, ${T.gold}28, ${T.gold}48)`,
+                      border: `1px solid ${T.gold}`,
+                      borderRadius: 12,
+                      padding: "11px 8px",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: T.goldL,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6
+                    }}
+                  >
+                    {uploadingPhotos ? "⏳ Yükleniyor..." : "📁 Fotoğraf Yükle"}
+                  </button>
+
+                  <button
+                    onClick={handleAddSamplePhotos}
+                    style={{
+                      background: T.card2,
+                      border: `1px solid ${T.border}`,
+                      borderRadius: 12,
+                      padding: "11px 8px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: T.text2,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6
+                    }}
+                  >
+                    ✨ 8 Örnek Foto
+                  </button>
+                </div>
+
+                {/* Müşteri Seçim & Paylaşım Aksiyonları */}
+                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                  <button
+                    onClick={() => setPreviewProof(true)}
+                    style={{
+                      background: "linear-gradient(135deg, #e91e63, #ff4081)",
+                      border: "none",
+                      borderRadius: 12,
+                      padding: "12px",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "#fff",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      boxShadow: "0 4px 16px rgba(233,30,99,0.35)"
+                    }}
+                  >
+                    💖 Tinder Tarzı Seçimi Başlat (Müşteri Gözünden)
+                  </button>
+
+                  <div style={{ display:"flex", gap:8 }}>
+                    <button
+                      onClick={() => {
+                        const ph = detail.phone ? detail.phone.replace(/\D/g,"").replace(/^0/,"") : "";
+                        const msg = `Merhaba ${detail.name.split(" ")[0]} Hanım/Bey 🌸\n\n${detail.date ? fmtDate(detail.date) + " tarihli " : ""}${detail.type} çekiminizin fotoğrafları hazırlandı! 📸✨\n\nAşağıdaki bağlantıdan fotoğraflarınızı inceleyebilir, beğendiklerinizi albümünüz için kalp ikonuna basarak (Tinder tarzı kaydırarak) seçebilirsiniz:\n\n👉 ${proofUrl}\n\nKeyifli seçimler dileriz! 🙏\nOmniCod StudyoApp`;
+                        if (ph) {
+                          window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`,"_blank");
+                        } else {
+                          navigator.clipboard.writeText(proofUrl);
+                          setToast({ message: "🔗 Seçim linki panoya kopyalandı!", type: "success" });
+                        }
+                      }}
+                      style={{
+                        flex: 1,
+                        background: "#25D36622",
+                        border: "1px solid #25D36655",
+                        borderRadius: 12,
+                        padding: "10px 8px",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: "#25D366",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6
+                      }}
+                    >
+                      💬 WhatsApp ile Gönder
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(proofUrl);
+                        setToast({ message: "📋 Seçim linki panoya kopyalandı!", type: "success" });
+                      }}
+                      style={{
+                        background: T.card2,
+                        border: `1px solid ${T.border}`,
+                        borderRadius: 12,
+                        padding: "10px 14px",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: T.text2,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 4
+                      }}
+                      title="Linki Kopyala"
+                    >
+                      📋 Kopyala
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {isAdmin && <GoldButton label="Ödeme / Söz Ekle" icon="money" onClick={()=>setShowPayment(true)} full/>}
           {detail.notes && (
             <div style={{ marginTop:14, background:T.card2, borderRadius:12, padding:"12px 14px",
@@ -1229,6 +1645,58 @@ OmniCod 📸`;
         <BottomSheet title="Müşteri Limiti" onClose={()=>setShowLimitModal(false)}>
           <ProGate check={clientLimitCheck} featureLabel="Müşteri" onUpgrade={()=>{ setShowLimitModal(false); setActive && setActive("planyonetimi"); }} />
         </BottomSheet>
+      )}
+
+      {/* CANLI MÜŞTERİ SEÇİM PORTALİ ÖNİZLEME */}
+      {previewProof && detail && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 99999,
+          background: T.bg,
+          display: "flex",
+          flexDirection: "column",
+          overflowY: "auto"
+        }}>
+          <div style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 100,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "14px 20px",
+            background: "rgba(10, 10, 12, 0.94)",
+            backdropFilter: "blur(16px)",
+            borderBottom: `1px solid ${T.border}`
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 20 }}>💖</span>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: T.gold }}>Müşteri Portalı Canlı Önizleme</div>
+                <div style={{ fontSize: 11, color: T.text3 }}>{detail.name} — Tinder Tarzı Fotoğraf Seçimi</div>
+              </div>
+            </div>
+            <button
+              onClick={() => setPreviewProof(false)}
+              style={{
+                background: "rgba(255, 255, 255, 0.08)",
+                border: `1px solid ${T.border}`,
+                color: "#fff",
+                padding: "8px 16px",
+                borderRadius: 12,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer"
+              }}
+            >
+              ✕ Kapat
+            </button>
+          </div>
+          <div style={{ flex: 1 }}>
+            <MusteriPortali data={data} clientId={detail.id} onLogout={() => setPreviewProof(false)} />
+          </div>
+        </div>
       )}
     </div>
   );
