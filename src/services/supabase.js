@@ -61,6 +61,19 @@ export const sb = {
         body: JSON.stringify(data)
       });
     } catch(e) { console.warn(`sb.update ${table} error:`, e); }
+  },
+  upsert: async (table, data) => {
+    if (IS_DEV) {
+      console.log(`[DEV SAFE] upsert ${table} - skipped in dev mode`);
+      return;
+    }
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+        method: "POST",
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" },
+        body: JSON.stringify(data)
+      });
+    } catch(e) { console.warn(`sb.upsert ${table} error:`, e); }
   }
 };
 
