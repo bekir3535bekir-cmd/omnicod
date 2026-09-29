@@ -7,11 +7,205 @@ import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, Pag
 import { PlanBadge, UsageBadge } from "../common/ProGate";
 import { canAddAppointment, getTrialInfo } from "../../services/plan";
 import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
+import { getPass, setPass, getSession, saveSession, clearSession, getAuthUser } from "../../services/storage";
+
+// ─── GÜNÜN FOTOĞRAF ÇEKİM TEKNİKLERİ KOLEKSİYONU ────────────────────────
+export const PHOTO_TECHNIQUES = [
+  {
+    category: "Işık & Dış Çekim",
+    icon: "🌅",
+    title: "Altın Saatte Gelinlik Ters Işığı (Rim Light)",
+    tip: "Güneşi çiftin tam arkasına alarak saç ve tül hatlarını parlatın. Yüzdeki sert gölgeleri yumuşatmak için önden 1/64 güçte HSS dolgu flaşı veya gümüş reflektör kullanın.",
+    tag: "Dış Çekim"
+  },
+  {
+    category: "Pozlama & Detay",
+    icon: "👰",
+    title: "Gelinlik Dokusunu Kurtarma (Zebra %95)",
+    tip: "Gelinliğin beyaz dantel detaylarının patlamaması için vizörde Zebra uyarısını %95'e ayarlayın. Çizgiler belirdiğinde pozlamayı -0.3 veya -0.7 EV düşürün; RAW işlerken dokular kusursuz kalır.",
+    tag: "Gelinlik"
+  },
+  {
+    category: "Stüdyo Işığı",
+    icon: "💡",
+    title: "Klasik Rembrandt Portre Işığı",
+    tip: "Ana ışığı (Key light) modelin 45° sağına ve 45° yukarıya yerleştirin. Modelin gölgede kalan yanağında burun gölgesiyle birleşen karakteristik üçgen ışık formu oluşturun.",
+    tag: "Stüdyo"
+  },
+  {
+    category: "Netleme & Hız",
+    icon: "🎯",
+    title: "Göz Takibi (Eye-AF) ve Düğün Yürüyüşü",
+    tip: "Gelin ve damat size doğru yürürken AF-C (Sürekli Netleme) ve Geniş Alan Göz AF moduna geçin. Enstantaneyi en az 1/500s tutarak hareket fluğunu tamamen engelleyin.",
+    tag: "Netleme"
+  },
+  {
+    category: "Lens & Perspektif",
+    icon: "🔍",
+    title: "85mm ile Arka Plan Sıkıştırma",
+    tip: "Dış çekimlerde 85mm f/1.4 veya f/1.8 lens kullanarak arka plandaki kalabalık veya karmaşık manzarayı yumuşacık bir bokeh ile eritin ve yüz hatlarını en doğal oranlarıyla yansıtın.",
+    tag: "Ekipman"
+  },
+  {
+    category: "Doğal Pozlama",
+    icon: "💬",
+    title: "Poz Vermeyen Çiftler İçin Dinamik Komutlar",
+    tip: "'Kameraya bakın ve gülün' demek yerine 'Birbirinize en komik anınızı fısıldayın' veya 'Yavaşça el ele bana doğru yürüyün' deyin. Spontane kahkahalar her zaman en samimi albüm kareleridir.",
+    tag: "Pozlama"
+  },
+  {
+    category: "Renk & Atmosfer",
+    icon: "🌆",
+    title: "Mavi Saat (Blue Hour) ve Çift Renk Kontrastı",
+    tip: "Güneş battıktan sonraki 20-30 dakikalık mavi saatte gökyüzü derin bir laciverte bürünür. Çifti arkadan sıcak bir LED (3200K) ile aydınlatarak müthiş bir turuncu-mavi renk kontrastı yakalayın.",
+    tag: "Işık"
+  },
+  {
+    category: "Grup Çekimi",
+    icon: "👥",
+    title: "Kalabalık Aile Çekimlerinde Diyafram Kuralı",
+    tip: "İki veya daha fazla sıra halinde dizilen aile çekimlerinde asla f/1.8 - f/2.8 ile çekim yapmayın. Tüm sıraların jilet gibi net çıkması için diyaframı en az f/5.6 - f/8 aralığına getirin.",
+    tag: "Grup"
+  },
+  {
+    category: "Detay & Aksesuar",
+    icon: "💍",
+    title: "Alyans ve Makro Çekimlerinde Yansıma Hilesi",
+    tip: "Yüzükleri davetiye veya buket üzerine yerleştirirken cep telefonu ekranını ayna gibi altına koyun. Çift yansıma ve 1:1 makro lens ile katalog kalitesinde detay kareleri elde edin.",
+    tag: "Detay"
+  },
+  {
+    category: "Işık Şekillendirici",
+    icon: "☂️",
+    title: "Kadifemsi Cilt Dokusu İçin Derin Parabolik Softbox",
+    tip: "Stüdyo portrelerinde 120cm veya 150cm derin parabolik softbox kullanarak gölge geçişlerini kadifemsi yapın. Işık kaynağını modele ne kadar yaklaştırırsanız ışık o kadar yumuşak düşer.",
+    tag: "Stüdyo"
+  },
+  {
+    category: "Göz Işığı",
+    icon: "👁️",
+    title: "Catchlight (Gözdeki Yaşam Parıltısı)",
+    tip: "Portrelerde bakışların canlı görünmesi için modelin göz bebeklerinde ışık yansıması (catchlight) olmalıdır. Softbox'ı modelin saat 10 veya saat 2 yönüne yerleştirip aşağı hafif eğimli açın.",
+    tag: "Portre"
+  },
+  {
+    category: "Sert Güneş",
+    icon: "☀️",
+    title: "Öğle Güneşi İçin Yarı Saydam Difüzör Kurtarıcısı",
+    tip: "Öğle saatinde çekim yapmak zorundaysanız çifti ağaç gölgesine alın veya üzerlerine yarı saydam 5-in-1 difüzör tutarak göz altlarındaki sert 'rakun gölgelerini' tamamen yok edin.",
+    tag: "Dış Çekim"
+  },
+  {
+    category: "Enstantane & Tül",
+    icon: "💨",
+    title: "Uçuşan Gelin Tülü Dinamik Pozu",
+    tip: "Yardımcınız tülü havaya bırakıp kadrajdan hızla kaçarken seri çekim modunda (H+) en az 1/1000s enstantane ile çekin. Tülün havada asılı kaldığı o büyüleyici anı dondurun.",
+    tag: "Aksiyon"
+  },
+  {
+    category: "Kompozisyon",
+    icon: "📐",
+    title: "Negatif Alan (Negative Space) ile Sinematik Duruş",
+    tip: "Modeli kadrajın sağ veya sol 1/3 çizgisine yerleştirin, kadrajın geri kalanını gökyüzü, deniz veya sade bir mimariye bırakın. Albüm kapakları için ideal minimalist bir etki yaratır.",
+    tag: "Kompozisyon"
+  },
+  {
+    category: "Flaş Senkronizasyonu",
+    icon: "⚡",
+    title: "HSS (Yüksek Hızlı Senkronizasyon) ve f/1.4",
+    tip: "Açık havada güneş altında arka planı f/1.4 ile eritirken 1/4000s enstantanede çekim yapmak için flaşınızda ve tetikleyicinizde HSS modunu mutlaka aktif edin.",
+    tag: "Flaş"
+  },
+  {
+    category: "Duygu & An",
+    icon: "🥹",
+    title: "İlk Görüşme (First Look) Gizli Çekimi",
+    tip: "Damat gelini ilk kez gelinlikle gördüğü anı çekerken 70-200mm telezoom ile uzakta kalın. Müdahale etmeyin; saf duyguyu, gözyaşını ve sarılmayı doğal akışında kaydedin.",
+    tag: "Duygu"
+  },
+  {
+    category: "Beyaz Dengesi (WB)",
+    icon: "🎨",
+    title: "Altın Saat ve Gün Batımında Manuel Kelvin",
+    tip: "Otomatik Beyaz Ayarı (AWB) gün batımının sıcak altın tonlarını soğutmaya çalışır. Gün batımının sıcaklığını korumak için Kelvin değerini manuel olarak 5600K - 6500K arasına sabitleyin.",
+    tag: "Renk"
+  },
+  {
+    category: "Poz & Vücut",
+    icon: "💃",
+    title: "İnce ve Zarif Duruş İçin 'S' Eğrisi Kuralı",
+    tip: "Modelin kameraya tam düz bakmasını engelleyin. Ağırlığı arka bacağa verdirtin, omuzları hafif çapraz tutun ve bir eli bel kıvrımına yerleştirerek doğal 'S' formu oluşturun.",
+    tag: "Pozlama"
+  },
+  {
+    category: "Yedeklilik & Güvenlik",
+    icon: "🛡️",
+    title: "Çift Kart Yuvasına Eşzamanlı Yedekleme",
+    tip: "Düğün günlerinde hafıza kartı arızası riskini sıfıra indirmek için makinenizi mutlaka Dual Slot 'Simultaneous Recording' (Eşzamanlı İkiz Kayıt) modunda tutun.",
+    tag: "Güvenlik"
+  },
+  {
+    category: "Stüdyo Arka Planı",
+    icon: "🎭",
+    title: "Modeli Fonda Yüzdürme (Işık Ayrımı)",
+    tip: "Modeli arka fon kağıdından en az 2 metre öne alın. Arka fona ayrı bir saç/fon spotu vererek modelin silüetini fondan jilet gibi ayırıp 3 boyutlu derinlik kazandırın.",
+    tag: "Stüdyo"
+  }
+];
+
+// Günün indeksini belirleme (Yılın günü)
+const getDayOfYear = (d = new Date()) => {
+  const start = new Date(d.getFullYear(), 0, 0);
+  const diff = (d - start) + ((start.getTimezoneOffset() - d.getTimezoneOffset()) * 60 * 1000);
+  const oneDay = 1000 * 60 * 60 * 24;
+  return Math.floor(diff / oneDay);
+};
+
+// Zamana duyarlı karşılama belirleme
+const getGreetingInfo = (hour) => {
+  if (hour >= 5 && hour < 12) {
+    return {
+      text: "Günaydın",
+      icon: "☀️",
+      sub: "Bugün stüdyoda ve dış çekimlerde harika kareler yakalama zamanı!"
+    };
+  }
+  if (hour >= 12 && hour < 18) {
+    return {
+      text: "İyi Günler",
+      icon: "🌤️",
+      sub: "Günün randevuları, çekim akışı ve teslimatları kontrolün altında."
+    };
+  }
+  if (hour >= 18 && hour < 23) {
+    return {
+      text: "İyi Akşamlar",
+      icon: "🌆",
+      sub: "Günün yorgunluğunu geride bırakırken kurgu ve teslimat listeni gözden geçir."
+    };
+  }
+  return {
+    text: "İyi Geceler",
+    icon: "🌙",
+    sub: "Gece mesaisinde misin? Günün çekimlerini yedeklemeyi unutma!"
+  };
+};
 
 export const Dashboard = ({ data, setActive, role, plan }) => {
   const isAdmin = role === "admin";
   const now     = new Date();
+
+  // Karşılama ve kullanıcı bilgisi
+  const authUser = getAuthUser();
+  const userName = authUser?.name || authUser?.studio || (isAdmin ? (SIRKET?.ad || "Stüdyo Yöneticisi") : "Fotoğrafçı");
+  const greeting = getGreetingInfo(now.getHours());
+
+  // Günün Çekim Tekniği (Her gün otomatik değişir, butonla da gezilebilir)
+  const dayOfYear = getDayOfYear(now);
+  const [tipOffset, setTipOffset] = useState(0);
+  const currentTipIdx = Math.abs(dayOfYear + tipOffset) % PHOTO_TECHNIQUES.length;
+  const currentTip = PHOTO_TECHNIQUES[currentTipIdx];
+
   // Müşteri ödemelerinden eksik incomes'ları birleştir
   const existingIds = new Set(data.incomes.map(i=>i.id));
   const missingFromClients = data.clients.flatMap(c=>
@@ -28,19 +222,33 @@ export const Dashboard = ({ data, setActive, role, plan }) => {
 
   return (
     <div className="fade-in">
-      {/* Hero Header */}
-      <div style={{ padding:"16px 20px 18px", borderBottom:`1px solid ${T.border}`, marginBottom:20, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-        <div>
-          <div style={{ fontSize:18, fontWeight:700, color:T.text }}>Stüdyo Yönetimi</div>
-          <div style={{ fontSize:12, color:T.text3, marginTop:3 }}>
-            {now.toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
+      {/* Zamana Duyarlı Karşılama (Hero Header - Apple Liquid Glass) */}
+      <div style={{
+        padding: "18px 20px 18px",
+        borderBottom: `1px solid ${T.border}`,
+        marginBottom: 20,
+        background: "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%)"
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 22 }}>{greeting.icon}</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: T.text, letterSpacing: "-0.3px" }}>
+                {greeting.text}, <span style={{ color: T.goldL }}>{userName}</span>
+              </span>
+            </div>
+            <div style={{ fontSize: 12, color: T.text3, marginTop: 5, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <span>{now.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>
+              <span style={{ opacity: 0.4 }}>•</span>
+              <span style={{ color: T.text2 }}>{greeting.sub}</span>
+            </div>
           </div>
-        </div>
-        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-          <div onClick={()=>setActive("planyonetimi")} style={{ cursor:"pointer" }}>
-            <PlanBadge plan={plan}/>
+          <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+            <div onClick={() => setActive("planyonetimi")} style={{ cursor: "pointer" }}>
+              <PlanBadge plan={plan}/>
+            </div>
+            <Pill label={isAdmin ? "Yönetici" : "Personel"} color={isAdmin ? T.goldL : T.blueL}/>
           </div>
-          <Pill label={isAdmin ? "Yönetici" : "Personel"} color={isAdmin ? T.goldL : T.blueL}/>
         </div>
       </div>
 
@@ -80,6 +288,123 @@ export const Dashboard = ({ data, setActive, role, plan }) => {
             <UsageBadge check={canAddAppointment(data)} label="Kullanılan Düğün / Çekim" />
           </Card>
         )}
+
+        {/* Günün Fotoğraf Çekim Tekniği (Apple Liquid Glass) */}
+        <div style={{
+          marginBottom: 20,
+          borderRadius: 22,
+          padding: "16px 18px",
+          background: "linear-gradient(135deg, rgba(232, 197, 71, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          border: "1px solid rgba(232, 197, 71, 0.25)",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
+          position: "relative",
+          overflow: "hidden"
+        }}>
+          {/* Top specular glow rim */}
+          <div style={{
+            position: "absolute",
+            top: 0,
+            left: "10%",
+            right: "10%",
+            height: 1,
+            background: "linear-gradient(90deg, transparent, rgba(232, 197, 71, 0.65), transparent)"
+          }} />
+
+          {/* Header row */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 18 }}>{currentTip.icon}</span>
+              <span style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.8px",
+                textTransform: "uppercase",
+                color: T.goldL,
+                background: "rgba(232, 197, 71, 0.12)",
+                padding: "3px 8px",
+                borderRadius: 8,
+                border: "1px solid rgba(232, 197, 71, 0.22)"
+              }}>
+                Günün Çekim Tekniği
+              </span>
+              <span style={{
+                fontSize: 10,
+                color: T.text3,
+                background: "rgba(255,255,255,0.05)",
+                padding: "3px 8px",
+                borderRadius: 8
+              }}>
+                {currentTip.category}
+              </span>
+            </div>
+
+            <button
+              onClick={() => setTipOffset(prev => prev + 1)}
+              title="Başka bir çekim tekniği gör"
+              style={{
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: T.text2,
+                borderRadius: 12,
+                padding: "4px 10px",
+                fontSize: 11,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                transition: "all 0.2s ease"
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.14)"; e.currentTarget.style.color = T.text; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = T.text2; }}
+            >
+              <span>Başka İpucu</span>
+              <span style={{ fontSize: 12 }}>🎲</span>
+            </button>
+          </div>
+
+          {/* Title */}
+          <div style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: T.text,
+            marginBottom: 6,
+            lineHeight: 1.35
+          }}>
+            {currentTip.title}
+          </div>
+
+          {/* Tip content */}
+          <div style={{
+            fontSize: 12.5,
+            color: T.text2,
+            lineHeight: 1.55,
+            letterSpacing: "-0.1px"
+          }}>
+            {currentTip.tip}
+          </div>
+
+          {/* Footer note */}
+          <div style={{
+            marginTop: 10,
+            paddingTop: 8,
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            fontSize: 10.5,
+            color: T.text3
+          }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span>💡</span> Her gün yeni bir stüdyo ve çekim tavsiyesi
+            </span>
+            <span style={{ opacity: 0.7, fontWeight: 600 }}>
+              {currentTipIdx + 1} / {PHOTO_TECHNIQUES.length}
+            </span>
+          </div>
+        </div>
+
         {/* Finance cards - sadece admin */}
         {isAdmin && (
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:24 }}>
