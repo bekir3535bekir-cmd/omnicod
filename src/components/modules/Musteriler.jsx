@@ -141,7 +141,6 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
   };
 
   const save = () => {
-    if(saving) return;
     if(!form.name?.trim()) {
       setAddError("Lütfen müşteri Ad Soyad alanını doldurunuz.");
       return;
@@ -155,7 +154,6 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
       return;
     }
     setAddError(null);
-    setSaving(true);
     const clientName = form.name.trim();
     const totalAmt = Number(form.totalAmount)||0;
     const kaporaAmt = Number(form.paid)||0;
@@ -242,10 +240,10 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
     sb.upsert("appointments", toDB.appointments(newAptObj)).catch(e=>console.error("Randevu kayıt hatası:",e));
     if(kaporaIncome) sb.upsert("incomes", toDB.incomes(kaporaIncome)).catch(()=>{});
     anniversaryReminders.forEach(r => sb.upsert("reminders", toDB.reminders(r)).catch(()=>{}));
+    // Modal kapat + bildirim
     setShowAdd(false);
     setForm(F);
     setAddError(null);
-    setSaving(false);
     setToast({ message: `🎉 ${clientName} başarıyla kaydedildi!`, type: "success" });
   };
 
@@ -1157,8 +1155,8 @@ OmniCod 📸`;
       {showAdd && (
         <BottomSheet
           title="Yeni Müşteri"
-          onClose={()=>{ setShowAdd(false); setAddError(null); setSaving(false); }}
-          footer={<GoldButton label={saving ? "Kaydediliyor..." : "Müşteriyi Kaydet"} icon="check" onClick={save} disabled={saving} full/>}
+          onClose={()=>{ setShowAdd(false); setAddError(null); }}
+          footer={<GoldButton label="Müşteriyi Kaydet" icon="check" onClick={save} full/>}
         >
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
             {addError && (
