@@ -98,3 +98,26 @@ export const verifyEmailCode = (email, inputCode) => {
   }
 };
 
+// ─── STÜDYO PROFİL & KARTVİZİT BİLGİLERİ ─────────────────────────────
+export const getStudioProfile = () => {
+  try {
+    const raw = localStorage.getItem(PREFIX + "studio_profile");
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  const auth = getAuthUser();
+  return {
+    name: auth?.name || "Güngör Büyükküpcü",
+    studio: auth?.studio || "StudyoApp Fotoğrafçılık",
+    phone: auth?.phone || "0536 605 22 54",
+    email: auth?.email || "gesesorganizasyon@gmail.com",
+    address: auth?.address || "Arapçeşme Mh. Yeni Bağdat Cad. No:755 Gebze / Kocaeli",
+    instagram: auth?.instagram || "@studyoapp"
+  };
+};
+
+export const saveStudioProfile = (profile) => {
+  try {
+    localStorage.setItem(PREFIX + "studio_profile", JSON.stringify(profile));
+  } catch(e) {}
+};
+

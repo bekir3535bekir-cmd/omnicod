@@ -61,6 +61,18 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
+  // Müşteriye özel doğrudan seçim linki kontrolü (?proof=CLIENT_ID veya ?portal=CLIENT_ID)
+  useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const proofId = urlParams.get("proof") || urlParams.get("portal");
+      if (proofId) {
+        setRole("musteri");
+        setMusteriClientId(proofId);
+      }
+    } catch(e) {}
+  }, []);
+
   const [musteriClientId, setMusteriClientId] = useState(() => getClientId());
   const [pendingClientId, setPendingClientId] = useState(null); // Takvim'den müşteri kartı açmak için
   const handleLogin = (r, clientId) => {
@@ -270,7 +282,7 @@ export default function App() {
     galeri:      !isFullAccess ? <ProGate proOnly featureLabel="Portföy Galerisi" onUpgrade={()=>setActive("planyonetimi")}/> : <Galeri data={data} setData={setData} role={role}/>,
     raporlar:    !isFullAccess ? <ProGate proOnly featureLabel="Raporlar & Analitik" onUpgrade={()=>setActive("planyonetimi")}/> : (role==="admin" ? <Raporlar data={data}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>),
     teklif:      !isFullAccess ? <ProGate proOnly featureLabel="Fiyat Teklifi" onUpgrade={()=>setActive("planyonetimi")}/> : (role==="admin" ? <Teklif data={data} setData={setData} role={role}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>),
-    portal:      !isFullAccess ? <ProGate proOnly featureLabel="Müşteri Portali" onUpgrade={()=>setActive("planyonetimi")}/> : (role==="admin" ? <Portal data={data}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>),
+    portal:      !isFullAccess ? <ProGate proOnly featureLabel="Müşteri Portali" onUpgrade={()=>setActive("planyonetimi")}/> : (role==="admin" ? <Portal data={data} setData={setData}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>),
     isasistani:  !isFullAccess ? <ProGate proOnly featureLabel="İş Asistanı" onUpgrade={()=>setActive("planyonetimi")}/> : (role==="admin" ? <IsAsistani data={data} setData={setData} role={role}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>),
     notdefteri:  role==="admin" ? <NotDefteri data={data} setData={setData} role={role}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>,
     planyonetimi: <PlanYonetimi data={data} plan={plan} setPlanState={setPlanState} setActive={setActive}/>,

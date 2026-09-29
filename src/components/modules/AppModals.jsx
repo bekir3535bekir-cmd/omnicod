@@ -1048,6 +1048,55 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
   const myShifts = data.shifts.filter(s => String(s.teamId) === String(clientId))
     .sort((a,b) => new Date(a.date) - new Date(b.date));
 
+  // Fotoğraf Seçim & Proofing Sistemi
+  const clientPhotos = (data.gallery || []).filter(g => g.clientId === clientId);
+  const clientSelectionsKey = `studyo_selections_${clientId}`;
+  const [selections, setSelections] = useState(() => {
+    try {
+      const s = localStorage.getItem(clientSelectionsKey);
+      return s ? JSON.parse(s) : {};
+    } catch(e) { return {}; }
+  });
+  const [proofIdx, setProofIdx] = useState(0);
+  const [proofMode, setProofMode] = useState("tinder"); // "tinder" | "grid"
+  const [sentSuccess, setSentSuccess] = useState(false);
+  const quota = 40;
+
+  const toggleSelect = (id) => {
+    setSelections(prev => {
+      const next = { ...prev, [id]: prev[id] === "selected" ? null : "selected" };
+      try { localStorage.setItem(clientSelectionsKey, JSON.stringify(next)); } catch(e) {}
+      return next;
+    });
+  };
+
+  const toggleCover = (id) => {
+    setSelections(prev => {
+      const next = { ...prev, [id]: prev[id] === "cover" ? "selected" : "cover" };
+      try { localStorage.setItem(clientSelectionsKey, JSON.stringify(next)); } catch(e) {}
+      return next;
+    });
+  };
+
+  const selectedCount = Object.values(selections).filter(v => v === "selected" || v === "cover").length;
+  const coverId = Object.keys(selections).find(k => selections[k] === "cover");
+
+  const handleSendSelectionToStudio = () => {
+    const selectedIds = Object.keys(selections).filter(id => selections[id]);
+    const names = selectedIds.map(id => {
+      const p = clientPhotos.find(item => item.id === id);
+      return p?.title || id;
+    });
+    const coverPhoto = clientPhotos.find(p => p.id === coverId);
+    const coverText = coverPhoto ? `\n⭐ Kapak Tercihimiz: ${coverPhoto.title}` : "";
+    const msg = `Merhaba! Albümümüz için toplam ${selectedIds.length} fotoğrafı seçtik: 🎉\n\n${names.join(", ")}${coverText}\n\nKontrol edip baskı/tasarım aşamasına geçebiliriz! — ${client.name}`;
+    
+    // Stüdyo WhatsApp
+    const studioPhone = "905366052254";
+    window.open(`https://wa.me/${studioPhone}?text=${encodeURIComponent(msg)}`, "_blank");
+    setSentSuccess(true);
+  };
+
   return (
     <div className="fade-in" style={{ minHeight:"100vh", background:T.bg, paddingBottom:40 }}>
       {/* Header */}
@@ -1210,25 +1259,352 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
           )}
         </div>
 
-        {/* Galeri */}
-        {data.gallery && data.gallery.filter(g=>g.clientId===clientId).length > 0 && (
-          <div style={{ background:T.card, border:`1px solid ${T.border}`,
-            borderRadius:16, padding:16, marginBottom:16 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:T.goldL,
-              textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:12 }}>
-              📸 Galeri
+        {/* 💖 ALBÜM FOTOĞRAF SEÇİM & TINDER PROOFING SİSTEMİ */}
+        <div style={{
+          background: "linear-gradient(135deg, rgba(232, 197, 71, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%)",
+          border: `1.5px solid ${T.gold}44`,
+          borderRadius: 22,
+          padding: "20px 18px",
+          marginBottom: 20,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.35)"
+        }}>
+          {/* Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.goldL, letterSpacing: "1px", textTransform: "uppercase" }}>
+                FOTOĞRAF SEÇİMİ (PROOFING)
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: T.text, marginTop: 2 }}>
+                Albüm Fotoğraflarınızı Seçin
+              </div>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
-              {data.gallery.filter(g=>g.clientId===clientId).map(g=>(
-                <div key={g.id} style={{ background:T.card2, borderRadius:10,
-                  aspectRatio:"1", display:"flex", alignItems:"center",
-                  justifyContent:"center", fontSize:28 }}>
-                  {g.emoji || "📷"}
-                </div>
-              ))}
+            <div style={{ display: "flex", gap: 6 }}>
+              <button
+                onClick={() => setProofMode("tinder")}
+                style={{
+                  background: proofMode === "tinder" ? T.gold : "rgba(255,255,255,0.06)",
+                  color: proofMode === "tinder" ? "#000" : T.text2,
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "4px 8px",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: "pointer"
+                }}
+              >
+                🔥 Tinder
+              </button>
+              <button
+                onClick={() => setProofMode("grid")}
+                style={{
+                  background: proofMode === "grid" ? T.gold : "rgba(255,255,255,0.06)",
+                  color: proofMode === "grid" ? "#000" : T.text2,
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "4px 8px",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: "pointer"
+                }}
+              >
+                🖼️ Izgara
+              </button>
             </div>
           </div>
-        )}
+
+          {/* İlerleme Çubuğu */}
+          <div style={{ background: "rgba(0,0,0,0.35)", borderRadius: 14, padding: "10px 14px", marginBottom: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <span style={{ fontSize: 12, color: T.text2 }}>Albüm Seçim Durumu:</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: selectedCount >= quota ? T.greenL : T.goldL }}>
+                {selectedCount} / {quota} Fotoğraf
+              </span>
+            </div>
+            <div style={{ height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 99, overflow: "hidden" }}>
+              <div style={{
+                width: `${Math.min(100, (selectedCount / quota) * 100)}%`,
+                height: "100%",
+                background: selectedCount >= quota ? T.greenL : `linear-gradient(90deg, ${T.gold}, ${T.goldL})`,
+                transition: "width 0.3s ease"
+              }} />
+            </div>
+          </div>
+
+          {clientPhotos.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "30px 10px", color: T.text3, fontSize: 13 }}>
+              📸 Fotoğraflarınız hazırlanıyor... Stüdyomuz fotoğrafları yüklediğinde burada görebileceksiniz!
+            </div>
+          ) : proofMode === "tinder" ? (
+            /* TINDER KART GÖRÜNÜMÜ */
+            <div style={{
+              borderRadius: 20,
+              overflow: "hidden",
+              background: "#0E0E12",
+              border: "1.5px solid rgba(255,255,255,0.12)",
+              position: "relative"
+            }}>
+              {(() => {
+                const cur = clientPhotos[proofIdx] || clientPhotos[0];
+                const isSel = selections[cur.id] === "selected" || selections[cur.id] === "cover";
+                const isCov = selections[cur.id] === "cover";
+
+                return (
+                  <div>
+                    <div style={{ position: "relative", width: "100%", height: 320, background: "#000" }}>
+                      <img
+                        src={cur.url}
+                        alt={cur.title}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+
+                      {/* Rozetler */}
+                      <div style={{
+                        position: "absolute",
+                        top: 10,
+                        left: 10,
+                        right: 10,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center"
+                      }}>
+                        <span style={{
+                          background: "rgba(0,0,0,0.65)",
+                          backdropFilter: "blur(8px)",
+                          color: "#fff",
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: "3px 8px",
+                          borderRadius: 8
+                        }}>
+                          {proofIdx + 1} / {clientPhotos.length}
+                        </span>
+
+                        {isCov ? (
+                          <span style={{
+                            background: T.gold,
+                            color: "#000",
+                            fontSize: 10,
+                            fontWeight: 800,
+                            padding: "3px 8px",
+                            borderRadius: 8
+                          }}>
+                            ⭐ KAPAK SEÇİLDİ
+                          </span>
+                        ) : isSel ? (
+                          <span style={{
+                            background: T.greenL,
+                            color: "#000",
+                            fontSize: 10,
+                            fontWeight: 800,
+                            padding: "3px 8px",
+                            borderRadius: 8
+                          }}>
+                            ❤️ ALBÜME SEÇİLDİ
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div style={{
+                        position: "absolute",
+                        bottom: 8,
+                        left: 10,
+                        right: 10,
+                        background: "rgba(0,0,0,0.6)",
+                        padding: "4px 8px",
+                        borderRadius: 6,
+                        color: "#fff",
+                        fontSize: 11,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap"
+                      }}>
+                        {cur.title}
+                      </div>
+                    </div>
+
+                    {/* Tinder Eylem Butonları */}
+                    <div style={{
+                      padding: "14px 16px",
+                      display: "flex",
+                      justifyContent: "space-around",
+                      alignItems: "center"
+                    }}>
+                      <button
+                        onClick={() => setProofIdx(prev => (prev + 1) % clientPhotos.length)}
+                        title="Pas Geç (Sonraki)"
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: 99,
+                          background: "rgba(255,255,255,0.06)",
+                          border: "1px solid rgba(255,255,255,0.15)",
+                          color: "#fff",
+                          fontSize: 18,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center"
+                        }}
+                      >
+                        ✕
+                      </button>
+
+                      <button
+                        onClick={() => toggleCover(cur.id)}
+                        title="Kapak Fotoğrafı Yap"
+                        style={{
+                          width: 46,
+                          height: 46,
+                          borderRadius: 99,
+                          background: isCov ? T.gold : "rgba(255,255,255,0.06)",
+                          border: `1.5px solid ${isCov ? T.goldL : "rgba(255,255,255,0.15)"}`,
+                          color: isCov ? "#000" : T.goldL,
+                          fontSize: 18,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center"
+                        }}
+                      >
+                        ⭐
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          toggleSelect(cur.id);
+                          setProofIdx(prev => (prev + 1) % clientPhotos.length);
+                        }}
+                        title="Albüme Ekle"
+                        style={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 99,
+                          background: isSel ? "linear-gradient(135deg, #e91e63, #c2185b)" : "rgba(255,255,255,0.08)",
+                          border: `2px solid ${isSel ? "#ff4081" : "rgba(255,255,255,0.2)"}`,
+                          color: isSel ? "#fff" : "#ff4081",
+                          fontSize: 24,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          boxShadow: isSel ? "0 0 20px rgba(233, 30, 99, 0.5)" : "none"
+                        }}
+                      >
+                        ❤️
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          ) : (
+            /* IZGARA MODU */
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {clientPhotos.map((photo, i) => {
+                const isSel = selections[photo.id] === "selected" || selections[photo.id] === "cover";
+                const isCov = selections[photo.id] === "cover";
+
+                return (
+                  <div
+                    key={photo.id}
+                    style={{
+                      borderRadius: 14,
+                      overflow: "hidden",
+                      background: isSel ? "rgba(76, 175, 80, 0.12)" : "rgba(255,255,255,0.03)",
+                      border: `2px solid ${isCov ? T.goldL : isSel ? T.greenL : "rgba(255,255,255,0.08)"}`,
+                      position: "relative"
+                    }}
+                  >
+                    <div style={{ aspectRatio: "1", position: "relative" }}>
+                      <img
+                        src={photo.url}
+                        alt={photo.title}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                      <span style={{
+                        position: "absolute",
+                        top: 5,
+                        left: 5,
+                        background: "rgba(0,0,0,0.65)",
+                        color: "#fff",
+                        fontSize: 9,
+                        padding: "2px 5px",
+                        borderRadius: 5
+                      }}>
+                        #{i + 1}
+                      </span>
+                    </div>
+
+                    <div style={{ padding: 6, display: "flex", gap: 4 }}>
+                      <button
+                        onClick={() => toggleSelect(photo.id)}
+                        style={{
+                          flex: 1,
+                          background: isSel ? T.greenL : "rgba(255,255,255,0.08)",
+                          color: isSel ? "#000" : "#fff",
+                          border: "none",
+                          borderRadius: 8,
+                          padding: "5px 0",
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          cursor: "pointer"
+                        }}
+                      >
+                        {isSel ? "❤️ Seçildi" : "🤍 Seç"}
+                      </button>
+                      <button
+                        onClick={() => toggleCover(photo.id)}
+                        style={{
+                          background: isCov ? T.goldL : "rgba(255,255,255,0.08)",
+                          color: isCov ? "#000" : "#fff",
+                          border: "none",
+                          borderRadius: 8,
+                          padding: "5px 8px",
+                          fontSize: 10,
+                          cursor: "pointer"
+                        }}
+                      >
+                        ⭐
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Onaylama ve WhatsApp Butonu */}
+          {selectedCount > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <button
+                onClick={handleSendSelectionToStudio}
+                style={{
+                  width: "100%",
+                  background: "linear-gradient(135deg, #25D366, #128C7E)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 14,
+                  padding: "13px",
+                  fontWeight: 700,
+                  fontSize: 13.5,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  boxShadow: "0 6px 20px rgba(37, 211, 102, 0.3)"
+                }}
+              >
+                <span>✅</span> Seçimleri Tamamla & Stüdyoya Bildir ({selectedCount} Fotoğraf)
+              </button>
+              {sentSuccess && (
+                <div style={{ textAlign: "center", fontSize: 11.5, color: T.greenL, marginTop: 6 }}>
+                  Seçimleriniz stüdyomuza iletildi, teşekkürler! 🎉
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* İletişim */}
         <div style={{ background:T.card, border:`1px solid ${T.gold}33`,
@@ -1237,13 +1613,14 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
             Sorularınız için bize ulaşın
           </div>
           <div style={{ fontFamily:"Playfair Display", fontSize:18,
-            color:T.goldL, fontWeight:700 }}>OmniCod</div>
-          <div style={{ fontSize:12, color:T.text3, marginTop:4 }}>📸 Profesyonel Stüdyo Sistemi</div>
+            color:T.goldL, fontWeight:700 }}>StudyoApp</div>
+          <div style={{ fontSize:12, color:T.text3, marginTop:4 }}>📸 Profesyonel Stüdyo & Çekim Sistemi</div>
         </div>
       </div>
     </div>
   );
 };
+
 
 export const LoginScreen = ({ onLogin, data }) => {
   const [mode, setMode] = useState("login"); // "login" | "register" | "verify" | "personel" | "musteri"
