@@ -870,7 +870,7 @@ OmniCod 📸`;
           })()}
           <div style={{ marginTop:12, display:"flex", flexDirection:"column", gap:10 }}>
             {isAdmin && <GoldButton label="Müşteriyi Düzenle" icon="edit" variant="outline" full onClick={()=>{ setEditClientForm({...detail, extraDates:detail.extraDates||[]}); setShowEditClient(true); }}/>}
-            {isAdmin && <GoldButton label="Müşteriyi Sil" icon="trash" variant="danger" full onClick={()=>setConfirmDelete(true)}/>}
+            <GoldButton label="Müşteriyi Sil" icon="trash" variant="danger" full onClick={()=>setConfirmDelete(true)}/>
           </div>
         </BottomSheet>
       )}
