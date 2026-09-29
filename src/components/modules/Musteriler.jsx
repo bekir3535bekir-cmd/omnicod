@@ -55,6 +55,9 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
       setShowLimitModal(true);
       return;
     }
+    setSaving(false);
+    setAddError(null);
+    setForm(F);
     setShowAdd(true);
   };
 
@@ -1154,7 +1157,7 @@ OmniCod 📸`;
       {showAdd && (
         <BottomSheet
           title="Yeni Müşteri"
-          onClose={()=>{ setShowAdd(false); setAddError(null); }}
+          onClose={()=>{ setShowAdd(false); setAddError(null); setSaving(false); }}
           footer={<GoldButton label={saving ? "Kaydediliyor..." : "Müşteriyi Kaydet"} icon="check" onClick={save} disabled={saving} full/>}
         >
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
