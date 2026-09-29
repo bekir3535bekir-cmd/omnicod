@@ -41,7 +41,8 @@ ${FONT}
 html, body { height:100%; background:${theme.bg}; }
 body { font-family:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", sans-serif; color:${theme.text}; overflow-x:hidden; max-width:430px; margin:0 auto; -webkit-font-smoothing:antialiased; }
 input,textarea,select,button { font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif; }
-input,textarea,select { outline:none; background:transparent; color:${theme.text}; border:none; width:100%; }
+input,textarea,select { outline:none; background:transparent; color:${theme.text}; border:none; width:100%; color-scheme: dark; }
+select option { background-color: #181920 !important; color: #F5F5F7 !important; padding: 10px 14px; }
 button { cursor:pointer; border:none; background:transparent; }
 .num { font-family:'DM Sans',-apple-system,sans-serif; font-variant-numeric:tabular-nums; }
 ::-webkit-scrollbar { width:2px; height:2px; }

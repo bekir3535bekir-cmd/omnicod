@@ -25,6 +25,8 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
 
   const [showEditClient, setShowEditClient] = useState(false);
   const [editClientForm, setEditClientForm] = useState(null);
+  const [addError, setAddError] = useState(null);
+  const [editError, setEditError] = useState(null);
 
   // Başka sekmeden (Takvim) belirli bir müşteri kartı açılması istendiyse
   useEffect(() => {
@@ -96,11 +98,19 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
   };
 
   const saveEditClient = () => {
-    if(!editClientForm || !editClientForm.name) return;
+    if(!editClientForm?.name?.trim()) {
+      setEditError("Lütfen müşteri Ad Soyad alanını doldurunuz.");
+      return;
+    }
+    if(!editClientForm?.phone?.trim()) {
+      setEditError("Lütfen geçerli bir telefon numarası giriniz.");
+      return;
+    }
+    setEditError(null);
     const finalExtraDates = (editClientForm.extraDates||[]).filter(Boolean);
     updateClient(editClientForm.id, {
-      name:            editClientForm.name,
-      phone:           editClientForm.phone||"",
+      name:            editClientForm.name.trim(),
+      phone:           editClientForm.phone.trim(),
       email:           editClientForm.email||"",
       type:            editClientForm.type,
       package:         editClientForm.package,
@@ -117,11 +127,19 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
   };
 
   const save = () => {
-    if(!form.name||!form.phone) return;
+    if(!form.name?.trim()) {
+      setAddError("Lütfen müşteri Ad Soyad alanını doldurunuz.");
+      return;
+    }
+    if(!form.phone?.trim()) {
+      setAddError("Lütfen geçerli bir telefon numarası giriniz.");
+      return;
+    }
     if(!clientLimitCheck.allowed) {
       setShowLimitModal(true);
       return;
     }
+    setAddError(null);
     const totalAmt = Number(form.totalAmount)||0;
     const kaporaAmt = Number(form.paid)||0;
     const newClientId = uid();
@@ -834,10 +852,31 @@ OmniCod 📸`;
 
       {/* MÜŞTERİ DÜZENLE */}
       {showEditClient && editClientForm && (
-        <BottomSheet title="Müşteriyi Düzenle" onClose={()=>{setShowEditClient(false);setEditClientForm(null);}}>
+        <BottomSheet
+          title="Müşteriyi Düzenle"
+          onClose={()=>{ setShowEditClient(false); setEditClientForm(null); setEditError(null); }}
+          footer={<GoldButton label="Değişiklikleri Kaydet" icon="check" onClick={saveEditClient} full/>}
+        >
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-            <Field label="Ad Soyad" value={editClientForm.name} onChange={ecf("name")} placeholder="Müşteri adı" required/>
-            <Field label="Telefon" type="tel" value={editClientForm.phone||""} onChange={ecf("phone")} placeholder="05xx xxx xx xx" required/>
+            {editError && (
+              <div style={{
+                background:"rgba(255, 69, 58, 0.15)",
+                border:`1px solid ${T.red}66`,
+                borderRadius:14,
+                padding:"10px 14px",
+                display:"flex",
+                alignItems:"center",
+                gap:10,
+                color:T.redL,
+                fontSize:13,
+                fontWeight:600
+              }}>
+                <span>⚠️</span>
+                <span>{editError}</span>
+              </div>
+            )}
+            <Field label="Ad Soyad" value={editClientForm.name} onChange={ecf("name")} placeholder="Müşteri adı" required error={editError && !editClientForm.name?.trim() ? "Ad Soyad alanı zorunludur" : null}/>
+            <Field label="Telefon" type="tel" value={editClientForm.phone||""} onChange={ecf("phone")} placeholder="05xx xxx xx xx" required error={editError && !editClientForm.phone?.trim() ? "Telefon alanı zorunludur" : null}/>
             <Field label="E-Posta" type="email" value={editClientForm.email||""} onChange={ecf("email")} placeholder="mail@mail.com"/>
             <Field label="Etkinlik Türü" value={editClientForm.type} onChange={ecf("type")} options={["Düğün","Nişan","Kına","Portre","Bebek","Mezuniyet","Diğer"]}/>
             <Field label="Paket" value={editClientForm.package} onChange={ecf("package")} options={data.packages.map(p=>p.name)}/>
@@ -876,7 +915,6 @@ OmniCod 📸`;
             {(editClientForm.type==="Düğün"||editClientForm.type==="Nişan") && (
               <DatePicker label="💍 Evlilik / Etkinlik Yıldönümü" value={editClientForm.anniversaryDate||""} onChange={ecf("anniversaryDate")}/>
             )}
-            <GoldButton label="Değişiklikleri Kaydet" icon="check" onClick={saveEditClient} full/>
           </div>
         </BottomSheet>
       )}
@@ -1089,10 +1127,31 @@ OmniCod 📸`;
 
       {/* YENİ MÜŞTERİ FORMU */}
       {showAdd && (
-        <BottomSheet title="Yeni Müşteri" onClose={()=>setShowAdd(false)}>
+        <BottomSheet
+          title="Yeni Müşteri"
+          onClose={()=>{ setShowAdd(false); setAddError(null); }}
+          footer={<GoldButton label="Müşteriyi Kaydet" icon="check" onClick={save} full/>}
+        >
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-            <Field label="Ad Soyad" value={form.name} onChange={f("name")} placeholder="Müşteri adı" required/>
-            <Field label="Telefon" type="tel" value={form.phone} onChange={f("phone")} placeholder="05xx xxx xx xx" required/>
+            {addError && (
+              <div style={{
+                background:"rgba(255, 69, 58, 0.15)",
+                border:`1px solid ${T.red}66`,
+                borderRadius:14,
+                padding:"10px 14px",
+                display:"flex",
+                alignItems:"center",
+                gap:10,
+                color:T.redL,
+                fontSize:13,
+                fontWeight:600
+              }}>
+                <span>⚠️</span>
+                <span>{addError}</span>
+              </div>
+            )}
+            <Field label="Ad Soyad" value={form.name} onChange={f("name")} placeholder="Müşteri adı" required error={addError && !form.name?.trim() ? "Ad Soyad alanı zorunludur" : null}/>
+            <Field label="Telefon" type="tel" value={form.phone} onChange={f("phone")} placeholder="05xx xxx xx xx" required error={addError && !form.phone?.trim() ? "Telefon alanı zorunludur" : null}/>
             <Field label="E-Posta" type="email" value={form.email} onChange={f("email")} placeholder="mail@mail.com"/>
             <Field label="Etkinlik Türü" value={form.type} onChange={f("type")} options={["Düğün","Nişan","Kına","Portre","Bebek","Mezuniyet","Diğer"]}/>
             <Field label="Paket" value={form.package} onChange={f("package")} options={data.packages.map(p=>p.name)}/>
@@ -1135,7 +1194,6 @@ OmniCod 📸`;
               <DatePicker label="💍 Evlilik / Etkinlik Yıldönümü" value={form.anniversaryDate} onChange={f("anniversaryDate")}
                 note="Her yıl otomatik hatırlatıcı oluşturulur"/>
             )}
-            <GoldButton label="Müşteriyi Kaydet" icon="check" onClick={save} full/>
           </div>
         </BottomSheet>
       )}

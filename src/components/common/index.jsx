@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { T } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmt, fmtDate, uid, MN } from "../../utils/helpers";
@@ -42,23 +42,25 @@ const Pill = ({ label, color=T.gold }) => (
   </span>
 );
 
-const GoldButton = ({ label, icon, onClick, full, sm, variant="primary", style={} }) => {
+const GoldButton = ({ label, icon, onClick, full, sm, variant="primary", disabled, style={} }) => {
   const isPrimary = variant==="primary";
   const isOutline = variant==="outline";
   const isDanger  = variant==="danger";
   const isGhost   = variant==="ghost";
   return (
-    <button onClick={onClick} style={{
+    <button onClick={disabled ? undefined : onClick} disabled={disabled} style={{
       display:"flex", alignItems:"center", justifyContent:"center", gap:8,
       width:full?"100%":"auto",
-      background: isPrimary
+      background: disabled
+        ? "rgba(255, 255, 255, 0.08)"
+        : isPrimary
         ? `linear-gradient(135deg, ${T.goldL} 0%, ${T.gold} 50%, ${T.goldD} 100%)`
         : isDanger ? "rgba(255, 69, 58, 0.14)"
         : isGhost ? "transparent"
         : "rgba(255, 255, 255, 0.04)",
-      color: isPrimary ? "#000000" : isDanger ? T.redL : isGhost ? T.text2 : T.goldL,
-      border: isOutline ? `1.5px solid ${T.gold}` : isDanger ? `1px solid ${T.red}44` : isPrimary ? "1px solid rgba(255,255,255,0.3)" : `1px solid ${T.border}`,
-      boxShadow: isPrimary ? `0 8px 24px -4px ${T.gold}50, inset 0 1px 1px rgba(255,255,255,0.6)` : isOutline ? `inset 0 1px 1px rgba(255,255,255,0.1)` : "none",
+      color: disabled ? T.text3 : isPrimary ? "#000000" : isDanger ? T.redL : isGhost ? T.text2 : T.goldL,
+      border: disabled ? `1px solid ${T.border}` : isOutline ? `1.5px solid ${T.gold}` : isDanger ? `1px solid ${T.red}44` : isPrimary ? "1px solid rgba(255,255,255,0.3)" : `1px solid ${T.border}`,
+      boxShadow: disabled ? "none" : isPrimary ? `0 8px 24px -4px ${T.gold}50, inset 0 1px 1px rgba(255,255,255,0.6)` : isOutline ? `inset 0 1px 1px rgba(255,255,255,0.1)` : "none",
       borderRadius: 16,
       padding: sm ? "10px 18px" : "14px 22px",
       fontSize: sm ? 13 : 15,
@@ -66,22 +68,152 @@ const GoldButton = ({ label, icon, onClick, full, sm, variant="primary", style={
       letterSpacing: "0.2px",
       backdropFilter: !isPrimary ? "blur(16px)" : "none",
       WebkitBackdropFilter: !isPrimary ? "blur(16px)" : "none",
+      cursor: disabled ? "not-allowed" : "pointer",
+      opacity: disabled ? 0.6 : 1,
       transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
       ...style
     }}>
-      {icon && <Ic n={icon} s={sm?15:17} c={isPrimary?"#000000":isDanger?T.redL:isGhost?T.text2:T.goldL}/>}
+      {icon && <Ic n={icon} s={sm?15:17} c={disabled ? T.text3 : isPrimary?"#000000":isDanger?T.redL:isGhost?T.text2:T.goldL}/>}
       {label}
     </button>
   );
 };
 
-const Field = ({ label, value, onChange, type="text", placeholder, textarea, options, rows=3, required, note }) => {
+export const CustomSelect = ({ value, onChange, options, placeholder="Seçiniz..." }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [open]);
+
+  // Find label
+  const selectedOption = (options || []).find(o => (typeof o === "object" ? o.value === value : o === value));
+  const displayLabel = typeof selectedOption === "object"
+    ? (selectedOption?.label || placeholder)
+    : (selectedOption || value || placeholder);
+
+  return (
+    <div ref={ref} style={{ position: "relative", width: "100%" }}>
+      <button
+        type="button"
+        onClick={() => setOpen(prev => !prev)}
+        style={{
+          background: "rgba(255, 255, 255, 0.04)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          border: `1px solid ${open ? T.goldL : T.border}`,
+          boxShadow: open ? `0 0 0 2px ${T.gold}33, inset 0 1px 2px rgba(0,0,0,0.3)` : "inset 0 1px 2px rgba(0,0,0,0.3)",
+          borderRadius: 14,
+          padding: "12px 14px",
+          color: displayLabel && displayLabel !== placeholder ? T.text : T.text3,
+          fontSize: 14,
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          cursor: "pointer",
+          transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+          textAlign: "left"
+        }}
+      >
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {displayLabel}
+        </span>
+        <span style={{
+          color: open ? T.goldL : T.text3,
+          fontSize: 10,
+          transition: "transform 0.2s ease",
+          transform: open ? "rotate(180deg)" : "rotate(0deg)",
+          marginLeft: 8,
+          display: "flex",
+          alignItems: "center"
+        }}>
+          ▼
+        </span>
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute",
+          top: "calc(100% + 6px)",
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          background: "linear-gradient(145deg, rgba(26, 26, 34, 0.98) 0%, rgba(16, 16, 22, 0.98) 100%)",
+          backdropFilter: "blur(32px) saturate(190%)",
+          WebkitBackdropFilter: "blur(32px) saturate(190%)",
+          border: `1.5px solid ${T.gold}44`,
+          borderRadius: 16,
+          boxShadow: "0 16px 40px rgba(0,0,0,0.9), 0 0 20px rgba(232, 197, 71, 0.15)",
+          padding: "6px",
+          maxHeight: 240,
+          overflowY: "auto"
+        }}>
+          {(options || []).map((o, idx) => {
+            const val = typeof o === "object" ? o.value : o;
+            const lbl = typeof o === "object" ? o.label : o;
+            const isSelected = val === value;
+            const isEmptyChoice = !val && !lbl;
+
+            return (
+              <div
+                key={idx}
+                onClick={() => {
+                  onChange(val);
+                  setOpen(false);
+                }}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  fontSize: 13.5,
+                  fontWeight: isSelected ? 600 : 400,
+                  color: isSelected ? T.goldL : T.text,
+                  background: isSelected ? `${T.gold}22` : "transparent",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  cursor: "pointer",
+                  transition: "background 0.15s ease",
+                  marginBottom: 2
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) e.currentTarget.style.background = "transparent";
+                }}
+              >
+                <span>{isEmptyChoice ? "(Seçim Yapılmadı)" : lbl}</span>
+                {isSelected && <span style={{ color: T.goldL, fontSize: 13, fontWeight: 700 }}>✓</span>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Field = ({ label, value, onChange, type="text", placeholder, textarea, options, rows=3, required, note, error }) => {
   const inputStyle = {
     background: "rgba(255, 255, 255, 0.035)",
     backdropFilter: "blur(16px)",
     WebkitBackdropFilter: "blur(16px)",
-    border: `1px solid ${T.border}`,
-    boxShadow: "inset 0 1px 2px rgba(0,0,0,0.3)",
+    border: `1px solid ${error ? "#ff453a" : T.border}`,
+    boxShadow: error ? "0 0 0 2px rgba(255,69,58,0.25)" : "inset 0 1px 2px rgba(0,0,0,0.3)",
     borderRadius: 14,
     padding: "12px 14px",
     color: T.text,
@@ -93,21 +225,18 @@ const Field = ({ label, value, onChange, type="text", placeholder, textarea, opt
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
       <div style={{ display:"flex", justifyContent:"space-between" }}>
-        {label && <span style={{ fontSize:12, color:T.text2, fontWeight:500, letterSpacing:"0.3px" }}>{label}{required&&<span style={{color:T.gold}}> *</span>}</span>}
+        {label && <span style={{ fontSize:12, color:error ? T.redL : T.text2, fontWeight:500, letterSpacing:"0.3px" }}>{label}{required&&<span style={{color:error ? T.redL : T.gold}}> *</span>}</span>}
         {note && <span style={{ fontSize:11, color:T.text3 }}>{note}</span>}
       </div>
       {options ? (
-        <select value={value} onChange={e=>onChange(e.target.value)} style={inputStyle}>
-          {options.map(o => typeof o==="object"
-            ? <option key={o.value} value={o.value}>{o.label}</option>
-            : <option key={o} value={o}>{o}</option>)}
-        </select>
+        <CustomSelect value={value} onChange={onChange} options={options} placeholder={placeholder||"Seçiniz..."}/>
       ) : textarea ? (
         <textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows}
           style={{ ...inputStyle, resize:"vertical" }}/>
       ) : (
         <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={inputStyle}/>
       )}
+      {error && <span style={{ fontSize:11, color:T.redL, marginTop:2 }}>{error}</span>}
     </div>
   );
 };
@@ -193,32 +322,48 @@ const DatePicker = ({ label, value, onChange, required }) => {
   );
 };
 
-const BottomSheet = ({ title, onClose, children }) => (
+const BottomSheet = ({ title, onClose, footer, children }) => (
   <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
     {/* Backdrop */}
     <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.8)", backdropFilter:"blur(16px)", WebkitBackdropFilter:"blur(16px)" }}/>
     {/* Modal Box */}
     <div className="modal-pop" style={{
       position:"relative", zIndex:1,
-      background:"linear-gradient(145deg, rgba(22, 22, 28, 0.94) 0%, rgba(14, 14, 18, 0.96) 100%)",
+      background:"linear-gradient(145deg, rgba(22, 22, 28, 0.96) 0%, rgba(14, 14, 18, 0.98) 100%)",
       backdropFilter:"blur(36px) saturate(200%)",
       WebkitBackdropFilter:"blur(36px) saturate(200%)",
       borderRadius:28,
       border:"1px solid rgba(255, 255, 255, 0.12)",
       boxShadow:"0 32px 80px rgba(0,0,0,0.95), inset 0 1px 1px rgba(255,255,255,0.22)",
       maxWidth:440, width:"100%",
-      maxHeight:"88vh", overflowY:"auto",
+      maxHeight:"90vh",
       display:"flex", flexDirection:"column",
-      paddingBottom:24
+      overflow: "hidden"
     }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 20px 14px", borderBottom:`1px solid ${T.border}`, position:"sticky", top:0, background:"transparent", zIndex:10, borderRadius:"28px 28px 0 0" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 20px 14px", borderBottom:`1px solid ${T.border}`, background:"rgba(22, 22, 28, 0.8)", backdropFilter:"blur(20px)", zIndex:10 }}>
         <span style={{ fontFamily:"Playfair Display", fontSize:19, fontWeight:700, color:T.goldL }}>{title}</span>
         <button onClick={onClose} style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${T.border}`,
           borderRadius:99, width:34, height:34, display:"flex", alignItems:"center", justifyContent:"center" }}>
           <Ic n="close" s={15} c={T.text2}/>
         </button>
       </div>
-      <div style={{ padding:"18px 20px 0" }}>{children}</div>
+
+      <div style={{ padding:"18px 20px 24px", overflowY:"auto", flex:1 }}>
+        {children}
+      </div>
+
+      {footer && (
+        <div style={{
+          padding:"14px 20px 18px",
+          borderTop:`1px solid ${T.border}`,
+          background:"rgba(18, 18, 22, 0.95)",
+          backdropFilter:"blur(24px)",
+          WebkitBackdropFilter:"blur(24px)",
+          zIndex:10
+        }}>
+          {footer}
+        </div>
+      )}
     </div>
   </div>
 );
