@@ -1,7 +1,7 @@
 {
-  "name": "OmniCod — Fotoğrafçılık & Stüdyo Yönetim Sistemi",
-  "short_name": "OmniCod",
-  "description": "OmniCod Profesyonel Fotoğraf Stüdyosu CRM, Ajanda, Muhasebe ve Müşteri Takip Sistemi",
+  "name": "StudyoApp — Fotoğrafçılık & Stüdyo Yönetim Sistemi",
+  "short_name": "StudyoApp",
+  "description": "StudyoApp Profesyonel Fotoğraf Stüdyosu CRM, Ajanda, Muhasebe ve Müşteri Takip Sistemi",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0A0A0B",

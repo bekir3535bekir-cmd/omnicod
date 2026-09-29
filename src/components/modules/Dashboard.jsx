@@ -244,50 +244,17 @@ export const Dashboard = ({ data, setActive, role, plan }) => {
             </div>
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
-            <div onClick={() => setActive("planyonetimi")} style={{ cursor: "pointer" }}>
-              <PlanBadge plan={plan}/>
-            </div>
+            {plan === "pro" && (
+              <div onClick={() => setActive("planyonetimi")} style={{ cursor: "pointer" }}>
+                <PlanBadge plan={plan}/>
+              </div>
+            )}
             <Pill label={isAdmin ? "Yönetici" : "Personel"} color={isAdmin ? T.goldL : T.blueL}/>
           </div>
         </div>
       </div>
 
       <div style={{ padding:"0 20px" }}>
-        {/* Pro Deneme Banner */}
-        {plan === "trial" && (
-          <Card onClick={()=>setActive("planyonetimi")} style={{ marginBottom:16, padding:14, cursor:"pointer",
-            background:`linear-gradient(135deg, ${T.blue}15, ${T.card})`, borderColor:T.blue+"55" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <span style={{ fontSize:22 }}>⏳</span>
-                <div>
-                  <div style={{ fontSize:13, fontWeight:700, color:T.blueL }}>
-                    7 Günlük Pro Deneme Aktif
-                  </div>
-                  <div style={{ fontSize:11, color:T.text3, marginTop:2 }}>
-                    Tüm özellikler açık • Kalan: {getTrialInfo().daysLeft} gün
-                  </div>
-                </div>
-              </div>
-              <span style={{ fontSize:11, color:T.goldL, fontWeight:600 }}>İncele →</span>
-            </div>
-          </Card>
-        )}
-
-        {/* Basic Plan Limit Banner */}
-        {plan === "basic" && (
-          <Card onClick={()=>setActive("planyonetimi")} style={{ marginBottom:16, padding:14, cursor:"pointer",
-            background:`linear-gradient(135deg, ${T.gold}10, ${T.card})`, borderColor:T.gold+"44" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ fontSize:15 }}>⚡</span>
-                <span style={{ fontSize:13, fontWeight:700, color:T.goldL }}>Basic Plan — 20 Düğün Limiti</span>
-              </div>
-              <span style={{ fontSize:11, color:T.goldL, fontWeight:600 }}>Pro'ya Geç (₺749/ay) →</span>
-            </div>
-            <UsageBadge check={canAddAppointment(data)} label="Kullanılan Düğün / Çekim" />
-          </Card>
-        )}
 
         {/* Günün Fotoğraf Çekim Tekniği (Apple Liquid Glass) */}
         <div style={{

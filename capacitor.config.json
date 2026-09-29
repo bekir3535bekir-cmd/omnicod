@@ -1,6 +1,6 @@
 {
   "appId": "com.omnicod.app",
-  "appName": "OmniCod",
+  "appName": "StudyoApp",
   "webDir": "dist",
   "bundledWebRuntime": false,
   "server": {
