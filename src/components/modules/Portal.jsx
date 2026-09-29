@@ -20,7 +20,7 @@ const DEMO_WEDDING_PHOTOS = [
 ];
 
 export const Portal = ({ data, setData }) => {
-  const [selClient, setSelClient] = useState("");
+  const [selClient, setSelClient] = useState(() => data?.clients?.[0]?.id || "");
   const [quota, setQuota] = useState(40);
   const [viewMode, setViewMode] = useState("tinder"); // "tinder" | "grid"
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -30,11 +30,12 @@ export const Portal = ({ data, setData }) => {
 
   const fileInputRef = useRef(null);
 
-  const client = data.clients.find(c => c.id === selClient);
-  const clientPhotos = (data.gallery || []).filter(g => g.clientId === selClient);
+  const client = (data?.clients || []).find(c => String(c.id) === String(selClient)) || data?.clients?.[0];
+  const activeClientId = client?.id || selClient;
+  const clientPhotos = (data?.gallery || []).filter(g => String(g.clientId) === String(activeClientId));
 
   // Müşterinin kaydettiği seçimler
-  const clientSelectionsKey = `studyo_selections_${selClient}`;
+  const clientSelectionsKey = `studyo_selections_${activeClientId}`;
   const [selections, setSelections] = useState(() => {
     try {
       const s = localStorage.getItem(clientSelectionsKey);

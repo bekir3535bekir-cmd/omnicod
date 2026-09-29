@@ -1026,31 +1026,34 @@ export const NotDefteri = ({ data, setData, role }) => {
 // MÜŞTERİ PORTALİ
 // ════════════════════════════════════════════════
 
-export const MusteriPortali = ({ data, clientId, onLogout }) => {
-  const client = data.clients.find(c => c.id === clientId);
-  if(!client) return (
-    <div style={{ minHeight:"100vh", background:T.bg, display:"flex", alignItems:"center",
-      justifyContent:"center", flexDirection:"column", gap:16, padding:24 }}>
-      <div style={{ fontSize:40 }}>😕</div>
-      <div style={{ fontSize:16, color:T.text2 }}>Müşteri bulunamadı</div>
-      <button onClick={onLogout} style={{ background:T.gold, border:"none", borderRadius:12,
-        padding:"12px 24px", fontSize:14, fontWeight:700, color:"#0A0A0B" }}>
-        Çıkış Yap
-      </button>
-    </div>
-  );
+const DEMO_WEDDING_PHOTOS = [
+  { id: "p1", title: "Gelin_ve_Damat_Portre_01.jpg", url: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80" },
+  { id: "p2", title: "Dugun_Mekan_Genis_Aci_02.jpg", url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80" },
+  { id: "p3", title: "Gelinlik_Detay_03.jpg", url: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=800&q=80" },
+  { id: "p4", title: "Gelin_Cicegi_Detay_04.jpg", url: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=800&q=80" },
+  { id: "p5", title: "Damat_Yaka_Cicegi_05.jpg", url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80" },
+  { id: "p6", title: "Goz_Goze_Gulumseme_06.jpg", url: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=800&q=80" },
+  { id: "p7", title: "Gelin_Tulu_Ucusu_07.jpg", url: "https://images.unsplash.com/photo-1606800052052-a08af7148866?auto=format&fit=crop&w=800&q=80" },
+  { id: "p8", title: "Alyans_ve_Davetiye_08.jpg", url: "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?auto=format&fit=crop&w=800&q=80" },
+  { id: "p9", title: "Dugun_Dansi_09.jpg", url: "https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&w=800&q=80" },
+  { id: "p10", title: "Gun_Batimi_Siluet_10.jpg", url: "https://images.unsplash.com/photo-1544077960-604201fe74bc?auto=format&fit=crop&w=800&q=80" },
+];
 
-  const apt = data.appointments.find(a => a.clientName === client.name);
+export const MusteriPortali = ({ data, clientId, onLogout }) => {
+  const client = (data?.clients || []).find(c => String(c.id) === String(clientId)) || (data?.clients || [])[0] || { id: "demo_client", name: "Melis & Can", type: "Düğün Çekimi", date: "2026-10-15" };
+
+  const apt = (data?.appointments || []).find(a => a.clientName === client.name);
   const process = client.process || {};
   const debt = (client.totalAmount||0) - (client.paid||0);
   const pct = client.totalAmount > 0 ? Math.round((client.paid/client.totalAmount)*100) : 0;
   // Personelin kendi shiftleri
-  const myShifts = data.shifts.filter(s => String(s.teamId) === String(clientId))
+  const myShifts = (data?.shifts || []).filter(s => String(s.teamId) === String(clientId))
     .sort((a,b) => new Date(a.date) - new Date(b.date));
 
   // Fotoğraf Seçim & Proofing Sistemi
-  const clientPhotos = (data.gallery || []).filter(g => g.clientId === clientId);
-  const clientSelectionsKey = `studyo_selections_${clientId}`;
+  const rawPhotos = (data?.gallery || []).filter(g => String(g.clientId) === String(client?.id));
+  const clientPhotos = rawPhotos.length > 0 ? rawPhotos : DEMO_WEDDING_PHOTOS;
+  const clientSelectionsKey = `studyo_selections_${client.id}`;
   const [selections, setSelections] = useState(() => {
     try {
       const s = localStorage.getItem(clientSelectionsKey);
