@@ -1,79 +1,64 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import QRCode from "qrcode";
 import { T } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { Card, Pill, PageHeader, GoldButton, Field, BottomSheet } from "../common";
 import { getStudioProfile, saveStudioProfile } from "../../services/storage";
 
-// Hızlı, temiz, bağımlılıksız SVG QR Kod Oluşturucu
-const SimpleQRCodeSVG = ({ text, size = 180 }) => {
-  const modules = [];
-  const n = 21;
-  for (let r = 0; r < n; r++) {
-    modules[r] = [];
-    for (let c = 0; c < n; c++) {
-      const isTopLeft = r < 7 && c < 7;
-      const isTopRight = r < 7 && c >= n - 7;
-      const isBottomLeft = r >= n - 7 && c < 7;
+// Standart ISO 18004 Uyumlu Gerçek QR Kod Bileşeni
+const RealQRCode = ({ text, size = 190 }) => {
+  const [dataUrl, setDataUrl] = useState("");
 
-      if (isTopLeft || isTopRight || isBottomLeft) {
-        const isBorder = (r === 0 || r === 6 || c === 0 || c === 6 ||
-                         (isTopRight && (r === 0 || r === 6 || c === n - 7 || c === n - 1)) ||
-                         (isBottomLeft && (r === n - 7 || r === n - 1 || c === 0 || c === 6)));
-        const isCenter = ((r >= 2 && r <= 4) && (c >= 2 && c <= 4)) ||
-                         ((r >= 2 && r <= 4) && (c >= n - 5 && c <= n - 3)) ||
-                         ((r >= n - 5 && r <= n - 3) && (c >= 2 && c <= 4));
-        modules[r][c] = isBorder || isCenter;
-      } else if (r === 6 || c === 6) {
-        modules[r][c] = (r + c) % 2 === 0;
-      } else {
-        let hash = 0;
-        for (let i = 0; i < text.length; i++) {
-          hash = (hash * 31 + text.charCodeAt(i) + (r * 13) + (c * 7)) % 10007;
-        }
-        modules[r][c] = (hash % 2 === 0);
-      }
-    }
+  useEffect(() => {
+    if (!text) return;
+    QRCode.toDataURL(text, {
+      width: size * 2,
+      margin: 1,
+      color: {
+        dark: "#0a0a0b",
+        light: "#ffffff"
+      },
+      errorCorrectionLevel: "M"
+    })
+      .then(url => setDataUrl(url))
+      .catch(err => console.error("QR Code oluşturulamadı:", err));
+  }, [text, size]);
+
+  if (!dataUrl) {
+    return (
+      <div style={{
+        width: size,
+        height: size,
+        background: "#ffffff",
+        borderRadius: 18,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }}>
+        <span style={{ fontSize: 12, color: "#888", fontWeight: 600 }}>QR Hazırlanıyor...</span>
+      </div>
+    );
   }
 
-  const cellSize = size / n;
-
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ borderRadius: 14 }}>
-      <rect width={size} height={size} fill="#ffffff" rx="14" />
-      {modules.map((row, r) =>
-        row.map((cell, c) =>
-          cell ? (
-            <rect
-              key={`${r}-${c}`}
-              x={c * cellSize}
-              y={r * cellSize}
-              width={cellSize}
-              height={cellSize}
-              fill="#0A0A0B"
-            />
-          ) : null
-        )
-      )}
-      {/* Merkez Logo Pulu */}
-      <rect
-        x={size * 0.37}
-        y={size * 0.37}
-        width={size * 0.26}
-        height={size * 0.26}
-        fill="#ffffff"
-        rx="8"
+    <div style={{
+      width: size,
+      height: size,
+      background: "#ffffff",
+      borderRadius: 18,
+      padding: 10,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: "0 12px 36px rgba(0,0,0,0.45)",
+      border: "1px solid rgba(255,255,255,0.15)"
+    }}>
+      <img
+        src={dataUrl}
+        alt="QR Kod"
+        style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 10, display: "block" }}
       />
-      <text
-        x={size / 2}
-        y={size / 2 + 6}
-        textAnchor="middle"
-        fontSize={size * 0.13}
-        fill="#B8953F"
-        fontWeight="bold"
-      >
-        📸
-      </text>
-    </svg>
+    </div>
   );
 };
 
@@ -82,6 +67,7 @@ export const DijitalKartvizit = () => {
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState(profile);
   const [copied, setCopied] = useState(false);
+  const [qrType, setQrType] = useState("vcard"); // "vcard" | "wa"
 
   // Düzenleme kaydetme
   const handleSaveEdit = () => {
@@ -132,8 +118,41 @@ END:VCARD`;
     }
   };
 
-  const cleanPhone = profile.phone.replace(/[^0-9]/g, "");
-  const vCardPayload = `BEGIN:VCARD\nFN:${profile.name}\nORG:${profile.studio}\nTEL:${profile.phone}\nEMAIL:${profile.email}\nEND:VCARD`;
+  // İsim parçalama (Ad ve Soyad)
+  const nameParts = (profile.name || "").trim().split(/\s+/);
+  const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
+  const firstName = nameParts.length > 1 ? nameParts.slice(0, -1).join(" ") : nameParts[0] || "";
+
+  // Uluslararası telefon formatı (+90...)
+  const rawDigits = (profile.phone || "").replace(/\D/g, "");
+  let intlPhone = profile.phone || "";
+  if (rawDigits.length === 10) {
+    intlPhone = `+90${rawDigits}`;
+  } else if (rawDigits.length === 11 && rawDigits.startsWith("0")) {
+    intlPhone = `+90${rawDigits.slice(1)}`;
+  } else if (rawDigits.length === 12 && rawDigits.startsWith("90")) {
+    intlPhone = `+${rawDigits}`;
+  }
+
+  // 100% Standart vCard 3.0 (Tüm iOS ve Android kameralarının anında Kişi Kartı / Rehbere Ekle olarak algıladığı format)
+  const vCardPayload = [
+    "BEGIN:VCARD",
+    "VERSION:3.0",
+    `N:${lastName};${firstName};;;`,
+    `FN:${profile.name}`,
+    `ORG:${profile.studio || "Fotoğraf Stüdyosu"}`,
+    `TITLE:Fotoğrafçı & Stüdyo Yöneticisi`,
+    `TEL;TYPE=CELL,VOICE:${intlPhone}`,
+    profile.email ? `EMAIL;TYPE=INTERNET,WORK:${profile.email}` : "",
+    profile.address ? `ADR;TYPE=WORK:;;${profile.address};;;Türkiye` : "",
+    profile.instagram ? `URL:https://instagram.com/${profile.instagram.replace("@", "")}` : "",
+    `NOTE:${profile.studio} — Dijital Kartvizit`,
+    "END:VCARD"
+  ].filter(Boolean).join("\r\n");
+
+  const waDigits = rawDigits.startsWith("90") ? rawDigits : (rawDigits.startsWith("0") ? `90${rawDigits.slice(1)}` : `90${rawDigits}`);
+  const waUrl = `https://wa.me/${waDigits}?text=${encodeURIComponent(`Merhaba ${profile.studio}, hizmetleriniz hakkında bilgi almak istiyorum.`)}`;
+  const activeQrText = qrType === "vcard" ? vCardPayload : waUrl;
 
   return (
     <div className="fade-in" style={{ padding: "0 20px 40px" }}>
@@ -238,12 +257,51 @@ END:VCARD`;
           justifyContent: "center",
           margin: "14px 0"
         }}>
-          <SimpleQRCodeSVG text={vCardPayload} size={180} />
-          <div style={{ fontSize: 12, fontWeight: 600, color: T.text, marginTop: 14, textAlign: "center" }}>
-            Telefon kamerasıyla okutun
+          {/* QR Türü Seçimi */}
+          <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+            <button
+              onClick={() => setQrType("vcard")}
+              style={{
+                background: qrType === "vcard" ? T.gold : "rgba(255,255,255,0.06)",
+                color: qrType === "vcard" ? "#000" : T.text2,
+                border: "none",
+                borderRadius: 99,
+                padding: "7px 14px",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 0.2s"
+              }}
+            >
+              📇 Rehbere Kaydet
+            </button>
+            <button
+              onClick={() => setQrType("wa")}
+              style={{
+                background: qrType === "wa" ? "#25D366" : "rgba(255,255,255,0.06)",
+                color: qrType === "wa" ? "#fff" : T.text2,
+                border: "none",
+                borderRadius: 99,
+                padding: "7px 14px",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 0.2s"
+              }}
+            >
+              💬 WhatsApp
+            </button>
           </div>
-          <div style={{ fontSize: 11, color: T.text3, marginTop: 2, textAlign: "center" }}>
-            Kişi bilgileri doğrudan rehbere kaydedilir
+
+          <RealQRCode text={activeQrText} size={190} />
+
+          <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginTop: 14, textAlign: "center" }}>
+            {qrType === "vcard" ? "Telefon Kamerasıyla Okutun" : "WhatsApp Sohbetini Başlatın"}
+          </div>
+          <div style={{ fontSize: 11, color: T.text3, marginTop: 3, textAlign: "center", maxWidth: 260, lineHeight: 1.4 }}>
+            {qrType === "vcard"
+              ? "Kişi bilgileri (Ad Soyad, Telefon, E-posta, Stüdyo) tek dokunuşla rehbere kaydedilir."
+              : "Okutan kişi doğrudan stüdyonuzla WhatsApp üzerinden sohbete başlar."}
           </div>
         </div>
 
