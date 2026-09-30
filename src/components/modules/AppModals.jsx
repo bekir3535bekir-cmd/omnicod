@@ -1926,115 +1926,307 @@ export const LoginScreen = ({ onLogin, data }) => {
   const bgIcons = ["📷","📸","🎞️","🎬","💡","🎥","📷","📸","🎞️","🎬","💡","🎥","📷","📸","🎞️","🎬","💡","🎥","📷","📸","🎞️","🎬","💡","🎥"];
 
   return (
-    <div style={{ minHeight:"100vh", background:"#0A0A0B", display:"flex", flexDirection:"column",
-      alignItems:"center", justifyContent:"center", padding:20, position:"relative", overflow:"hidden" }}>
+    <div style={{
+      minHeight: "100vh",
+      background: "radial-gradient(circle at 50% 12%, rgba(212, 175, 55, 0.14) 0%, rgba(18, 18, 24, 0.95) 45%, #070709 100%)",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "24px 20px",
+      position: "relative",
+      overflow: "hidden"
+    }}>
 
-      {/* Arka plan kamera ikonları */}
-      <div style={{ position:"absolute", inset:0, display:"grid",
-        gridTemplateColumns:"repeat(6,1fr)", gap:0, opacity:0.035, pointerEvents:"none",
-        transform:"rotate(-15deg) scale(1.4)" }}>
-        {bgIcons.map((ic,i)=>(
-          <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"center",
-            fontSize:44, padding:18 }}>{ic}</div>
-        ))}
+      {/* ─── KAMERA VİZÖRÜ (VIEWFINDER HUD) ÇERÇEVELERİ ─── */}
+      {/* 4 Köşe Odak Çerçeveleri */}
+      <div style={{ position: "absolute", top: 22, left: 22, width: 28, height: 28, borderTop: `2px solid ${T.gold}66`, borderLeft: `2px solid ${T.gold}66`, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", top: 22, right: 22, width: 28, height: 28, borderTop: `2px solid ${T.gold}66`, borderRight: `2px solid ${T.gold}66`, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", bottom: 22, left: 22, width: 28, height: 28, borderBottom: `2px solid ${T.gold}66`, borderLeft: `2px solid ${T.gold}66`, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", bottom: 22, right: 22, width: 28, height: 28, borderBottom: `2px solid ${T.gold}66`, borderRight: `2px solid ${T.gold}66`, pointerEvents: "none" }} />
+
+      {/* Kamera Vizör Bilgi Çubuğu (Üst & Alt Göstergeler) */}
+      <div style={{ position: "absolute", top: 26, left: 56, right: 56, display: "flex", justifyContent: "space-between", alignItems: "center", pointerEvents: "none", opacity: 0.55 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, fontFamily: "monospace", letterSpacing: 1.5, color: T.goldL }}>
+          <span style={{ color: "#ff4444", animation: "pulse 2s infinite" }}>●</span> RAW • 4K 60P
+        </div>
+        <div style={{ fontSize: 10, fontFamily: "monospace", letterSpacing: 1.5, color: T.text3 }}>
+          [ f/1.4 &nbsp; 1/250s &nbsp; ISO 100 ]
+        </div>
       </div>
 
-      {/* Üst ışık efekti */}
-      <div style={{ position:"absolute", top:-120, left:"50%", transform:"translateX(-50%)",
-        width:450, height:450, borderRadius:"50%",
-        background:`radial-gradient(circle, ${T.gold}18 0%, transparent 70%)`,
-        pointerEvents:"none" }}/>
+      <div style={{ position: "absolute", bottom: 26, left: 56, right: 56, display: "flex", justifyContent: "space-between", alignItems: "center", pointerEvents: "none", opacity: 0.45 }}>
+        <div style={{ fontSize: 9.5, fontFamily: "monospace", letterSpacing: 1.5, color: T.text3 }}>
+          AF-C • 3D TRACKING
+        </div>
+        <div style={{ fontSize: 9.5, fontFamily: "monospace", letterSpacing: 1.5, color: T.goldL }}>
+          50mm PRIME F1.4
+        </div>
+      </div>
 
-      {/* Logo */}
-      <div style={{ position:"relative", zIndex:1, textAlign:"center", marginBottom:24 }}>
-        <div style={{ width:76, height:76, borderRadius:22, margin:"0 auto 14px",
-          background:`linear-gradient(135deg,${T.gold}24,${T.gold}08)`,
-          border:`1.5px solid ${T.gold}44`,
-          display:"flex", alignItems:"center", justifyContent:"center",
-          boxShadow:`0 0 40px ${T.gold}22` }}>
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
-              stroke={T.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <circle cx="12" cy="13" r="4" stroke={T.goldL} strokeWidth="1.5"/>
-            <circle cx="12" cy="13" r="1.8" fill={T.gold}/>
+      {/* Fotoğrafçılık Işık Hüzmesi (Studio Key Light) */}
+      <div style={{
+        position: "absolute",
+        top: -150,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: 520,
+        height: 520,
+        borderRadius: "50%",
+        background: `radial-gradient(circle, ${T.gold}24 0%, ${T.gold}08 45%, transparent 70%)`,
+        filter: "blur(60px)",
+        pointerEvents: "none"
+      }} />
+
+      {/* ─── LOGO & BAŞLIK (StudyoApp & Kamera Diyaframı) ─── */}
+      <div style={{ position: "relative", zIndex: 1, textAlign: "center", marginBottom: 26 }}>
+        {/* Çok Katmanlı Altın Lens Diyaframı */}
+        <div style={{
+          width: 86,
+          height: 86,
+          margin: "0 auto 16px",
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          {/* Dış Diyafram Halkası */}
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "50%",
+            background: "linear-gradient(135deg, rgba(245, 215, 127, 0.35) 0%, rgba(18, 18, 22, 0.8) 100%)",
+            border: `2px solid ${T.gold}`,
+            boxShadow: `0 0 35px ${T.gold}40, inset 0 0 15px rgba(255,255,255,0.2)`
+          }} />
+
+          {/* Diyafram Kanatları SVG */}
+          <svg width="52" height="52" viewBox="0 0 100 100" style={{ position: "relative", zIndex: 2 }}>
+            <circle cx="50" cy="50" r="46" fill="none" stroke={T.gold} strokeWidth="2.5" strokeDasharray="4 2" opacity="0.6" />
+            {/* 8 Bıçaklı Diyafram */}
+            <path d="M 50 10 L 80 40 L 60 50 Z" fill={T.goldL} opacity="0.9" />
+            <path d="M 90 50 L 60 80 L 50 60 Z" fill={T.gold} opacity="0.85" />
+            <path d="M 50 90 L 20 60 L 40 50 Z" fill={T.goldL} opacity="0.9" />
+            <path d="M 10 50 L 40 20 L 50 40 Z" fill={T.gold} opacity="0.85" />
+            <path d="M 22 22 L 50 20 L 45 42 Z" fill={T.goldD} opacity="0.75" />
+            <path d="M 78 22 L 80 50 L 58 45 Z" fill={T.goldD} opacity="0.75" />
+            <path d="M 78 78 L 50 80 L 55 58 Z" fill={T.goldD} opacity="0.75" />
+            <path d="M 22 78 L 20 50 L 42 55 Z" fill={T.goldD} opacity="0.75" />
+            {/* Mercek Yansıması Camı */}
+            <circle cx="50" cy="50" r="20" fill="radial-gradient(circle, #3b82f6 0%, #0a0a14 80%)" opacity="0.7" />
+            <circle cx="45" cy="45" r="5" fill="#ffffff" opacity="0.85" />
           </svg>
         </div>
-        <div style={{ display:"flex", alignItems:"baseline", justifyContent:"center", gap:3 }}>
-          <span style={{ fontFamily:"Playfair Display", fontSize:32, fontWeight:700,
-            color:T.goldL, letterSpacing:"1.5px", lineHeight:1 }}>Omni</span>
-          <span style={{ fontFamily:"Inter", fontSize:30, fontWeight:800,
-            color:T.gold, letterSpacing:"1px", lineHeight:1 }}>Cod</span>
+
+        {/* Pro Rozeti */}
+        <div style={{
+          display: "inline-block",
+          background: "rgba(212, 175, 55, 0.12)",
+          border: `1px solid ${T.gold}55`,
+          borderRadius: 99,
+          padding: "3px 12px",
+          marginBottom: 8
+        }}>
+          <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 2, color: T.goldL, textTransform: "uppercase" }}>
+            PRO STUDIO OS
+          </span>
         </div>
-        <div style={{ fontSize:12, color:T.text3, marginTop:5, letterSpacing:"0.5px" }}>
-          Fotoğrafçılık & Stüdyo Yönetim Sistemi
+
+        {/* Ana Logo İsmi: StudyoApp */}
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 3 }}>
+          <span style={{
+            fontFamily: "Playfair Display, Georgia, serif",
+            fontSize: 34,
+            fontWeight: 700,
+            color: "#FFFFFF",
+            letterSpacing: "1.2px",
+            lineHeight: 1
+          }}>
+            Studyo
+          </span>
+          <span style={{
+            fontFamily: "Inter, sans-serif",
+            fontSize: 32,
+            fontWeight: 800,
+            background: `linear-gradient(135deg, ${T.goldL} 0%, ${T.gold} 60%, #AA820A 100%)`,
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            letterSpacing: "1px",
+            lineHeight: 1
+          }}>
+            App
+          </span>
+        </div>
+
+        <div style={{ fontSize: 11.5, color: T.text3, marginTop: 6, letterSpacing: "1.2px", fontWeight: 500, textTransform: "uppercase" }}>
+          Fotoğrafçılık & Stüdyo İşletim Sistemi
         </div>
       </div>
 
-      {/* Kart (Apple Liquid Glass) */}
-      <div style={{ position:"relative", zIndex:1, width:"100%", maxWidth:364 }}>
-        <div style={{ background:"linear-gradient(145deg, rgba(24, 24, 32, 0.88) 0%, rgba(14, 14, 18, 0.94) 100%)",
-          backdropFilter:"blur(36px) saturate(200%)", WebkitBackdropFilter:"blur(36px) saturate(200%)",
-          border:"1px solid rgba(255, 255, 255, 0.12)", borderRadius:28, padding:"28px 22px",
-          boxShadow:"0 32px 80px -10px rgba(0,0,0,0.95), inset 0 1px 1px rgba(255,255,255,0.22), inset 0 -1px 1px rgba(0,0,0,0.5)" }}>
+      {/* ─── KART (Ultra-Refined Liquid Glassmorphism) ─── */}
+      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 366 }}>
+        <div style={{
+          background: "linear-gradient(160deg, rgba(26, 26, 34, 0.88) 0%, rgba(12, 12, 16, 0.94) 100%)",
+          backdropFilter: "blur(48px) saturate(200%)",
+          WebkitBackdropFilter: "blur(48px) saturate(200%)",
+          border: `1px solid ${T.gold}35`,
+          borderRadius: 28,
+          padding: "26px 22px",
+          boxShadow: `0 32px 80px -10px rgba(0,0,0,0.95), 0 0 35px ${T.gold}12, inset 0 1px 1px rgba(255,255,255,0.2)`
+        }}>
 
-          {/* ─── 1. STÜDYO SAHİBİ GİRİŞ EKRANI (Varsayılan) ─── */}
+          {/* ─── 1. STÜDYO SAHİBİ GİRİŞ EKRANI ─── */}
           {mode === "login" && (
             <>
-              {/* Sekmeler: Giriş Yap / Kayıt Ol (Liquid Glass Pills) */}
-              <div style={{ display:"flex", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16, padding:4, marginBottom:20 }}>
-                <button onClick={()=>{ setMode("login"); setLoginErr(null); }}
-                  style={{ flex:1, padding:"10px 0", borderRadius:12, fontSize:13, fontWeight:700,
-                    background:"linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 100%)",
-                    border:"1px solid rgba(255,255,255,0.25)", color:"#FFFFFF",
-                    boxShadow:"0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3)" }}>
+              {/* Sekmeler: Giriş Yap / 7 Gün Pro */}
+              <div style={{
+                display: "flex",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: 16,
+                padding: 4,
+                marginBottom: 20
+              }}>
+                <button
+                  onClick={() => { setMode("login"); setLoginErr(null); }}
+                  style={{
+                    flex: 1,
+                    padding: "10px 0",
+                    borderRadius: 12,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    background: "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 100%)",
+                    border: "1px solid rgba(255,255,255,0.25)",
+                    color: "#FFFFFF",
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3)",
+                    cursor: "pointer"
+                  }}
+                >
                   Giriş Yap
                 </button>
-                <button onClick={()=>{ setMode("register"); setRegErr(null); }}
-                  style={{ flex:1.2, padding:"10px 0", borderRadius:12, fontSize:12, fontWeight:600,
-                    color:T.goldL, background:"transparent", border:"1px solid transparent" }}>
+                <button
+                  onClick={() => { setMode("register"); setRegErr(null); }}
+                  style={{
+                    flex: 1.2,
+                    padding: "10px 0",
+                    borderRadius: 12,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: T.goldL,
+                    background: "transparent",
+                    border: "1px solid transparent",
+                    cursor: "pointer"
+                  }}
+                >
                   👑 7 Gün Ücretsiz
                 </button>
               </div>
 
-              <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div>
-                  <div style={{ fontSize:12, color:T.text3, marginBottom:6, fontWeight:500 }}>E-posta veya Şifre</div>
-                  <input value={loginEmail} onChange={e=>setLoginEmail(e.target.value)}
-                    onKeyDown={e=>e.key==="Enter"&&handleOwnerLogin()}
-                    placeholder="ornek@gmail.com"
+                  <div style={{ fontSize: 12, color: T.text3, marginBottom: 6, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>✉️</span> E-posta veya Stüdyo Şifresi
+                  </div>
+                  <input
+                    value={loginEmail}
+                    onChange={e => setLoginEmail(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleOwnerLogin()}
+                    placeholder="ornek@gmail.com veya şifreniz"
                     autoFocus
-                    style={{ background:"rgba(255,255,255,0.04)", border:`1px solid ${T.border}`,
-                      borderRadius:12, padding:"13px 14px", color:T.text, fontSize:14, outline:"none", width:"100%" }}/>
+                    style={{
+                      background: "rgba(255,255,255,0.04)",
+                      border: `1px solid ${T.border}`,
+                      borderRadius: 14,
+                      padding: "13px 14px",
+                      color: T.text,
+                      fontSize: 14,
+                      outline: "none",
+                      width: "100%",
+                      boxSizing: "border-box",
+                      transition: "border 0.2s"
+                    }}
+                  />
                 </div>
 
                 <div>
-                  <div style={{ fontSize:12, color:T.text3, marginBottom:6, fontWeight:500 }}>Şifre</div>
-                  <input type="password" value={loginPass} onChange={e=>setLoginPass(e.target.value)}
-                    onKeyDown={e=>e.key==="Enter"&&handleOwnerLogin()}
+                  <div style={{ fontSize: 12, color: T.text3, marginBottom: 6, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>🔒</span> Şifre
+                  </div>
+                  <input
+                    type="password"
+                    value={loginPass}
+                    onChange={e => setLoginPass(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleOwnerLogin()}
                     placeholder="••••••••"
-                    style={{ background:"rgba(255,255,255,0.04)", border:`1px solid ${T.border}`,
-                      borderRadius:12, padding:"13px 14px", color:T.text, fontSize:14, outline:"none", width:"100%" }}/>
+                    style={{
+                      background: "rgba(255,255,255,0.04)",
+                      border: `1px solid ${T.border}`,
+                      borderRadius: 14,
+                      padding: "13px 14px",
+                      color: T.text,
+                      fontSize: 14,
+                      outline: "none",
+                      width: "100%",
+                      boxSizing: "border-box",
+                      transition: "border 0.2s"
+                    }}
+                  />
                 </div>
 
                 {loginErr && (
-                  <div style={{ fontSize:12, color:T.redL, background:T.red+"18",
-                    border:`1px solid ${T.red}33`, borderRadius:10, padding:"9px 12px", textAlign:"center" }}>
+                  <div style={{
+                    fontSize: 12,
+                    color: T.redL,
+                    background: T.red + "18",
+                    border: `1px solid ${T.red}33`,
+                    borderRadius: 10,
+                    padding: "9px 12px",
+                    textAlign: "center"
+                  }}>
                     ⚠️ {loginErr}
                   </div>
                 )}
 
-                <button onClick={handleOwnerLogin}
-                  style={{ width:"100%", background:`linear-gradient(135deg,${T.gold},${T.goldD})`,
-                    border:"none", borderRadius:12, padding:"14px", fontSize:14, fontWeight:700,
-                    color:"#0A0A0B", cursor:"pointer", boxShadow:`0 6px 20px ${T.gold}35`, marginTop:4 }}>
-                  Giriş Yap
+                <button
+                  onClick={handleOwnerLogin}
+                  style={{
+                    width: "100%",
+                    background: `linear-gradient(135deg, ${T.goldL} 0%, ${T.gold} 50%, #B8860B 100%)`,
+                    border: "none",
+                    borderRadius: 14,
+                    padding: "14px",
+                    fontSize: 14.5,
+                    fontWeight: 800,
+                    color: "#0A0A0B",
+                    cursor: "pointer",
+                    boxShadow: `0 8px 24px ${T.gold}45`,
+                    marginTop: 4,
+                    letterSpacing: "0.5px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8
+                  }}
+                >
+                  <span>📸</span> Stüdyoya Giriş Yap
                 </button>
               </div>
 
               {/* Hızlı Kayıt Çağrısı */}
-              <div style={{ textAlign:"center", marginTop:16, paddingTop:14, borderTop:`1px solid ${T.border}` }}>
-                <span style={{ fontSize:12, color:T.text3 }}>Henüz hesabınız yok mu? </span>
-                <button onClick={()=>setMode("register")} style={{ fontSize:12, color:T.goldL, fontWeight:700, textDecoration:"underline" }}>
+              <div style={{ textAlign: "center", marginTop: 16, paddingTop: 14, borderTop: `1px solid ${T.border}` }}>
+                <span style={{ fontSize: 12, color: T.text3 }}>Henüz hesabınız yok mu? </span>
+                <button
+                  onClick={() => setMode("register")}
+                  style={{
+                    fontSize: 12,
+                    color: T.goldL,
+                    fontWeight: 700,
+                    textDecoration: "underline",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer"
+                  }}
+                >
                   7 Gün Ücretsiz Başla
                 </button>
               </div>
