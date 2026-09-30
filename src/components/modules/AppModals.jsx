@@ -1978,6 +1978,104 @@ export const LoginScreen = ({ onLogin, data }) => {
         pointerEvents: "none"
       }} />
 
+      {/* ─── KAMERA ODAKLAMA & DİYAFRAM ANİMASYONLARI ─── */}
+      <style>{`
+        @keyframes lensCenterGitGel {
+          0% {
+            transform: scale(1);
+            filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0.3));
+          }
+          12% {
+            transform: scale(1.48);
+            filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.85));
+          }
+          25% {
+            transform: scale(0.68);
+            filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
+          }
+          38% {
+            transform: scale(1.36);
+            filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.75));
+          }
+          50% {
+            transform: scale(0.85);
+            filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
+          }
+          62% {
+            transform: scale(1.06);
+            filter: drop-shadow(0 0 9px rgba(245, 215, 127, 0.95));
+          }
+          70%, 100% {
+            transform: scale(1);
+            filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0.3));
+          }
+        }
+
+        @keyframes lensBladesAperture {
+          0% {
+            transform: rotate(0deg) scale(1);
+          }
+          12% {
+            transform: rotate(15deg) scale(1.09);
+          }
+          25% {
+            transform: rotate(-12deg) scale(0.93);
+          }
+          38% {
+            transform: rotate(11deg) scale(1.06);
+          }
+          50% {
+            transform: rotate(-6deg) scale(0.96);
+          }
+          62% {
+            transform: rotate(2deg) scale(1.02);
+          }
+          70%, 100% {
+            transform: rotate(0deg) scale(1);
+          }
+        }
+
+        @keyframes lensDashedRotate {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes lensGlintFlash {
+          0%, 55% {
+            opacity: 0.8;
+            transform: scale(1);
+          }
+          62% {
+            opacity: 1;
+            transform: scale(1.6);
+            filter: drop-shadow(0 0 6px #ffffff);
+          }
+          70%, 100% {
+            opacity: 0.85;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes outerHaloBreath {
+          0%, 55% {
+            box-shadow: 0 0 35px rgba(212, 175, 55, 0.38), inset 0 0 15px rgba(255,255,255,0.2);
+            border-color: rgba(212, 175, 55, 0.8);
+          }
+          62% {
+            box-shadow: 0 0 55px rgba(245, 215, 127, 0.75), inset 0 0 22px rgba(255,255,255,0.45);
+            border-color: #F5D77F;
+          }
+          72%, 100% {
+            box-shadow: 0 0 35px rgba(212, 175, 55, 0.38), inset 0 0 15px rgba(255,255,255,0.2);
+            border-color: rgba(212, 175, 55, 0.8);
+          }
+        }
+      `}</style>
+
       {/* ─── LOGO & BAŞLIK (StudyoApp & Kamera Diyaframı) ─── */}
       <div style={{ position: "relative", zIndex: 1, textAlign: "center", marginBottom: 26 }}>
         {/* Çok Katmanlı Altın Lens Diyaframı */}
@@ -1988,8 +2086,10 @@ export const LoginScreen = ({ onLogin, data }) => {
           position: "relative",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center"
-        }}>
+          justifyContent: "center",
+          cursor: "pointer",
+          userSelect: "none"
+        }} title="Kamera Odaklama (AF)">
           {/* Dış Diyafram Halkası */}
           <div style={{
             position: "absolute",
@@ -1997,24 +2097,53 @@ export const LoginScreen = ({ onLogin, data }) => {
             borderRadius: "50%",
             background: "linear-gradient(135deg, rgba(245, 215, 127, 0.35) 0%, rgba(18, 18, 22, 0.8) 100%)",
             border: `2px solid ${T.gold}`,
-            boxShadow: `0 0 35px ${T.gold}40, inset 0 0 15px rgba(255,255,255,0.2)`
+            animation: "outerHaloBreath 3.6s ease-in-out infinite"
           }} />
 
-          {/* Diyafram Kanatları SVG */}
-          <svg width="52" height="52" viewBox="0 0 100 100" style={{ position: "relative", zIndex: 2 }}>
-            <circle cx="50" cy="50" r="46" fill="none" stroke={T.gold} strokeWidth="2.5" strokeDasharray="4 2" opacity="0.6" />
-            {/* 8 Bıçaklı Diyafram */}
-            <path d="M 50 10 L 80 40 L 60 50 Z" fill={T.goldL} opacity="0.9" />
-            <path d="M 90 50 L 60 80 L 50 60 Z" fill={T.gold} opacity="0.85" />
-            <path d="M 50 90 L 20 60 L 40 50 Z" fill={T.goldL} opacity="0.9" />
-            <path d="M 10 50 L 40 20 L 50 40 Z" fill={T.gold} opacity="0.85" />
-            <path d="M 22 22 L 50 20 L 45 42 Z" fill={T.goldD} opacity="0.75" />
-            <path d="M 78 22 L 80 50 L 58 45 Z" fill={T.goldD} opacity="0.75" />
-            <path d="M 78 78 L 50 80 L 55 58 Z" fill={T.goldD} opacity="0.75" />
-            <path d="M 22 78 L 20 50 L 42 55 Z" fill={T.goldD} opacity="0.75" />
-            {/* Mercek Yansıması Camı */}
-            <circle cx="50" cy="50" r="20" fill="radial-gradient(circle, #3b82f6 0%, #0a0a14 80%)" opacity="0.7" />
-            <circle cx="45" cy="45" r="5" fill="#ffffff" opacity="0.85" />
+          {/* Diyafram Kanatları & Mercek SVG */}
+          <svg width="56" height="56" viewBox="0 0 100 100" style={{ position: "relative", zIndex: 2, overflow: "visible" }}>
+            <defs>
+              <radialGradient id="studyoLensCoreGrad" cx="42%" cy="40%" r="58%">
+                <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.95" />
+                <stop offset="35%" stopColor="#1e1b4b" stopOpacity="0.9" />
+                <stop offset="70%" stopColor="#0b0b14" stopOpacity="0.98" />
+                <stop offset="100%" stopColor="#020306" stopOpacity="1" />
+              </radialGradient>
+            </defs>
+
+            {/* Dönen Odak Skalası (Dashed Ring) */}
+            <g style={{ transformOrigin: "50px 50px", animation: "lensDashedRotate 22s linear infinite" }}>
+              <circle cx="50" cy="50" r="46" fill="none" stroke={T.gold} strokeWidth="2" strokeDasharray="4 2.5" opacity="0.65" />
+            </g>
+
+            {/* 8 Bıçaklı Diyafram Kanatları (Açılıp Kapanma / Odak Arama Hareketi) */}
+            <g style={{ transformOrigin: "50px 50px", animation: "lensBladesAperture 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite" }}>
+              <path d="M 50 10 L 80 40 L 60 50 Z" fill={T.goldL} opacity="0.9" />
+              <path d="M 90 50 L 60 80 L 50 60 Z" fill={T.gold} opacity="0.85" />
+              <path d="M 50 90 L 20 60 L 40 50 Z" fill={T.goldL} opacity="0.9" />
+              <path d="M 10 50 L 40 20 L 50 40 Z" fill={T.gold} opacity="0.85" />
+              <path d="M 22 22 L 50 20 L 45 42 Z" fill={T.goldD} opacity="0.75" />
+              <path d="M 78 22 L 80 50 L 58 45 Z" fill={T.goldD} opacity="0.75" />
+              <path d="M 78 78 L 50 80 L 55 58 Z" fill={T.goldD} opacity="0.75" />
+              <path d="M 22 78 L 20 50 L 42 55 Z" fill={T.goldD} opacity="0.75" />
+            </g>
+
+            {/* ─── TAM ORTADAKİ MERCEK & GÖZBEBEĞİ (1-2 KEZ GİT-GEL ODAKLAMA) ─── */}
+            <g style={{
+              transformOrigin: "50px 50px",
+              animation: "lensCenterGitGel 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite"
+            }}>
+              {/* Çok Katmanlı Safir Lens Camı */}
+              <circle cx="50" cy="50" r="20" fill="url(#studyoLensCoreGrad)" />
+              {/* Diyafram İçi İnce Altın Halka */}
+              <circle cx="50" cy="50" r="19.5" fill="none" stroke={T.gold} strokeWidth="1" opacity="0.5" />
+              {/* Mercek Işık Yansıması & Parlaması (Glint) */}
+              <circle cx="44" cy="44" r="5" fill="#FFFFFF" style={{
+                transformOrigin: "44px 44px",
+                animation: "lensGlintFlash 3.6s ease-in-out infinite"
+              }} />
+              <circle cx="56" cy="56" r="2" fill="#38BDF8" opacity="0.7" />
+            </g>
           </svg>
         </div>
 
