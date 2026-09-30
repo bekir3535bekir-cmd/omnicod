@@ -1978,34 +1978,34 @@ export const LoginScreen = ({ onLogin, data }) => {
         pointerEvents: "none"
       }} />
 
-      {/* ─── KAMERA ODAKLAMA & DİYAFRAM ANİMASYONLARI ─── */}
+      {/* ─── KAMERA ODAKLAMA & DİYAFRAM ANİMASYONLARI (9.5s Döngü, 7s Sakin Bekleme) ─── */}
       <style>{`
         @keyframes lensCenterGitGel {
           0% {
             transform: scale(1);
             filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0.3));
           }
-          12% {
-            transform: scale(1.48);
+          5% {
+            transform: scale(1.45);
             filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.85));
           }
-          25% {
-            transform: scale(0.68);
+          10% {
+            transform: scale(0.72);
             filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
           }
-          38% {
-            transform: scale(1.36);
+          15% {
+            transform: scale(1.32);
             filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.75));
           }
-          50% {
-            transform: scale(0.85);
+          20% {
+            transform: scale(0.88);
             filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
           }
-          62% {
-            transform: scale(1.06);
+          24% {
+            transform: scale(1.05);
             filter: drop-shadow(0 0 9px rgba(245, 215, 127, 0.95));
           }
-          70%, 100% {
+          27%, 100% {
             transform: scale(1);
             filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0.3));
           }
@@ -2015,22 +2015,22 @@ export const LoginScreen = ({ onLogin, data }) => {
           0% {
             transform: rotate(0deg) scale(1);
           }
-          12% {
-            transform: rotate(15deg) scale(1.09);
+          5% {
+            transform: rotate(14deg) scale(1.08);
           }
-          25% {
-            transform: rotate(-12deg) scale(0.93);
+          10% {
+            transform: rotate(-10deg) scale(0.94);
           }
-          38% {
-            transform: rotate(11deg) scale(1.06);
+          15% {
+            transform: rotate(10deg) scale(1.05);
           }
-          50% {
-            transform: rotate(-6deg) scale(0.96);
+          20% {
+            transform: rotate(-6deg) scale(0.97);
           }
-          62% {
-            transform: rotate(2deg) scale(1.02);
+          24% {
+            transform: rotate(1deg) scale(1.02);
           }
-          70%, 100% {
+          27%, 100% {
             transform: rotate(0deg) scale(1);
           }
         }
@@ -2045,31 +2045,31 @@ export const LoginScreen = ({ onLogin, data }) => {
         }
 
         @keyframes lensGlintFlash {
-          0%, 55% {
+          0%, 20% {
             opacity: 0.8;
             transform: scale(1);
           }
-          62% {
+          24% {
             opacity: 1;
             transform: scale(1.6);
             filter: drop-shadow(0 0 6px #ffffff);
           }
-          70%, 100% {
+          27%, 100% {
             opacity: 0.85;
             transform: scale(1);
           }
         }
 
         @keyframes outerHaloBreath {
-          0%, 55% {
+          0%, 20% {
             box-shadow: 0 0 35px rgba(212, 175, 55, 0.38), inset 0 0 15px rgba(255,255,255,0.2);
             border-color: rgba(212, 175, 55, 0.8);
           }
-          62% {
+          24% {
             box-shadow: 0 0 55px rgba(245, 215, 127, 0.75), inset 0 0 22px rgba(255,255,255,0.45);
             border-color: #F5D77F;
           }
-          72%, 100% {
+          29%, 100% {
             box-shadow: 0 0 35px rgba(212, 175, 55, 0.38), inset 0 0 15px rgba(255,255,255,0.2);
             border-color: rgba(212, 175, 55, 0.8);
           }
@@ -2097,7 +2097,7 @@ export const LoginScreen = ({ onLogin, data }) => {
             borderRadius: "50%",
             background: "linear-gradient(135deg, rgba(245, 215, 127, 0.35) 0%, rgba(18, 18, 22, 0.8) 100%)",
             border: `2px solid ${T.gold}`,
-            animation: "outerHaloBreath 3.6s ease-in-out infinite"
+            animation: "outerHaloBreath 9.5s ease-in-out infinite"
           }} />
 
           {/* Diyafram Kanatları & Mercek SVG */}
@@ -2112,12 +2112,12 @@ export const LoginScreen = ({ onLogin, data }) => {
             </defs>
 
             {/* Dönen Odak Skalası (Dashed Ring) */}
-            <g style={{ transformOrigin: "50px 50px", animation: "lensDashedRotate 22s linear infinite" }}>
+            <g style={{ transformOrigin: "50px 50px", animation: "lensDashedRotate 28s linear infinite" }}>
               <circle cx="50" cy="50" r="46" fill="none" stroke={T.gold} strokeWidth="2" strokeDasharray="4 2.5" opacity="0.65" />
             </g>
 
             {/* 8 Bıçaklı Diyafram Kanatları (Açılıp Kapanma / Odak Arama Hareketi) */}
-            <g style={{ transformOrigin: "50px 50px", animation: "lensBladesAperture 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite" }}>
+            <g style={{ transformOrigin: "50px 50px", animation: "lensBladesAperture 9.5s cubic-bezier(0.4, 0, 0.2, 1) infinite" }}>
               <path d="M 50 10 L 80 40 L 60 50 Z" fill={T.goldL} opacity="0.9" />
               <path d="M 90 50 L 60 80 L 50 60 Z" fill={T.gold} opacity="0.85" />
               <path d="M 50 90 L 20 60 L 40 50 Z" fill={T.goldL} opacity="0.9" />
@@ -2131,7 +2131,7 @@ export const LoginScreen = ({ onLogin, data }) => {
             {/* ─── TAM ORTADAKİ MERCEK & GÖZBEBEĞİ (1-2 KEZ GİT-GEL ODAKLAMA) ─── */}
             <g style={{
               transformOrigin: "50px 50px",
-              animation: "lensCenterGitGel 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite"
+              animation: "lensCenterGitGel 9.5s cubic-bezier(0.4, 0, 0.2, 1) infinite"
             }}>
               {/* Çok Katmanlı Safir Lens Camı */}
               <circle cx="50" cy="50" r="20" fill="url(#studyoLensCoreGrad)" />
@@ -2140,7 +2140,7 @@ export const LoginScreen = ({ onLogin, data }) => {
               {/* Mercek Işık Yansıması & Parlaması (Glint) */}
               <circle cx="44" cy="44" r="5" fill="#FFFFFF" style={{
                 transformOrigin: "44px 44px",
-                animation: "lensGlintFlash 3.6s ease-in-out infinite"
+                animation: "lensGlintFlash 9.5s ease-in-out infinite"
               }} />
               <circle cx="56" cy="56" r="2" fill="#38BDF8" opacity="0.7" />
             </g>
