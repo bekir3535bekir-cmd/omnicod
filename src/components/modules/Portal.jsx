@@ -22,7 +22,7 @@ const DEMO_WEDDING_PHOTOS = [
 export const Portal = ({ data, setData }) => {
   const [selClient, setSelClient] = useState(() => data?.clients?.[0]?.id || "");
   const [quota, setQuota] = useState(40);
-  const [viewMode, setViewMode] = useState("tinder"); // "tinder" | "grid"
+  const [viewMode, setViewMode] = useState("grid"); // "grid" | "card"
   const [currentIdx, setCurrentIdx] = useState(0);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedNames, setCopiedNames] = useState(false);
@@ -301,7 +301,7 @@ export const Portal = ({ data, setData }) => {
               </div>
 
               <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.5, marginBottom: 12 }}>
-                Müşteriniz bu linke tıkladığında şifre girmeden doğrudan fotoğrafları Tinder tarzı tek tek inceleyip seçebilir:
+                Müşteriniz bu linke tıkladığında şifre girmeden doğrudan fotoğrafları tek tek veya ızgara modunda inceleyip seçebilir:
               </div>
 
               <div style={{
@@ -391,7 +391,7 @@ export const Portal = ({ data, setData }) => {
               </Card>
             )}
 
-            {/* MÜŞTERİ SEÇİM SİMÜLASYONU & TİNDER MODU */}
+            {/* MÜŞTERİ SEÇİM SİMÜLASYONU */}
             <div style={{ marginTop: 24 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>
@@ -399,34 +399,34 @@ export const Portal = ({ data, setData }) => {
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
                   <button
-                    onClick={() => setViewMode("tinder")}
-                    style={{
-                      background: viewMode === "tinder" ? T.gold : "rgba(255,255,255,0.06)",
-                      color: viewMode === "tinder" ? "#000" : T.text2,
-                      border: "none",
-                      borderRadius: 8,
-                      padding: "4px 10px",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      cursor: "pointer"
-                    }}
-                  >
-                    🔥 Tinder Modu
-                  </button>
-                  <button
                     onClick={() => setViewMode("grid")}
                     style={{
                       background: viewMode === "grid" ? T.gold : "rgba(255,255,255,0.06)",
                       color: viewMode === "grid" ? "#000" : T.text2,
                       border: "none",
                       borderRadius: 8,
-                      padding: "4px 10px",
+                      padding: "5px 10px",
                       fontSize: 11,
                       fontWeight: 700,
                       cursor: "pointer"
                     }}
                   >
-                    🖼️ Izgara Modu
+                    🖼️ Tüm Fotoğraflar ({clientPhotos.length})
+                  </button>
+                  <button
+                    onClick={() => setViewMode("card")}
+                    style={{
+                      background: viewMode === "card" ? T.gold : "rgba(255,255,255,0.06)",
+                      color: viewMode === "card" ? "#000" : T.text2,
+                      border: "none",
+                      borderRadius: 8,
+                      padding: "5px 10px",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: "pointer"
+                    }}
+                  >
+                    🎴 Tek Tek İncele
                   </button>
                 </div>
               </div>
@@ -435,8 +435,8 @@ export const Portal = ({ data, setData }) => {
                 <div style={{ textAlign: "center", padding: "30px 20px", background: T.card, borderRadius: 18, color: T.text3, fontSize: 13 }}>
                   Yukarıdaki butonlardan fotoğraf yükleyin veya "Örnek 10 Kare Ekle" butonuna basın.
                 </div>
-              ) : viewMode === "tinder" ? (
-                /* TINDER KART MODU */
+              ) : viewMode === "card" ? (
+                /* TEK TEK İNCELEME KART MODU */
                 <div style={{
                   borderRadius: 24,
                   overflow: "hidden",
@@ -472,16 +472,18 @@ export const Portal = ({ data, setData }) => {
                             right: 12,
                             display: "flex",
                             justifyContent: "space-between",
-                            alignItems: "center"
+                            alignItems: "center",
+                            zIndex: 2
                           }}>
                             <span style={{
-                              background: "rgba(0,0,0,0.65)",
+                              background: "rgba(0,0,0,0.7)",
                               backdropFilter: "blur(10px)",
                               color: "#fff",
-                              fontSize: 11,
+                              fontSize: 12,
                               fontWeight: 700,
                               padding: "4px 10px",
-                              borderRadius: 10
+                              borderRadius: 10,
+                              border: "1px solid rgba(255,255,255,0.15)"
                             }}>
                               {currentIdx + 1} / {clientPhotos.length}
                             </span>
@@ -493,7 +495,8 @@ export const Portal = ({ data, setData }) => {
                                 fontSize: 11,
                                 fontWeight: 800,
                                 padding: "4px 10px",
-                                borderRadius: 10
+                                borderRadius: 10,
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.5)"
                               }}>
                                 ⭐ KAPAK FOTOĞRAFI
                               </span>
@@ -504,12 +507,71 @@ export const Portal = ({ data, setData }) => {
                                 fontSize: 11,
                                 fontWeight: 800,
                                 padding: "4px 10px",
-                                borderRadius: 10
+                                borderRadius: 10,
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.5)"
                               }}>
                                 ❤️ ALBÜME SEÇİLDİ
                               </span>
                             ) : null}
                           </div>
+
+                          {/* Sol Ok (Önceki) */}
+                          {clientPhotos.length > 1 && (
+                            <button
+                              onClick={() => setCurrentIdx(prev => (prev - 1 + clientPhotos.length) % clientPhotos.length)}
+                              title="Önceki Fotoğraf"
+                              style={{
+                                position: "absolute",
+                                top: "50%",
+                                left: 10,
+                                transform: "translateY(-50%)",
+                                width: 40,
+                                height: 40,
+                                borderRadius: "50%",
+                                background: "rgba(0,0,0,0.65)",
+                                border: "1px solid rgba(255,255,255,0.25)",
+                                color: "#fff",
+                                fontSize: 22,
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                zIndex: 3,
+                                backdropFilter: "blur(4px)"
+                              }}
+                            >
+                              ‹
+                            </button>
+                          )}
+
+                          {/* Sağ Ok (Sonraki) */}
+                          {clientPhotos.length > 1 && (
+                            <button
+                              onClick={() => setCurrentIdx(prev => (prev + 1) % clientPhotos.length)}
+                              title="Sonraki Fotoğraf"
+                              style={{
+                                position: "absolute",
+                                top: "50%",
+                                right: 10,
+                                transform: "translateY(-50%)",
+                                width: 40,
+                                height: 40,
+                                borderRadius: "50%",
+                                background: "rgba(0,0,0,0.65)",
+                                border: "1px solid rgba(255,255,255,0.25)",
+                                color: "#fff",
+                                fontSize: 22,
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                zIndex: 3,
+                                backdropFilter: "blur(4px)"
+                              }}
+                            >
+                              ›
+                            </button>
+                          )}
 
                           <div style={{
                             position: "absolute",
@@ -527,80 +589,152 @@ export const Portal = ({ data, setData }) => {
                           </div>
                         </div>
 
-                        {/* Tinder Eylem Butonları */}
+                        {/* Navigasyon & Eylem Butonları */}
                         <div style={{
-                          padding: "16px 20px 20px",
+                          padding: "14px 16px",
                           display: "flex",
-                          justifyContent: "space-around",
-                          alignItems: "center"
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: 8,
+                          background: "rgba(255,255,255,0.02)",
+                          borderTop: "1px solid rgba(255,255,255,0.06)"
                         }}>
-                          {/* Pas Geç */}
                           <button
-                            onClick={() => setCurrentIdx(prev => (prev + 1) % clientPhotos.length)}
-                            title="Pas Geç (Sonraki)"
+                            onClick={() => setCurrentIdx(prev => (prev - 1 + clientPhotos.length) % clientPhotos.length)}
+                            disabled={clientPhotos.length <= 1}
                             style={{
-                              width: 54,
-                              height: 54,
-                              borderRadius: 99,
-                              background: "rgba(255,255,255,0.06)",
-                              border: "1.5px solid rgba(255,255,255,0.15)",
+                              background: "rgba(255,255,255,0.08)",
+                              border: "1px solid rgba(255,255,255,0.15)",
                               color: "#fff",
-                              fontSize: 22,
+                              borderRadius: 10,
+                              padding: "9px 12px",
+                              fontSize: 12,
+                              fontWeight: 600,
                               cursor: "pointer",
                               display: "flex",
                               alignItems: "center",
-                              justifyContent: "center"
+                              gap: 4,
+                              opacity: clientPhotos.length <= 1 ? 0.4 : 1
                             }}
                           >
-                            ✕
+                            ← Önceki
                           </button>
 
-                          {/* Kapak Yap */}
                           <button
                             onClick={() => setCover(currentPhoto.id)}
                             title="Kapak Fotoğrafı Yap"
                             style={{
-                              width: 50,
-                              height: 50,
-                              borderRadius: 99,
-                              background: isCover ? T.gold : "rgba(255,255,255,0.06)",
+                              background: isCover ? T.gold : "rgba(255,255,255,0.08)",
                               border: `1.5px solid ${isCover ? T.goldL : "rgba(255,255,255,0.15)"}`,
                               color: isCover ? "#000" : T.goldL,
-                              fontSize: 20,
+                              borderRadius: 10,
+                              padding: "9px 12px",
+                              fontSize: 12,
+                              fontWeight: 700,
                               cursor: "pointer",
                               display: "flex",
                               alignItems: "center",
-                              justifyContent: "center"
+                              gap: 4
                             }}
                           >
-                            ⭐
+                            {isCover ? "⭐ Kapak" : "☆ Kapak Yap"}
                           </button>
 
-                          {/* Kalp / Seç */}
                           <button
                             onClick={() => {
                               toggleSelect(currentPhoto.id);
-                              setCurrentIdx(prev => (prev + 1) % clientPhotos.length);
                             }}
-                            title="Albüme Seç"
+                            title={isSelected ? "Albüme Seçildi" : "Albüme Seç"}
                             style={{
-                              width: 64,
-                              height: 64,
-                              borderRadius: 99,
                               background: isSelected ? "linear-gradient(135deg, #e91e63, #c2185b)" : "rgba(255,255,255,0.08)",
-                              border: `2px solid ${isSelected ? "#ff4081" : "rgba(255,255,255,0.2)"}`,
-                              color: isSelected ? "#fff" : "#ff4081",
-                              fontSize: 28,
+                              border: `1.5px solid ${isSelected ? "#ff4081" : "rgba(255,255,255,0.2)"}`,
+                              color: isSelected ? "#fff" : "#ff80ab",
+                              borderRadius: 10,
+                              padding: "9px 14px",
+                              fontSize: 12,
+                              fontWeight: 700,
                               cursor: "pointer",
                               display: "flex",
                               alignItems: "center",
-                              justifyContent: "center",
-                              boxShadow: isSelected ? "0 0 25px rgba(233, 30, 99, 0.5)" : "none"
+                              gap: 6,
+                              boxShadow: isSelected ? "0 0 16px rgba(233, 30, 99, 0.4)" : "none"
                             }}
                           >
-                            ❤️
+                            {isSelected ? "❤️ Seçildi" : "🤍 Albüme Seç"}
+                          </button>
+
+                          <button
+                            onClick={() => setCurrentIdx(prev => (prev + 1) % clientPhotos.length)}
+                            disabled={clientPhotos.length <= 1}
+                            style={{
+                              background: "rgba(255,255,255,0.08)",
+                              border: "1px solid rgba(255,255,255,0.15)",
+                              color: "#fff",
+                              borderRadius: 10,
+                              padding: "9px 12px",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
+                              opacity: clientPhotos.length <= 1 ? 0.4 : 1
+                            }}
+                          >
+                            Sonraki →
                           </button>
                         </div>
+
+                        {/* Filmstrip Alt Şerit */}
+                        {clientPhotos.length > 1 && (
+                          <div style={{
+                            display: "flex",
+                            gap: 6,
+                            padding: "10px 14px",
+                            overflowX: "auto",
+                            background: "rgba(0,0,0,0.35)",
+                            borderTop: "1px solid rgba(255,255,255,0.04)"
+                          }}>
+                            {clientPhotos.map((p, idx) => {
+                              const isCurActive = idx === currentIdx;
+                              const pSel = selections[p.id] === "selected" || selections[p.id] === "cover";
+                              const pCov = selections[p.id] === "cover";
+
+                              return (
+                                <div
+                                  key={p.id}
+                                  onClick={() => setCurrentIdx(idx)}
+                                  style={{
+                                    width: 44,
+                                    height: 44,
+                                    borderRadius: 8,
+                                    overflow: "hidden",
+                                    flexShrink: 0,
+                                    cursor: "pointer",
+                                    position: "relative",
+                                    border: isCurActive
+                                      ? `2px solid ${T.gold}`
+                                      : pCov
+                                      ? `2px solid ${T.goldL}`
+                                      : pSel
+                                      ? "2px solid #e91e63"
+                                      : "1px solid rgba(255,255,255,0.12)",
+                                    opacity: isCurActive ? 1 : 0.65,
+                                    transition: "all 0.2s ease"
+                                  }}
+                                >
+                                  <img src={p.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                  {pCov && (
+                                    <span style={{ position: "absolute", top: 1, left: 1, fontSize: 8 }}>⭐</span>
+                                  )}
+                                  {!pCov && pSel && (
+                                    <span style={{ position: "absolute", top: 1, left: 1, fontSize: 8 }}>❤️</span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     );
                   })()}

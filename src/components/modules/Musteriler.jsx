@@ -1187,14 +1187,14 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
                       boxShadow: "0 4px 16px rgba(233,30,99,0.35)"
                     }}
                   >
-                    💖 Tinder Tarzı Seçimi Başlat (Müşteri Gözünden)
+                    ✨ Fotoğraf Seçimini Başlat (Müşteri Önizleme)
                   </button>
 
                   <div style={{ display:"flex", gap:8 }}>
                     <button
                       onClick={() => {
                         const ph = detail.phone ? detail.phone.replace(/\D/g,"").replace(/^0/,"") : "";
-                        const msg = `Merhaba ${detail.name.split(" ")[0]} Hanım/Bey 🌸\n\n${detail.date ? fmtDate(detail.date) + " tarihli " : ""}${detail.type} çekiminizin fotoğrafları hazırlandı! 📸✨\n\nAşağıdaki bağlantıdan fotoğraflarınızı inceleyebilir, beğendiklerinizi albümünüz için kalp ikonuna basarak (Tinder tarzı kaydırarak) seçebilirsiniz:\n\n👉 ${proofUrl}\n\nKeyifli seçimler dileriz! 🙏\nOmniCod StudyoApp`;
+                        const msg = `Merhaba ${detail.name.split(" ")[0]} Hanım/Bey 🌸\n\n${detail.date ? fmtDate(detail.date) + " tarihli " : ""}${detail.type} çekiminizin fotoğrafları hazırlandı! 📸✨\n\nAşağıdaki bağlantıdan fotoğraflarınızı inceleyebilir, beğendiklerinizi albümünüz için kolayca seçebilirsiniz:\n\n👉 ${proofUrl}\n\nKeyifli seçimler dileriz! 🙏\nOmniCod StudyoApp`;
                         if (ph) {
                           window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`,"_blank");
                         } else {
@@ -1674,7 +1674,7 @@ OmniCod 📸`;
               <span style={{ fontSize: 20 }}>💖</span>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: T.gold }}>Müşteri Portalı Canlı Önizleme</div>
-                <div style={{ fontSize: 11, color: T.text3 }}>{detail.name} — Tinder Tarzı Fotoğraf Seçimi</div>
+                <div style={{ fontSize: 11, color: T.text3 }}>{detail.name} — Fotoğraf Seçim Sistemi</div>
               </div>
             </div>
             <button

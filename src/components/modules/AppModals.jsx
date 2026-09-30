@@ -1061,13 +1061,14 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
     } catch(e) { return {}; }
   });
   const [proofIdx, setProofIdx] = useState(0);
-  const [proofMode, setProofMode] = useState("tinder"); // "tinder" | "grid"
+  const [proofMode, setProofMode] = useState("grid"); // "grid" | "card"
   const [sentSuccess, setSentSuccess] = useState(false);
   const quota = 40;
 
   const toggleSelect = (id) => {
     setSelections(prev => {
-      const next = { ...prev, [id]: prev[id] === "selected" ? null : "selected" };
+      const isCurrentlySelected = prev[id] === "selected" || prev[id] === "cover";
+      const next = { ...prev, [id]: isCurrentlySelected ? null : "selected" };
       try { localStorage.setItem(clientSelectionsKey, JSON.stringify(next)); } catch(e) {}
       return next;
     });
@@ -1283,34 +1284,34 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
             </div>
             <div style={{ display: "flex", gap: 6 }}>
               <button
-                onClick={() => setProofMode("tinder")}
-                style={{
-                  background: proofMode === "tinder" ? T.gold : "rgba(255,255,255,0.06)",
-                  color: proofMode === "tinder" ? "#000" : T.text2,
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "4px 8px",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  cursor: "pointer"
-                }}
-              >
-                🔥 Tinder
-              </button>
-              <button
                 onClick={() => setProofMode("grid")}
                 style={{
                   background: proofMode === "grid" ? T.gold : "rgba(255,255,255,0.06)",
                   color: proofMode === "grid" ? "#000" : T.text2,
                   border: "none",
                   borderRadius: 8,
-                  padding: "4px 8px",
+                  padding: "5px 10px",
                   fontSize: 11,
                   fontWeight: 700,
                   cursor: "pointer"
                 }}
               >
-                🖼️ Izgara
+                🖼️ Tüm Fotoğraflar ({clientPhotos.length})
+              </button>
+              <button
+                onClick={() => setProofMode("card")}
+                style={{
+                  background: proofMode === "card" ? T.gold : "rgba(255,255,255,0.06)",
+                  color: proofMode === "card" ? "#000" : T.text2,
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "5px 10px",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: "pointer"
+                }}
+              >
+                🎴 Tek Tek İncele
               </button>
             </div>
           </div>
@@ -1337,8 +1338,8 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
             <div style={{ textAlign: "center", padding: "30px 10px", color: T.text3, fontSize: 13 }}>
               📸 Fotoğraflarınız hazırlanıyor... Stüdyomuz fotoğrafları yüklediğinde burada görebileceksiniz!
             </div>
-          ) : proofMode === "tinder" ? (
-            /* TINDER KART GÖRÜNÜMÜ */
+          ) : proofMode === "card" ? (
+            /* TEK TEK İNCELEME KART MODU */
             <div style={{
               borderRadius: 20,
               overflow: "hidden",
@@ -1353,7 +1354,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
 
                 return (
                   <div>
-                    <div style={{ position: "relative", width: "100%", height: 320, background: "#000" }}>
+                    <div style={{ position: "relative", width: "100%", height: 350, background: "#000" }}>
                       <img
                         src={cur.url}
                         alt={cur.title}
@@ -1368,16 +1369,18 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
                         right: 10,
                         display: "flex",
                         justifyContent: "space-between",
-                        alignItems: "center"
+                        alignItems: "center",
+                        zIndex: 2
                       }}>
                         <span style={{
-                          background: "rgba(0,0,0,0.65)",
+                          background: "rgba(0,0,0,0.7)",
                           backdropFilter: "blur(8px)",
                           color: "#fff",
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: 700,
-                          padding: "3px 8px",
-                          borderRadius: 8
+                          padding: "4px 10px",
+                          borderRadius: 8,
+                          border: "1px solid rgba(255,255,255,0.15)"
                         }}>
                           {proofIdx + 1} / {clientPhotos.length}
                         </span>
@@ -1386,10 +1389,11 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
                           <span style={{
                             background: T.gold,
                             color: "#000",
-                            fontSize: 10,
+                            fontSize: 11,
                             fontWeight: 800,
-                            padding: "3px 8px",
-                            borderRadius: 8
+                            padding: "4px 10px",
+                            borderRadius: 8,
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.5)"
                           }}>
                             ⭐ KAPAK SEÇİLDİ
                           </span>
@@ -1397,24 +1401,83 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
                           <span style={{
                             background: T.greenL,
                             color: "#000",
-                            fontSize: 10,
+                            fontSize: 11,
                             fontWeight: 800,
-                            padding: "3px 8px",
-                            borderRadius: 8
+                            padding: "4px 10px",
+                            borderRadius: 8,
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.5)"
                           }}>
                             ❤️ ALBÜME SEÇİLDİ
                           </span>
                         ) : null}
                       </div>
 
+                      {/* Sol Ok Butonu (Önceki) */}
+                      {clientPhotos.length > 1 && (
+                        <button
+                          onClick={() => setProofIdx(prev => (prev - 1 + clientPhotos.length) % clientPhotos.length)}
+                          title="Önceki Fotoğraf"
+                          style={{
+                            position: "absolute",
+                            top: "50%",
+                            left: 10,
+                            transform: "translateY(-50%)",
+                            width: 38,
+                            height: 38,
+                            borderRadius: "50%",
+                            background: "rgba(0,0,0,0.65)",
+                            border: "1px solid rgba(255,255,255,0.25)",
+                            color: "#fff",
+                            fontSize: 20,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            zIndex: 3,
+                            backdropFilter: "blur(4px)"
+                          }}
+                        >
+                          ‹
+                        </button>
+                      )}
+
+                      {/* Sağ Ok Butonu (Sonraki) */}
+                      {clientPhotos.length > 1 && (
+                        <button
+                          onClick={() => setProofIdx(prev => (prev + 1) % clientPhotos.length)}
+                          title="Sonraki Fotoğraf"
+                          style={{
+                            position: "absolute",
+                            top: "50%",
+                            right: 10,
+                            transform: "translateY(-50%)",
+                            width: 38,
+                            height: 38,
+                            borderRadius: "50%",
+                            background: "rgba(0,0,0,0.65)",
+                            border: "1px solid rgba(255,255,255,0.25)",
+                            color: "#fff",
+                            fontSize: 20,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            zIndex: 3,
+                            backdropFilter: "blur(4px)"
+                          }}
+                        >
+                          ›
+                        </button>
+                      )}
+
                       <div style={{
                         position: "absolute",
                         bottom: 8,
                         left: 10,
                         right: 10,
-                        background: "rgba(0,0,0,0.6)",
-                        padding: "4px 8px",
-                        borderRadius: 6,
+                        background: "rgba(0,0,0,0.7)",
+                        padding: "5px 10px",
+                        borderRadius: 8,
                         color: "#fff",
                         fontSize: 11,
                         overflow: "hidden",
@@ -1425,77 +1488,152 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
                       </div>
                     </div>
 
-                    {/* Tinder Eylem Butonları */}
+                    {/* Navigasyon & Eylem Butonları */}
                     <div style={{
-                      padding: "14px 16px",
+                      padding: "12px 14px",
                       display: "flex",
-                      justifyContent: "space-around",
-                      alignItems: "center"
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 8,
+                      background: "rgba(255,255,255,0.02)",
+                      borderTop: "1px solid rgba(255,255,255,0.06)"
                     }}>
                       <button
-                        onClick={() => setProofIdx(prev => (prev + 1) % clientPhotos.length)}
-                        title="Pas Geç (Sonraki)"
+                        onClick={() => setProofIdx(prev => (prev - 1 + clientPhotos.length) % clientPhotos.length)}
+                        disabled={clientPhotos.length <= 1}
                         style={{
-                          width: 48,
-                          height: 48,
-                          borderRadius: 99,
-                          background: "rgba(255,255,255,0.06)",
+                          background: "rgba(255,255,255,0.08)",
                           border: "1px solid rgba(255,255,255,0.15)",
                           color: "#fff",
-                          fontSize: 18,
+                          borderRadius: 10,
+                          padding: "9px 12px",
+                          fontSize: 12,
+                          fontWeight: 600,
                           cursor: "pointer",
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "center"
+                          gap: 4,
+                          opacity: clientPhotos.length <= 1 ? 0.4 : 1
                         }}
                       >
-                        ✕
+                        ← Önceki
                       </button>
 
                       <button
                         onClick={() => toggleCover(cur.id)}
                         title="Kapak Fotoğrafı Yap"
                         style={{
-                          width: 46,
-                          height: 46,
-                          borderRadius: 99,
-                          background: isCov ? T.gold : "rgba(255,255,255,0.06)",
+                          background: isCov ? T.gold : "rgba(255,255,255,0.08)",
                           border: `1.5px solid ${isCov ? T.goldL : "rgba(255,255,255,0.15)"}`,
                           color: isCov ? "#000" : T.goldL,
-                          fontSize: 18,
+                          borderRadius: 10,
+                          padding: "9px 12px",
+                          fontSize: 12,
+                          fontWeight: 700,
                           cursor: "pointer",
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "center"
+                          gap: 4
                         }}
                       >
-                        ⭐
+                        {isCov ? "⭐ Kapak" : "☆ Kapak Yap"}
                       </button>
 
                       <button
                         onClick={() => {
                           toggleSelect(cur.id);
-                          setProofIdx(prev => (prev + 1) % clientPhotos.length);
                         }}
-                        title="Albüme Ekle"
+                        title={isSel ? "Albüme Seçildi" : "Albüme Seç"}
                         style={{
-                          width: 56,
-                          height: 56,
-                          borderRadius: 99,
                           background: isSel ? "linear-gradient(135deg, #e91e63, #c2185b)" : "rgba(255,255,255,0.08)",
-                          border: `2px solid ${isSel ? "#ff4081" : "rgba(255,255,255,0.2)"}`,
-                          color: isSel ? "#fff" : "#ff4081",
-                          fontSize: 24,
+                          border: `1.5px solid ${isSel ? "#ff4081" : "rgba(255,255,255,0.2)"}`,
+                          color: isSel ? "#fff" : "#ff80ab",
+                          borderRadius: 10,
+                          padding: "9px 14px",
+                          fontSize: 12,
+                          fontWeight: 700,
                           cursor: "pointer",
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "center",
-                          boxShadow: isSel ? "0 0 20px rgba(233, 30, 99, 0.5)" : "none"
+                          gap: 6,
+                          boxShadow: isSel ? "0 0 16px rgba(233, 30, 99, 0.4)" : "none"
                         }}
                       >
-                        ❤️
+                        {isSel ? "❤️ Seçildi" : "🤍 Albüme Seç"}
+                      </button>
+
+                      <button
+                        onClick={() => setProofIdx(prev => (prev + 1) % clientPhotos.length)}
+                        disabled={clientPhotos.length <= 1}
+                        style={{
+                          background: "rgba(255,255,255,0.08)",
+                          border: "1px solid rgba(255,255,255,0.15)",
+                          color: "#fff",
+                          borderRadius: 10,
+                          padding: "9px 12px",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          opacity: clientPhotos.length <= 1 ? 0.4 : 1
+                        }}
+                      >
+                        Sonraki →
                       </button>
                     </div>
+
+                    {/* Alt Şerit (Küçük Resimler - Filmstrip) */}
+                    {clientPhotos.length > 1 && (
+                      <div style={{
+                        display: "flex",
+                        gap: 6,
+                        padding: "10px 14px",
+                        overflowX: "auto",
+                        background: "rgba(0,0,0,0.35)",
+                        borderTop: "1px solid rgba(255,255,255,0.04)"
+                      }}>
+                        {clientPhotos.map((p, idx) => {
+                          const isCurActive = idx === proofIdx;
+                          const pSel = selections[p.id] === "selected" || selections[p.id] === "cover";
+                          const pCov = selections[p.id] === "cover";
+
+                          return (
+                            <div
+                              key={p.id}
+                              onClick={() => setProofIdx(idx)}
+                              style={{
+                                width: 44,
+                                height: 44,
+                                borderRadius: 8,
+                                overflow: "hidden",
+                                flexShrink: 0,
+                                cursor: "pointer",
+                                position: "relative",
+                                border: isCurActive
+                                  ? `2px solid ${T.gold}`
+                                  : pCov
+                                  ? `2px solid ${T.goldL}`
+                                  : pSel
+                                  ? "2px solid #e91e63"
+                                  : "1px solid rgba(255,255,255,0.12)",
+                                opacity: isCurActive ? 1 : 0.65,
+                                transition: "all 0.2s ease"
+                              }}
+                            >
+                              <img src={p.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              {pCov && (
+                                <span style={{ position: "absolute", top: 1, left: 1, fontSize: 8 }}>⭐</span>
+                              )}
+                              {!pCov && pSel && (
+                                <span style={{ position: "absolute", top: 1, left: 1, fontSize: 8 }}>❤️</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
