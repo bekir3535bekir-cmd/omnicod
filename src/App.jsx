@@ -34,7 +34,14 @@ import { SesliAsistan } from "./components/modules/SesliAsistan";
 import { HizliNot, HizliArama, GeceModu, IsAsistani, NotDefteri, MusteriPortali, LoginScreen } from "./components/modules/AppModals";
 
 export default function App() {
-  const [data, setData]       = useState(() => getLocalData() || INIT);
+  const [data, setData]       = useState(() => {
+    const local = getLocalData();
+    if (!local) return INIT;
+    if (!local.team || local.team.length === 0) {
+      return { ...local, team: INIT.team };
+    }
+    return local;
+  });
   const [active, setActive]   = useState("dashboard");
   const [plan, setPlanState]  = useState(() => getPlan());
   const [darkMode, setDarkMode] = useState(true);
@@ -95,6 +102,9 @@ export default function App() {
       if (IS_DEV) {
         const local = getLocalData();
         if (local) {
+          if (!local.team || local.team.length === 0) {
+            local.team = INIT.team;
+          }
           setData(local);
         }
         setDbReady(true);
@@ -291,13 +301,13 @@ export default function App() {
   const isFullAccess = plan === "pro" || plan === "trial";
 
   const SCREENS = {
-    dashboard:   <Dashboard     data={data} setActive={setActive} role={role} plan={plan}/>,
+    dashboard:   <Dashboard     data={data} setData={setData} setActive={setActive} role={role} plan={plan}/>,
     ajanda:      <Ajanda        data={data} setData={setData} role={role} plan={plan} setActive={setActive}/>,
     musteriler:  <Musteriler    data={data} setData={setData} role={role} plan={plan} setActive={setActive} initialClientId={pendingClientId} onConsumeInitialClientId={()=>setPendingClientId(null)}/>,
-    muhasebe:    role==="admin" ? <Muhasebe data={data} setData={setData} role={role}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>,
+    muhasebe:    role==="admin" ? <Muhasebe data={data} setData={setData} role={role}/> : <Dashboard data={data} setData={setData} setActive={setActive} role={role} plan={plan}/>,
     more:        <MoreMenu      setActive={setActive} darkMode={darkMode} setDarkMode={setDarkMode} role={role} plan={plan} onLogout={handleLogout}/>,
     takvim:      <Takvim        data={data} setActive={setActive} setDetailClientId={setPendingClientId}/>,
-    paketler:    role==="admin" ? <Paketler data={data} setData={setData} role={role}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>,
+    paketler:    role==="admin" ? <Paketler data={data} setData={setData} role={role}/> : <Dashboard data={data} setData={setData} setActive={setActive} role={role} plan={plan}/>,
     sablonlar:   <Sablonlar     data={data}/>,
     sozlesmeler: !isFullAccess ? <ProGate proOnly featureLabel="Sözleşmeler" onUpgrade={()=>setActive("planyonetimi")}/> : (role==="admin" ? <Sozlesmeler data={data} setData={setData} role={role}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>),
     mesajlar:    <Mesajlar      data={data} setData={setData} role={role}/>,

@@ -18,7 +18,9 @@ export const INIT = {
   reminders: [],
   contracts: [],
   messages:  [],
-  team:      [],
+  team:      [
+    { id: "team-1", name: "Ayşe Yılmaz", role: "Fotoğrafçı / Asistan", phone: "0532 100 20 30", color: "#3A7EC4", salary: 0, totalEarned: 0, totalPaid: 0 }
+  ],
   shifts:    [],
   gallery:   [],
   quotes:    [],

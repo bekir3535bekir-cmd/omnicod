@@ -17,7 +17,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
   const [statusFilter, setStatusFilter] = useState("aktif");
   const [showCekim, setShowCekim] = useState(false);
   const [cekimApt,  setCekimApt]  = useState(null);
-  const F = { clientName:"", date:"", time:"", location:"", type:"Düğün", package:"Bronz Paket", notes:"", reminderDays:3, status:"onaylı", totalAmount:"", kapora:"", extraDates:[] };
+  const F = { clientName:"", date:"", time:"14:00", location:"", type:"Düğün", package:"Bronz Paket", notes:"", reminderDays:3, status:"onaylı", totalAmount:"", kapora:"", extraDates:[], staffName:"", equipmentReady:false, equipmentReadyBy:"", equipmentReadyAt:"" };
   const [form, setForm] = useState(F);
   const f = k => v => setForm(p=>({...p,[k]:v}));
   const [editApt, setEditApt] = useState(null);
@@ -138,7 +138,8 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
     setDetailId(null);
     setForm({ clientName:apt.clientName, date:"", time:apt.time||"", location:apt.location||"",
       type:apt.type, package:apt.package, notes:apt.notes||"", reminderDays:3,
-      status:"bekliyor", totalAmount:apt.totalAmount||"", kapora:"", extraDates:[] });
+      status:"bekliyor", totalAmount:apt.totalAmount||"", kapora:"", extraDates:[],
+      staffName:apt.staffName||"", equipmentReady:false, equipmentReadyBy:"", equipmentReadyAt:"" });
     setShowAdd(true);
   };
 
@@ -229,6 +230,17 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
                 </div>
                 <Pill label={a.package} color={pkgColor}/>
               </div>
+              {a.staffName && (
+                <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: T.text3 }}>
+                  <span>👤 Görevli:</span>
+                  <span style={{ color: T.text, fontWeight: 600 }}>{a.staffName}</span>
+                  {a.equipmentReady ? (
+                    <span style={{ color: "#4ade80", fontWeight: 700, marginLeft: 4 }}>• Ekipman Hazır ✅</span>
+                  ) : (
+                    <span style={{ color: "#fbbf24", fontWeight: 500, marginLeft: 4 }}>• Ekipman Bekleniyor 🎒</span>
+                  )}
+                </div>
+              )}
               {a.notes && <div style={{ marginTop:10, background:T.card2, borderRadius:10, padding:"8px 12px", fontSize:12, color:T.text2 }}>💬 {a.notes}</div>}
               {a.date && <WeatherCard date={a.date} location={a.location||""}/>}
               {isAdmin && (() => {
@@ -348,6 +360,47 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
               </div>
             );
           })()}
+
+          {/* Görevli Personel ve Ekipman Hazırlık Durumu */}
+          <div style={{
+            background: detail.equipmentReady ? "rgba(34, 197, 94, 0.08)" : "rgba(255, 255, 255, 0.03)",
+            border: `1px solid ${detail.equipmentReady ? "rgba(34, 197, 94, 0.3)" : T.border}`,
+            borderRadius: 14,
+            padding: "12px 14px",
+            marginBottom: 16
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 18 }}>👤</span>
+                <div>
+                  <div style={{ fontSize: 10, color: T.text3, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.5px" }}>
+                    Görevli Personel
+                  </div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: T.text, marginTop: 1 }}>
+                    {detail.staffName || "Henüz atanmadı"}
+                  </div>
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 10, color: T.text3, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.5px" }}>
+                  Ekipman Durumu
+                </div>
+                <div style={{
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  color: detail.equipmentReady ? "#4ade80" : "#fbbf24",
+                  marginTop: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  justifyContent: "flex-end"
+                }}>
+                  {detail.equipmentReady ? `✅ Hazırlandı (${detail.equipmentReadyBy || detail.staffName || "Personel"})` : "⏳ Hazırlık Bekleniyor"}
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div style={{ marginBottom:16 }}>
             <div style={{ fontSize:12, color:T.text3, marginBottom:10 }}>Durum Değiştir</div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
@@ -471,6 +524,54 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
               <Field label="Paket" value={editApt.package} onChange={v=>setEditApt(p=>({...p,package:v}))} options={data.packages.map(p=>p.name)}/>
             </div>
             <Field label="Notlar" value={editApt.notes||""} onChange={v=>setEditApt(p=>({...p,notes:v}))} textarea placeholder="Özel istekler..."/>
+
+            {/* Görevli Personel (Ekipman Kontrolü Atanacak Kişi) */}
+            <div>
+              <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:6, display:"flex", alignItems:"center", gap:6 }}>
+                <span>👤</span> Görevli Personel / Fotoğrafçı
+                <span style={{ fontSize:10, color:T.text3, fontWeight:400 }}>(Ekipman kontrolü bu personele iletilir)</span>
+              </div>
+              {data.team && data.team.length > 0 && (
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
+                  {data.team.map(member => (
+                    <button
+                      key={member.id}
+                      type="button"
+                      onClick={() => setEditApt(p => ({ ...p, staffName: member.name }))}
+                      style={{
+                        background: editApt.staffName === member.name ? T.gold + "33" : T.card2,
+                        border: `1px solid ${editApt.staffName === member.name ? T.gold : T.border}`,
+                        borderRadius: 20,
+                        padding: "5px 12px",
+                        fontSize: 12,
+                        color: editApt.staffName === member.name ? T.goldL : T.text2,
+                        cursor: "pointer",
+                        fontWeight: editApt.staffName === member.name ? 600 : 400
+                      }}
+                    >
+                      {member.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <input
+                value={editApt.staffName || ""}
+                onChange={e => setEditApt(p => ({ ...p, staffName: e.target.value }))}
+                placeholder="Örn: Ayşe Yılmaz, Mehmet..."
+                style={{
+                  width: "100%",
+                  background: T.card2,
+                  border: `1px solid ${T.border}`,
+                  borderRadius: 12,
+                  padding: "12px 14px",
+                  color: T.text,
+                  fontSize: 14,
+                  outline: "none",
+                  boxSizing: "border-box"
+                }}
+              />
+            </div>
+
             <GoldButton label="Değişiklikleri Kaydet" icon="check" full onClick={()=>{
               if(!editApt.clientName||!editApt.date) return;
               const finalExtraDates = (editApt.extraDates||[]).filter(Boolean);
@@ -612,6 +713,53 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
               <Field label="Paket" value={form.package} onChange={f("package")} options={data.packages.map(p=>p.name)}/>
             </div>
             <Field label="Notlar" value={form.notes} onChange={f("notes")} textarea placeholder="Özel istekler, dikkat edilecekler..."/>
+
+            {/* Görevli Personel (Ekipman Kontrolü Atanacak Kişi) */}
+            <div>
+              <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:6, display:"flex", alignItems:"center", gap:6 }}>
+                <span>👤</span> Görevli Personel / Fotoğrafçı
+                <span style={{ fontSize:10, color:T.text3, fontWeight:400 }}>(Ekipman kontrolü bu personele iletilir)</span>
+              </div>
+              {data.team && data.team.length > 0 && (
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
+                  {data.team.map(member => (
+                    <button
+                      key={member.id}
+                      type="button"
+                      onClick={() => setForm(p => ({ ...p, staffName: member.name }))}
+                      style={{
+                        background: form.staffName === member.name ? T.gold + "33" : T.card2,
+                        border: `1px solid ${form.staffName === member.name ? T.gold : T.border}`,
+                        borderRadius: 20,
+                        padding: "5px 12px",
+                        fontSize: 12,
+                        color: form.staffName === member.name ? T.goldL : T.text2,
+                        cursor: "pointer",
+                        fontWeight: form.staffName === member.name ? 600 : 400
+                      }}
+                    >
+                      {member.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <input
+                value={form.staffName || ""}
+                onChange={e => setForm(p => ({ ...p, staffName: e.target.value }))}
+                placeholder="Örn: Ayşe Yılmaz, Mehmet..."
+                style={{
+                  width: "100%",
+                  background: T.card2,
+                  border: `1px solid ${T.border}`,
+                  borderRadius: 12,
+                  padding: "12px 14px",
+                  color: T.text,
+                  fontSize: 14,
+                  outline: "none",
+                  boxSizing: "border-box"
+                }}
+              />
+            </div>
 
             {/* Ödeme Bilgileri */}
             <div style={{ background:T.card2, borderRadius:14, padding:14 }}>
