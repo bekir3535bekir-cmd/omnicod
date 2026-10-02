@@ -402,15 +402,47 @@ const Divider = ({label}) => (
 );
 
 // ─── LOGO ────────────────────────────────────────────────────────────────────
-const Logo = ({ compact }) => (
-  <div style={{ display:"flex", flexDirection:"column", gap:1 }}>
-    <div style={{ display:"flex", alignItems:"baseline", gap:compact?1:2 }}>
-      <span style={{ fontFamily:"'Plus Jakarta Sans', sans-serif", fontSize:compact?20:24, fontWeight:800,
-        color:T.goldL, letterSpacing:compact?1.5:2, lineHeight:1 }}>STÜDYO</span>
-      <span style={{ fontFamily:"'Plus Jakarta Sans', sans-serif", fontSize:compact?19:23, fontWeight:900,
-        color:T.gold, letterSpacing:compact?1:1.5, lineHeight:1 }}>M</span>
+const Logo = ({ compact, showText = true }) => (
+  <div style={{ display:"flex", alignItems:"center", gap:compact ? 8 : 10 }}>
+    {/* Modern Geometrik Diyafram & Ajanda Amblemi (Harf Bağımsız, Optik & Zaman Matrisi) */}
+    <div style={{
+      width: compact ? 30 : 36,
+      height: compact ? 30 : 36,
+      borderRadius: compact ? 9 : 11,
+      background: `linear-gradient(135deg, ${T.gold}28, ${T.gold}0A)`,
+      border: `1.5px solid ${T.gold}55`,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: `0 4px 14px ${T.gold}25`,
+      flexShrink: 0,
+      position: "relative"
+    }}>
+      <svg width={compact ? 18 : 22} height={compact ? 18 : 22} viewBox="0 0 24 24" fill="none">
+        {/* Dış Diyafram Halkası */}
+        <circle cx="12" cy="12" r="9.5" stroke={T.goldL} strokeWidth="1.5" strokeDasharray="3 2" />
+        {/* Optik Diyafram Geometrisi */}
+        <path d="M12 4.5 L17.5 12 L12 19.5 L6.5 12 Z" stroke={T.gold} strokeWidth="1.5" strokeLinejoin="round" />
+        {/* İç Odak & Çekim Noktası */}
+        <circle cx="12" cy="12" r="2.5" fill={T.gold} />
+        {/* Ajanda Planlama Köşe İmleri */}
+        <circle cx="5" cy="5" r="1" fill={T.goldL} opacity="0.8"/>
+        <circle cx="19" cy="5" r="1" fill={T.goldL} opacity="0.8"/>
+        <circle cx="19" cy="19" r="1" fill={T.goldL} opacity="0.8"/>
+        <circle cx="5" cy="19" r="1" fill={T.goldL} opacity="0.8"/>
+      </svg>
     </div>
-    <div style={{ height:1.5, background:`linear-gradient(90deg,${T.gold},${T.gold}00)`, width:"80%" }}/>
+    {showText && (
+      <div style={{ display:"flex", flexDirection:"column", gap:1 }}>
+        <div style={{ display:"flex", alignItems:"baseline", gap:compact?1:2 }}>
+          <span style={{ fontFamily:"'Plus Jakarta Sans', sans-serif", fontSize:compact?19:23, fontWeight:800,
+            color:T.text, letterSpacing:compact?1.2:1.8, lineHeight:1 }}>STÜDYO</span>
+          <span style={{ fontFamily:"'Plus Jakarta Sans', sans-serif", fontSize:compact?19:23, fontWeight:900,
+            color:T.gold, letterSpacing:compact?1:1.5, lineHeight:1 }}>M</span>
+        </div>
+        <div style={{ height:1.5, background:`linear-gradient(90deg,${T.gold},${T.gold}00)`, width:"80%" }}/>
+      </div>
+    )}
   </div>
 );
 
