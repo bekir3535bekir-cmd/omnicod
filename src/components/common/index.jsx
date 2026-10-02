@@ -404,32 +404,32 @@ const Divider = ({label}) => (
 // ─── LOGO ────────────────────────────────────────────────────────────────────
 const Logo = ({ compact, showText = true }) => (
   <div style={{ display:"flex", alignItems:"center", gap:compact ? 8 : 10 }}>
-    {/* Modern Geometrik Diyafram & Ajanda Amblemi (Harf Bağımsız, Optik & Zaman Matrisi) */}
+    {/* Kullanıcının Resmi Kamera & Ajanda Logosu */}
     <div style={{
-      width: compact ? 30 : 36,
-      height: compact ? 30 : 36,
-      borderRadius: compact ? 9 : 11,
-      background: `linear-gradient(135deg, ${T.gold}28, ${T.gold}0A)`,
-      border: `1.5px solid ${T.gold}55`,
+      width: compact ? 32 : 38,
+      height: compact ? 32 : 38,
+      borderRadius: compact ? 10 : 12,
+      background: "linear-gradient(145deg, #0E1626, #060911)",
+      border: "1.2px solid rgba(59, 130, 246, 0.4)",
+      boxShadow: "0 4px 14px rgba(0,0,0,0.5), 0 0 10px rgba(59, 130, 246, 0.2)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      boxShadow: `0 4px 14px ${T.gold}25`,
       flexShrink: 0,
-      position: "relative"
+      position: "relative",
+      padding: compact ? 2 : 3
     }}>
-      <svg width={compact ? 18 : 22} height={compact ? 18 : 22} viewBox="0 0 24 24" fill="none">
-        {/* Dış Diyafram Halkası */}
-        <circle cx="12" cy="12" r="9.5" stroke={T.goldL} strokeWidth="1.5" strokeDasharray="3 2" />
-        {/* Optik Diyafram Geometrisi */}
-        <path d="M12 4.5 L17.5 12 L12 19.5 L6.5 12 Z" stroke={T.gold} strokeWidth="1.5" strokeLinejoin="round" />
-        {/* İç Odak & Çekim Noktası */}
-        <circle cx="12" cy="12" r="2.5" fill={T.gold} />
-        {/* Ajanda Planlama Köşe İmleri */}
-        <circle cx="5" cy="5" r="1" fill={T.goldL} opacity="0.8"/>
-        <circle cx="19" cy="5" r="1" fill={T.goldL} opacity="0.8"/>
-        <circle cx="19" cy="19" r="1" fill={T.goldL} opacity="0.8"/>
-        <circle cx="5" cy="19" r="1" fill={T.goldL} opacity="0.8"/>
+      <svg width="100%" height="100%" viewBox="0 0 100 100" fill="none">
+        {/* Arkadaki Ajanda / Takvim (Zümrüt / Turkuaz #00B594) */}
+        <rect x="44" y="16" width="6" height="10" rx="3" fill="#00B594"/>
+        <rect x="68" y="16" width="6" height="10" rx="3" fill="#00B594"/>
+        <path d="M 37 32 H 74 C 77.5 32 80 34.5 80 38 V 74 C 80 75 79 76 78 76 H 75 C 74 76 74 75 74 74 V 39 C 74 38 73 37 72 37 H 42 C 39 37 37 39 37 42 V 46 H 31 V 38 C 31 34.5 33.5 32 37 32 Z" fill="#00B594"/>
+        
+        {/* Öndeki Kamera Gövdesi (Kraliyet Mavisi #3B5AF6) */}
+        <path d="M 35 44 L 40 37 C 41 35.5 42.5 35 44 35 H 56 C 57.5 35 59 35.5 60 37 L 65 44 H 71 C 74.5 44 77 46.5 77 50 V 78 C 77 81.5 74.5 84 71 84 H 29 C 25.5 84 23 81.5 23 78 V 50 C 23 46.5 25.5 44 29 44 Z" fill="#3B5AF6"/>
+        
+        {/* Merkezdeki Beyaz Mercek / Lens */}
+        <circle cx="50" cy="64" r="11" fill="#FFFFFF"/>
       </svg>
     </div>
     {showText && (
@@ -438,9 +438,9 @@ const Logo = ({ compact, showText = true }) => (
           <span style={{ fontFamily:"'Plus Jakarta Sans', sans-serif", fontSize:compact?19:23, fontWeight:800,
             color:T.text, letterSpacing:compact?1.2:1.8, lineHeight:1 }}>STÜDYO</span>
           <span style={{ fontFamily:"'Plus Jakarta Sans', sans-serif", fontSize:compact?19:23, fontWeight:900,
-            color:T.gold, letterSpacing:compact?1:1.5, lineHeight:1 }}>M</span>
+            color:"#3B5AF6", letterSpacing:compact?1:1.5, lineHeight:1 }}>M</span>
         </div>
-        <div style={{ height:1.5, background:`linear-gradient(90deg,${T.gold},${T.gold}00)`, width:"80%" }}/>
+        <div style={{ height:1.5, background:"linear-gradient(90deg, #3B5AF6, #00B594, transparent)", width:"90%" }}/>
       </div>
     )}
   </div>
