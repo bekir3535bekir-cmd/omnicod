@@ -1754,7 +1754,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
             Sorularınız için bize ulaşın
           </div>
           <div style={{ fontFamily:"Playfair Display", fontSize:18,
-            color:T.goldL, fontWeight:700 }}>StudyoApp</div>
+            color:T.goldL, fontWeight:700 }}>STÜDYOM</div>
           <div style={{ fontSize:12, color:T.text3, marginTop:4 }}>📸 Profesyonel Stüdyo & Çekim Sistemi</div>
         </div>
       </div>
@@ -2161,21 +2161,21 @@ export const LoginScreen = ({ onLogin, data }) => {
           </span>
         </div>
 
-        {/* Ana Logo İsmi: StudyoApp */}
+        {/* Ana Logo İsmi: STÜDYOM */}
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 3 }}>
           <span style={{
             fontFamily: "Playfair Display, Georgia, serif",
             fontSize: 34,
             fontWeight: 700,
             color: "#FFFFFF",
-            letterSpacing: "1.2px",
+            letterSpacing: "1.5px",
             lineHeight: 1
           }}>
-            Studyo
+            STÜDYO
           </span>
           <span style={{
             fontFamily: "Inter, sans-serif",
-            fontSize: 32,
+            fontSize: 33,
             fontWeight: 800,
             background: `linear-gradient(135deg, ${T.goldL} 0%, ${T.gold} 60%, #AA820A 100%)`,
             WebkitBackgroundClip: "text",
@@ -2183,7 +2183,7 @@ export const LoginScreen = ({ onLogin, data }) => {
             letterSpacing: "1px",
             lineHeight: 1
           }}>
-            App
+            M
           </span>
         </div>
 

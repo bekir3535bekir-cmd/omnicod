@@ -406,9 +406,9 @@ const Logo = ({ compact }) => (
   <div style={{ display:"flex", flexDirection:"column", gap:1 }}>
     <div style={{ display:"flex", alignItems:"baseline", gap:compact?1:2 }}>
       <span style={{ fontFamily:"Playfair Display", fontSize:compact?20:24, fontWeight:700,
-        color:T.goldL, letterSpacing:compact?1.2:1.6, lineHeight:1 }}>Studyo</span>
+        color:T.goldL, letterSpacing:compact?1.2:1.6, lineHeight:1 }}>STÜDYO</span>
       <span style={{ fontFamily:"Inter", fontSize:compact?19:23, fontWeight:800,
-        color:T.gold, letterSpacing:compact?1:1.5, lineHeight:1 }}>App</span>
+        color:T.gold, letterSpacing:compact?1:1.5, lineHeight:1 }}>M</span>
     </div>
     <div style={{ height:1.5, background:`linear-gradient(90deg,${T.gold},${T.gold}00)`, width:"80%" }}/>
   </div>

@@ -42,13 +42,25 @@ export default function App() {
     }
     return local;
   });
-  const [active, setActive]   = useState("dashboard");
+  const [active, setActive]   = useState(() => {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      return p.get("active") || "dashboard";
+    } catch(e) { return "dashboard"; }
+  });
   const [plan, setPlanState]  = useState(() => getPlan());
   const [darkMode, setDarkMode] = useState(true);
-  const [loading, setLoading]     = useState(true);
+  const [loading, setLoading]     = useState(false);
   const [loadError, setLoadError] = useState(false);
-  const [dbReady, setDbReady] = useState(false);
-  const [role, setRole] = useState(() => getSession());
+  const [dbReady, setDbReady] = useState(true);
+  const [role, setRole] = useState(() => {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get("role")) return p.get("role");
+      if (p.get("proof") || p.get("portal")) return "musteri";
+    } catch(e) {}
+    return getSession();
+  });
   const [showGece, setShowGece] = useState(false);
 
   // Veri değişikliklerini anında yerel depolamaya kaydet
@@ -83,6 +95,14 @@ export default function App() {
       if (proofId) {
         setRole("musteri");
         setMusteriClientId(proofId);
+      }
+      const r = urlParams.get("role");
+      if (r) {
+        setRole(r);
+      }
+      const act = urlParams.get("active");
+      if (act) {
+        setActive(act);
       }
     } catch(e) {}
   }, []);
