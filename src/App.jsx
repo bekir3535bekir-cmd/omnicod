@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
-import { T, DARK_THEME, LIGHT_THEME, setGlobalTheme, makeCSS } from "./constants/theme";
+import { T, DARK_THEME, LIGHT_THEME, SAPPHIRE_THEME, EMERALD_THEME, NORDIC_LIGHT, THEME_PALETTES, setGlobalTheme, makeCSS } from "./constants/theme";
 import { Ic } from "./constants/icons";
 import { fmt, fmtDate, todayStr, uid } from "./utils/helpers";
 import { INIT } from "./constants/initialData";
@@ -49,7 +48,17 @@ export default function App() {
     } catch(e) { return "dashboard"; }
   });
   const [plan, setPlanState]  = useState(() => getPlan());
-  const [darkMode, setDarkMode] = useState(true);
+  const [themeKey, setThemeKeyState] = useState(() => {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get("theme")) return p.get("theme");
+      return localStorage.getItem("studyom_theme_key") || "sapphire";
+    } catch(e) { return "sapphire"; }
+  });
+  const setThemeKey = (key) => {
+    setThemeKeyState(key);
+    try { localStorage.setItem("studyom_theme_key", key); } catch(e) {}
+  };
   const [loading, setLoading]     = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [dbReady, setDbReady] = useState(true);
@@ -254,7 +263,8 @@ export default function App() {
   }, [data, dbReady]);
 
   // Update global T on theme change
-  const currentTheme = darkMode ? DARK_THEME : LIGHT_THEME; setGlobalTheme(currentTheme);
+  const currentTheme = THEME_PALETTES[themeKey] || SAPPHIRE_THEME;
+  setGlobalTheme(currentTheme);
 
   if(!role) return (
     <>
@@ -325,7 +335,7 @@ export default function App() {
     ajanda:      <Ajanda        data={data} setData={setData} role={role} plan={plan} setActive={setActive}/>,
     musteriler:  <Musteriler    data={data} setData={setData} role={role} plan={plan} setActive={setActive} initialClientId={pendingClientId} onConsumeInitialClientId={()=>setPendingClientId(null)}/>,
     muhasebe:    role==="admin" ? <Muhasebe data={data} setData={setData} role={role}/> : <Dashboard data={data} setData={setData} setActive={setActive} role={role} plan={plan}/>,
-    more:        <MoreMenu      setActive={setActive} darkMode={darkMode} setDarkMode={setDarkMode} role={role} plan={plan} onLogout={handleLogout}/>,
+    more:        <MoreMenu      setActive={setActive} themeKey={themeKey} setThemeKey={setThemeKey} darkMode={currentTheme.isDark} role={role} plan={plan} onLogout={handleLogout}/>,
     takvim:      <Takvim        data={data} setActive={setActive} setDetailClientId={setPendingClientId}/>,
     paketler:    role==="admin" ? <Paketler data={data} setData={setData} role={role}/> : <Dashboard data={data} setData={setData} setActive={setActive} role={role} plan={plan}/>,
     sablonlar:   <Sablonlar     data={data}/>,

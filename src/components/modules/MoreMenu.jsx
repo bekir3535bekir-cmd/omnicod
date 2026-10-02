@@ -9,7 +9,7 @@ import { PLANS, getTrialInfo } from "../../services/plan";
 import { sb, fromDB, toDB } from "../../services/supabase";
 import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
 
-export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogout }) => {
+export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogout, themeKey = "sapphire", setThemeKey }) => {
   const [showSifre,   setShowSifre]   = useState(false);
   const [showAyarlar, setShowAyarlar] = useState(false);
   const [sForm, setSForm] = useState({ adminPass:"", personelPass:"" });
@@ -24,6 +24,12 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
   const isPro = plan === "pro";
   const isTrial = plan === "trial";
   const trial = getTrialInfo();
+
+  const THEMES = [
+    { key: "sapphire", name: "Safir & Titanyum", sub: "Modern stüdyo koyu palet", icon: "💎", primary: "#3B82F6", bg: "#090D16" },
+    { key: "emerald",  name: "Zümrüt & Grafit",   sub: "Derin yeşil fotoğrafçı paleti", icon: "🌿", primary: "#10B981", bg: "#06100D" },
+    { key: "nordic",   name: "Nordic Aydınlık",  sub: "Ferah ve minimalist beyaz", icon: "🕊️", primary: "#2563EB", bg: "#F8FAFC" },
+  ];
 
   return (
   <div className="fade-in">
@@ -101,24 +107,56 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
       <BottomSheet title="Ayarlar" onClose={()=>setShowAyarlar(false)}>
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
 
-          {/* Tema */}
-          <Card style={{ display:"flex", alignItems:"center", gap:14, padding:16 }}>
-            <div style={{ background:T.gold+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
-              <span style={{ fontSize:20 }}>{darkMode?"🌙":"☀️"}</span>
+          {/* Tema Seçimi */}
+          <div>
+            <div style={{ fontSize:13, fontWeight:700, color:T.text, marginBottom:8, display:"flex", alignItems:"center", gap:6 }}>
+              <span>🎨 Stüdyo Renk Paleti</span>
             </div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontWeight:600, fontSize:15 }}>Tema</div>
-              <div style={{ fontSize:12, color:T.text3, marginTop:2 }}>{darkMode?"Koyu Tema aktif":"Açık Tema aktif"}</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {THEMES.map(th => {
+                const isSelected = themeKey === th.key;
+                return (
+                  <div
+                    key={th.key}
+                    onClick={() => setThemeKey && setThemeKey(th.key)}
+                    style={{
+                      background: isSelected ? T.gold + "14" : T.card,
+                      border: `1.5px solid ${isSelected ? T.gold : T.border}`,
+                      borderRadius: 14,
+                      padding: "12px 14px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      cursor: "pointer",
+                      transition: "all 0.2s ease"
+                    }}
+                  >
+                    <div style={{ fontSize: 22, width: 34, height: 34, borderRadius: 10, background: th.bg, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${th.primary}44` }}>
+                      {th.icon}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: isSelected ? T.gold : T.text }}>
+                        {th.name}
+                      </div>
+                      <div style={{ fontSize: 11, color: T.text3, marginTop: 2 }}>
+                        {th.sub}
+                      </div>
+                    </div>
+                    {/* Renk Çemberleri */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <div style={{ width: 12, height: 12, borderRadius: "50%", background: th.primary, boxShadow: `0 0 8px ${th.primary}66` }} />
+                      <div style={{ width: 12, height: 12, borderRadius: "50%", background: th.bg, border: `1px solid ${T.border}` }} />
+                      {isSelected && (
+                        <div style={{ marginLeft: 4, width: 20, height: 20, borderRadius: "50%", background: T.gold, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 11, fontWeight: 900 }}>
+                          ✓
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div onClick={()=>setDarkMode(d=>!d)}
-              style={{ width:52, height:30, borderRadius:99,
-                background:darkMode?T.gold:T.border,
-                position:"relative", cursor:"pointer", transition:"background 0.3s", flexShrink:0 }}>
-              <div style={{ position:"absolute", top:3, left:darkMode?24:3, width:24, height:24,
-                borderRadius:99, background:"#fff", transition:"left 0.3s",
-                boxShadow:"0 1px 4px rgba(0,0,0,0.3)" }}/>
-            </div>
-          </Card>
+          </div>
 
           {/* Şifre Değiştir - sadece admin */}
           {role==="admin" && (
@@ -136,12 +174,12 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
           )}
 
           {/* Uygulama bilgisi */}
-          <div style={{ textAlign:"center", padding:"12px 0", borderTop:`1px solid ${T.border}` }}>
-            <div style={{ display:"flex", alignItems:"baseline", justifyContent:"center", gap:2 }}>
-              <span style={{ fontFamily:"Playfair Display", fontSize:16, fontWeight:700, color:T.goldL, letterSpacing:1 }}>Omni</span>
-              <span style={{ fontFamily:"Inter", fontSize:15, fontWeight:800, color:T.gold, letterSpacing:1 }}>Cod</span>
+          <div style={{ textAlign:"center", padding:"14px 0 6px 0", borderTop:`1px solid ${T.border}` }}>
+            <div style={{ display:"flex", alignItems:"baseline", justifyContent:"center", gap:3 }}>
+              <span style={{ fontFamily:"Plus Jakarta Sans, Inter, sans-serif", fontSize:18, fontWeight:900, color:T.text, letterSpacing:1.5 }}>STÜDYO</span>
+              <span style={{ fontFamily:"Plus Jakarta Sans, Inter, sans-serif", fontSize:18, fontWeight:900, color:T.gold, letterSpacing:1.5 }}>M</span>
             </div>
-            <div style={{ fontSize:11, color:T.text3, marginTop:4 }}>Fotoğrafçılık & Stüdyo Yönetim Sistemi</div>
+            <div style={{ fontSize:11, color:T.text3, marginTop:4, fontWeight:500 }}>Fotoğrafçılık & Stüdyo Yönetim Sistemi v2.5</div>
           </div>
         </div>
       </BottomSheet>

@@ -2095,8 +2095,9 @@ export const LoginScreen = ({ onLogin, data }) => {
             position: "absolute",
             inset: 0,
             borderRadius: "50%",
-            background: "linear-gradient(135deg, rgba(245, 215, 127, 0.35) 0%, rgba(18, 18, 22, 0.8) 100%)",
+            background: `linear-gradient(135deg, ${T.goldL}33 0%, rgba(15, 23, 42, 0.8) 100%)`,
             border: `2px solid ${T.gold}`,
+            boxShadow: `0 0 25px ${T.goldGlow}`,
             animation: "outerHaloBreath 9.5s ease-in-out infinite"
           }} />
 
@@ -2135,7 +2136,7 @@ export const LoginScreen = ({ onLogin, data }) => {
             }}>
               {/* Çok Katmanlı Safir Lens Camı */}
               <circle cx="50" cy="50" r="20" fill="url(#studyoLensCoreGrad)" />
-              {/* Diyafram İçi İnce Altın Halka */}
+              {/* Diyafram İçi İnce Halka */}
               <circle cx="50" cy="50" r="19.5" fill="none" stroke={T.gold} strokeWidth="1" opacity="0.5" />
               {/* Mercek Işık Yansıması & Parlaması (Glint) */}
               <circle cx="44" cy="44" r="5" fill="#FFFFFF" style={{
@@ -2150,7 +2151,7 @@ export const LoginScreen = ({ onLogin, data }) => {
         {/* Pro Rozeti */}
         <div style={{
           display: "inline-block",
-          background: "rgba(212, 175, 55, 0.12)",
+          background: `${T.gold}1A`,
           border: `1px solid ${T.gold}55`,
           borderRadius: 99,
           padding: "3px 12px",
@@ -2164,9 +2165,9 @@ export const LoginScreen = ({ onLogin, data }) => {
         {/* Ana Logo İsmi: STÜDYOM */}
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 3 }}>
           <span style={{
-            fontFamily: "Playfair Display, Georgia, serif",
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
             fontSize: 34,
-            fontWeight: 700,
+            fontWeight: 800,
             color: "#FFFFFF",
             letterSpacing: "1.5px",
             lineHeight: 1
@@ -2174,10 +2175,10 @@ export const LoginScreen = ({ onLogin, data }) => {
             STÜDYO
           </span>
           <span style={{
-            fontFamily: "Inter, sans-serif",
-            fontSize: 33,
-            fontWeight: 800,
-            background: `linear-gradient(135deg, ${T.goldL} 0%, ${T.gold} 60%, #AA820A 100%)`,
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontSize: 34,
+            fontWeight: 900,
+            background: `linear-gradient(135deg, ${T.goldL} 0%, ${T.gold} 60%, ${T.goldD} 100%)`,
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             letterSpacing: "1px",
@@ -2195,7 +2196,7 @@ export const LoginScreen = ({ onLogin, data }) => {
       {/* ─── KART (Ultra-Refined Liquid Glassmorphism) ─── */}
       <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 366 }}>
         <div style={{
-          background: "linear-gradient(160deg, rgba(26, 26, 34, 0.88) 0%, rgba(12, 12, 16, 0.94) 100%)",
+          background: `linear-gradient(160deg, ${T.card} 0%, ${T.bg} 100%)`,
           backdropFilter: "blur(48px) saturate(200%)",
           WebkitBackdropFilter: "blur(48px) saturate(200%)",
           border: `1px solid ${T.gold}35`,
@@ -2320,13 +2321,13 @@ export const LoginScreen = ({ onLogin, data }) => {
                   onClick={handleOwnerLogin}
                   style={{
                     width: "100%",
-                    background: `linear-gradient(135deg, ${T.goldL} 0%, ${T.gold} 50%, #B8860B 100%)`,
+                    background: `linear-gradient(135deg, ${T.goldL} 0%, ${T.gold} 50%, ${T.goldD} 100%)`,
                     border: "none",
                     borderRadius: 14,
                     padding: "14px",
                     fontSize: 14.5,
                     fontWeight: 800,
-                    color: "#0A0A0B",
+                    color: "#FFFFFF",
                     cursor: "pointer",
                     boxShadow: `0 8px 24px ${T.gold}45`,
                     marginTop: 4,

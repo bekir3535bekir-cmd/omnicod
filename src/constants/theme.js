@@ -1,48 +1,126 @@
-export const DARK_THEME = {
-  bg:"#070709", surface:"rgba(14, 14, 18, 0.72)", card:"rgba(22, 22, 28, 0.65)", card2:"rgba(28, 28, 36, 0.55)", card3:"rgba(36, 36, 46, 0.5)",
-  border:"rgba(255, 255, 255, 0.08)", borderL:"rgba(255, 255, 255, 0.16)",
-  gold:"#F5A623", goldL:"#FFD074", goldD:"#C68012", goldGlow:"#F5A62333",
-  text:"#F5F5F7", text2:"#A1A1A6", text3:"#6E6E73",
-  green:"#30D158", greenL:"#54D976", red:"#FF453A", redL:"#FF6961",
-  orange:"#FF9F0A", orangeL:"#FFB340", blue:"#0A84FF", blueL:"#409CFF",
-  glass:"linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.015) 100%)",
-  glassCard:"linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)",
-  glassHighlight:"rgba(255, 255, 255, 0.20)",
-  glassBorder:"rgba(255, 255, 255, 0.09)",
-  glassBlur:"blur(28px) saturate(190%)",
+export const SAPPHIRE_THEME = {
+  id: "sapphire",
+  name: "Safir & Titanyum (Mavi)",
+  bg: "#090D16",
+  surface: "rgba(15, 23, 42, 0.78)",
+  card: "rgba(22, 33, 56, 0.65)",
+  card2: "rgba(30, 41, 69, 0.6)",
+  card3: "rgba(42, 58, 96, 0.5)",
+  border: "rgba(148, 163, 184, 0.16)",
+  borderL: "rgba(148, 163, 184, 0.3)",
+  gold: "#3B82F6",
+  goldL: "#60A5FA",
+  goldD: "#1D4ED8",
+  goldGlow: "rgba(59, 130, 246, 0.35)",
+  text: "#F8FAFC",
+  text2: "#94A3B8",
+  text3: "#64748B",
+  green: "#10B981",
+  greenL: "#34D399",
+  red: "#F43F5E",
+  redL: "#FB7185",
+  orange: "#FB923C",
+  orangeL: "#FDBA74",
+  blue: "#06B6D4",
+  blueL: "#67E8F9",
+  glass: "linear-gradient(135deg, rgba(59, 130, 246, 0.09) 0%, rgba(255, 255, 255, 0.02) 100%)",
+  glassCard: "linear-gradient(145deg, rgba(22, 33, 56, 0.75) 0%, rgba(15, 23, 42, 0.8) 100%)",
+  glassHighlight: "rgba(255, 255, 255, 0.22)",
+  glassBorder: "rgba(148, 163, 184, 0.18)",
+  glassBlur: "blur(28px) saturate(190%)",
   isDark: true,
 };
 
-export const LIGHT_THEME = {
-  bg:"#F5F2EC", surface:"rgba(255, 255, 255, 0.8)", card:"rgba(255, 255, 255, 0.7)", card2:"#F0EDE6", card3:"#E8E4DC",
-  border:"#DDD8CE", borderL:"#C8C3B8",
-  gold:"#8A6E2E", goldL:"#7A5E1E", goldD:"#6A4E0E", goldGlow:"#B8953F22",
-  text:"#1A1714", text2:"#6B6560", text3:"#A09890",
-  green:"#2A7A4E", greenL:"#1E6E40", red:"#B03030", redL:"#C44040",
-  orange:"#A06020", orangeL:"#B07030", blue:"#2A5E9A", blueL:"#3A6EAA",
-  glass:"linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%)",
-  glassCard:"rgba(255, 255, 255, 0.8)",
-  glassHighlight:"rgba(255, 255, 255, 0.5)",
-  glassBorder:"rgba(0, 0, 0, 0.08)",
-  glassBlur:"blur(20px)",
+export const EMERALD_THEME = {
+  id: "emerald",
+  name: "Zümrüt & Grafit (Yeşil)",
+  bg: "#06100D",
+  surface: "rgba(6, 30, 24, 0.78)",
+  card: "rgba(12, 45, 36, 0.65)",
+  card2: "rgba(18, 58, 46, 0.6)",
+  card3: "rgba(26, 77, 62, 0.5)",
+  border: "rgba(52, 211, 153, 0.16)",
+  borderL: "rgba(52, 211, 153, 0.3)",
+  gold: "#10B981",
+  goldL: "#34D399",
+  goldD: "#047857",
+  goldGlow: "rgba(16, 185, 129, 0.35)",
+  text: "#F0FDF4",
+  text2: "#86EFAC",
+  text3: "#4ADE80",
+  green: "#10B981",
+  greenL: "#34D399",
+  red: "#F43F5E",
+  redL: "#FB7185",
+  orange: "#FB923C",
+  orangeL: "#FDBA74",
+  blue: "#38BDF8",
+  blueL: "#7DD3FC",
+  glass: "linear-gradient(135deg, rgba(16, 185, 129, 0.09) 0%, rgba(255, 255, 255, 0.02) 100%)",
+  glassCard: "linear-gradient(145deg, rgba(12, 45, 36, 0.75) 0%, rgba(6, 30, 24, 0.8) 100%)",
+  glassHighlight: "rgba(255, 255, 255, 0.22)",
+  glassBorder: "rgba(52, 211, 153, 0.18)",
+  glassBlur: "blur(28px) saturate(190%)",
+  isDark: true,
+};
+
+export const NORDIC_LIGHT = {
+  id: "nordic",
+  name: "Nordic Ferah Aydınlık (Beyaz & Mavi)",
+  bg: "#F8FAFC",
+  surface: "rgba(255, 255, 255, 0.94)",
+  card: "rgba(255, 255, 255, 0.88)",
+  card2: "#F1F5F9",
+  card3: "#E2E8F0",
+  border: "rgba(203, 213, 225, 0.85)",
+  borderL: "rgba(148, 163, 184, 0.45)",
+  gold: "#2563EB",
+  goldL: "#3B82F6",
+  goldD: "#1D4ED8",
+  goldGlow: "rgba(37, 99, 235, 0.2)",
+  text: "#0F172A",
+  text2: "#475569",
+  text3: "#94A3B8",
+  green: "#059669",
+  greenL: "#10B981",
+  red: "#E11D48",
+  redL: "#F43F5E",
+  orange: "#EA580C",
+  orangeL: "#FB923C",
+  blue: "#0284C7",
+  blueL: "#38BDF8",
+  glass: "linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(241, 245, 249, 0.8) 100%)",
+  glassCard: "rgba(255, 255, 255, 0.92)",
+  glassHighlight: "rgba(255, 255, 255, 0.8)",
+  glassBorder: "rgba(0, 0, 0, 0.08)",
+  glassBlur: "blur(20px)",
   isDark: false,
 };
 
-export let T = DARK_THEME;
+export const DARK_THEME = SAPPHIRE_THEME;
+export const LIGHT_THEME = NORDIC_LIGHT;
+
+export const THEME_PALETTES = {
+  sapphire: SAPPHIRE_THEME,
+  emerald: EMERALD_THEME,
+  nordic: NORDIC_LIGHT,
+};
+
+export let T = SAPPHIRE_THEME;
 export const setGlobalTheme = (theme) => {
   T = theme;
 };
 
-export const FONT = `@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');`;
+export const FONT = `@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700;800&display=swap');`;
 
 export const makeCSS = (theme) => `
 ${FONT}
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html, body { height:100%; background:${theme.bg}; }
-body { font-family:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", sans-serif; color:${theme.text}; overflow-x:hidden; max-width:430px; margin:0 auto; -webkit-font-smoothing:antialiased; }
-input,textarea,select,button { font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif; }
-input,textarea,select { outline:none; background:transparent; color:${theme.text}; border:none; width:100%; color-scheme: dark; }
-select option { background-color: #181920 !important; color: #F5F5F7 !important; padding: 10px 14px; }
+body { font-family:'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Inter", sans-serif; color:${theme.text}; overflow-x:hidden; max-width:430px; margin:0 auto; -webkit-font-smoothing:antialiased; }
+input,textarea,select,button { font-family:'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Inter", sans-serif; }
+input,textarea,select { outline:none; background:transparent; color:${theme.text}; border:none; width:100%; color-scheme: ${theme.isDark ? "dark" : "light"}; }
+select option { background-color: ${theme.isDark ? "#111827" : "#FFFFFF"} !important; color: ${theme.text} !important; padding: 10px 14px; }
 button { cursor:pointer; border:none; background:transparent; }
 .num { font-family:'DM Sans',-apple-system,sans-serif; font-variant-numeric:tabular-nums; }
 ::-webkit-scrollbar { width:2px; height:2px; }

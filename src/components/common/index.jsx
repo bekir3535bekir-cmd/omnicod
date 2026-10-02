@@ -30,7 +30,7 @@ const Card = ({ children, style={}, onClick, glow }) => (
 const Pill = ({ label, color=T.gold }) => (
   <span style={{
     display: "inline-flex", alignItems: "center",
-    background: color === T.gold ? "rgba(245, 166, 35, 0.12)" : color + "1E",
+    background: `${color}1E`,
     color,
     border: `1px solid ${color}33`,
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15)",
@@ -59,7 +59,7 @@ const GoldButton = ({ label, icon, onClick, full, sm, variant="primary", disable
         : isDanger ? "rgba(255, 69, 58, 0.14)"
         : isGhost ? "transparent"
         : "rgba(255, 255, 255, 0.04)",
-      color: disabled ? T.text3 : isPrimary ? "#000000" : isDanger ? T.redL : isGhost ? T.text2 : T.goldL,
+      color: disabled ? T.text3 : isPrimary ? "#FFFFFF" : isDanger ? T.redL : isGhost ? T.text2 : T.goldL,
       border: disabled ? `1px solid ${T.border}` : isOutline ? `1.5px solid ${T.gold}` : isDanger ? `1px solid ${T.red}44` : isPrimary ? "1px solid rgba(255,255,255,0.3)" : `1px solid ${T.border}`,
       boxShadow: disabled ? "none" : isPrimary ? `0 8px 24px -4px ${T.gold}50, inset 0 1px 1px rgba(255,255,255,0.6)` : isOutline ? `inset 0 1px 1px rgba(255,255,255,0.1)` : "none",
       borderRadius: 16,
@@ -74,7 +74,7 @@ const GoldButton = ({ label, icon, onClick, full, sm, variant="primary", disable
       transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
       ...style
     }}>
-      {icon && <Ic n={icon} s={sm?15:17} c={disabled ? T.text3 : isPrimary?"#000000":isDanger?T.redL:isGhost?T.text2:T.goldL}/>}
+      {icon && <Ic n={icon} s={sm?15:17} c={disabled ? T.text3 : isPrimary?"#FFFFFF":isDanger?T.redL:isGhost?T.text2:T.goldL}/>}
       {label}
     </button>
   );
@@ -405,9 +405,9 @@ const Divider = ({label}) => (
 const Logo = ({ compact }) => (
   <div style={{ display:"flex", flexDirection:"column", gap:1 }}>
     <div style={{ display:"flex", alignItems:"baseline", gap:compact?1:2 }}>
-      <span style={{ fontFamily:"Playfair Display", fontSize:compact?20:24, fontWeight:700,
-        color:T.goldL, letterSpacing:compact?1.2:1.6, lineHeight:1 }}>STÜDYO</span>
-      <span style={{ fontFamily:"Inter", fontSize:compact?19:23, fontWeight:800,
+      <span style={{ fontFamily:"'Plus Jakarta Sans', sans-serif", fontSize:compact?20:24, fontWeight:800,
+        color:T.goldL, letterSpacing:compact?1.5:2, lineHeight:1 }}>STÜDYO</span>
+      <span style={{ fontFamily:"'Plus Jakarta Sans', sans-serif", fontSize:compact?19:23, fontWeight:900,
         color:T.gold, letterSpacing:compact?1:1.5, lineHeight:1 }}>M</span>
     </div>
     <div style={{ height:1.5, background:`linear-gradient(90deg,${T.gold},${T.gold}00)`, width:"80%" }}/>
