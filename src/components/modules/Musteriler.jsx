@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
-import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE , initProcess, isComplete } from "../../constants/templates";
+import { fmt, fmtTL, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT, publicAppUrl } from "../../utils/helpers";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, initProcess, isComplete } from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo, Toast } from "../common";
 import { UsageBadge, ProGate } from "../common/ProGate";
 import { MusteriPortali } from "./AppModals";
 import { canAddClient } from "../../services/plan";
 import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
+import { getPass, setPass, getSession, saveSession, clearSession, getStudioInfo } from "../../services/storage";
 
 // Canvas tabanlı hafifleştirilmiş resim sıkıştırma (localStorage taşmasını önler)
 const compressImage = (file) => {
@@ -373,7 +373,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
   };
 
   const savePayment = () => {
-    if(!pForm.amount || !detail) return;
+    if(!(Number(pForm.amount) > 0) || !detail) return;
     const amt     = Number(pForm.amount);
     const payId   = uid();
     const payDate = pForm.payDate || todayStr();
@@ -626,7 +626,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
       )}
 
       {/* Müşteri kartları */}
-      <div style={{ padding:"0 20px" }}>
+      <div className="card-list" style={{ padding:"0 20px" }}>
         {filtered.length === 0 ? (
           <EmptyState icon="users" title={search?"Müşteri Bulunamadı":"Henüz Müşteri Yok"}
             sub={search?`"${search}" ile eşleşen müşteri yok.`:"İlk müşterini ekleyerek başla."}
@@ -683,7 +683,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
                     onClick={(e) => {
                       e.stopPropagation();
                       const ph = c.phone.replace(/\D/g, "").replace(/^0/, "");
-                      const msg = `Merhaba ${c.name}! StudyoApp üzerinden fotoğraf çekimi ve süreciniz hakkında bilgilendirme yapmak istedik. Nasıl yardımcı olabiliriz?`;
+                      const msg = `Merhaba ${c.name}! ${getStudioInfo().unvan || "Stüdyomuz"} olarak fotoğraf çekimi ve süreciniz hakkında bilgilendirme yapmak istedik. Nasıl yardımcı olabiliriz?`;
                       window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`, "_blank");
                     }}
                     style={{
@@ -807,7 +807,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
                   const ph = detail.phone.replace(/\D/g,"").replace(/^0/,"");
                   const msg = `Merhaba ${detail.name.split(" ")[0]} hanım/bey 👋
 
-OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olabiliriz?`;
+${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olabiliriz?`;
                   window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`,"_blank");
                 }} style={{ background:"#25D36622", border:"1px solid #25D36644", borderRadius:8,
                   padding:"4px 10px", fontSize:12, color:"#25D366", fontWeight:600 }}>
@@ -963,7 +963,7 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
           {/* FOTOĞRAFLAR & MÜŞTERİ SEÇİMİ (PROOFING) BÖLÜMÜ */}
           {(() => {
             const clientPhotos = (data.gallery || []).filter(g => String(g.clientId) === String(detail.id));
-            const proofUrl = `${window.location.origin}/?proof=${detail.id}`;
+            const proofUrl = publicAppUrl() ? `${publicAppUrl()}/?proof=${detail.id}` : "";
             const clientSelectionsKey = `studyo_selections_${detail.id}`;
             let savedSelections = {};
             try {
@@ -1193,8 +1193,9 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
                   <div style={{ display:"flex", gap:8 }}>
                     <button
                       onClick={() => {
+                        if (!proofUrl) return alert("Müşteri linki oluşturulamadı: web sürümünün adresi ayarlanmamış (.env → VITE_PUBLIC_URL).");
                         const ph = detail.phone ? detail.phone.replace(/\D/g,"").replace(/^0/,"") : "";
-                        const msg = `Merhaba ${detail.name.split(" ")[0]} Hanım/Bey 🌸\n\n${detail.date ? fmtDate(detail.date) + " tarihli " : ""}${detail.type} çekiminizin fotoğrafları hazırlandı! 📸✨\n\nAşağıdaki bağlantıdan fotoğraflarınızı inceleyebilir, beğendiklerinizi albümünüz için kolayca seçebilirsiniz:\n\n👉 ${proofUrl}\n\nKeyifli seçimler dileriz! 🙏\nOmniCod StudyoApp`;
+                        const msg = `Merhaba ${detail.name.split(" ")[0]} Hanım/Bey 🌸\n\n${detail.date ? fmtDate(detail.date) + " tarihli " : ""}${detail.type} çekiminizin fotoğrafları hazırlandı! 📸✨\n\nAşağıdaki bağlantıdan fotoğraflarınızı inceleyebilir, beğendiklerinizi albümünüz için kolayca seçebilirsiniz:\n\n👉 ${proofUrl}\n\nKeyifli seçimler dileriz! 🙏\n${getStudioInfo().unvan || "Stüdyomuz"}`;
                         if (ph) {
                           window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`,"_blank");
                         } else {
@@ -1223,6 +1224,7 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
 
                     <button
                       onClick={() => {
+                        if (!proofUrl) return alert("Müşteri linki oluşturulamadı: web sürümünün adresi ayarlanmamış (.env → VITE_PUBLIC_URL).");
                         navigator.clipboard.writeText(proofUrl);
                         setToast({ message: "📋 Seçim linki panoya kopyalandı!", type: "success" });
                       }}
@@ -1266,7 +1268,7 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
 
 Size ${fmtDate(detail.date)} tarihli ${detail.type} çekiminizle ilgili bilgi vermek istedik.
 
-OmniCod 📸`;
+${getStudioInfo().unvan || ""} 📸`;
                   window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`,"_blank");
                 }} style={{ flex:1, background:"#25D36622", border:"1px solid #25D36644", borderRadius:12,
                   padding:"12px 8px", fontSize:12, fontWeight:700, color:"#25D366" }}>
@@ -1274,7 +1276,7 @@ OmniCod 📸`;
                 </button>
                 {kalan > 0 && isAdmin && (
                   <button onClick={()=>{
-                    const msg = `Merhaba ${detail.name.split(" ")[0]} hanım/bey 👋\n\n${fmtDate(detail.date)} tarihli çekiminize ait ${fmt(kalan)} tutarındaki ödemenizin hatırlatmasını yapmak istedik.\n\nKolaylıklar dileriz 🙏\nOmniCod 📸`;
+                    const msg = `Merhaba ${detail.name.split(" ")[0]} hanım/bey 👋\n\n${fmtDate(detail.date)} tarihli çekiminize ait ${fmtTL(kalan)} tutarındaki ödemenizin hatırlatmasını yapmak istedik.\n\nKolaylıklar dileriz 🙏\n${getStudioInfo().unvan || "Stüdyomuz"} 📸`;
                     window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`,"_blank");
                   }} style={{ flex:1, background:T.orange+"22", border:`1px solid ${T.orange}44`, borderRadius:12,
                     padding:"12px 8px", fontSize:12, fontWeight:700, color:T.orangeL }}>
@@ -1376,9 +1378,13 @@ OmniCod 📸`;
                   Vazgeç
                 </button>
                 <button onClick={()=>{
-                  const deletedClient = {...detail, deletedAt: todayStr()};
                   // Bu müşteriye bağlı randevuları da bul
                   const linkedApts = data.appointments.filter(a => a.clientId===detail.id || a.clientName===detail.name);
+                  // Geri alınabilmesi için bağlı kayıtların kopyası da çöp kutusunda saklanır
+                  const deletedClient = {...detail, deletedAt: todayStr(),
+                    _apts: linkedApts,
+                    _incomes: data.incomes.filter(i=>(detail.payments||[]).some(pp=>pp.id===i.id)),
+                    _reminders: data.reminders.filter(r=>linkedApts.some(a=>a.id===r.linkedId)) };
                   // Supabase'den direkt sil — müşteri + ödemeler + bağlı randevular + hatırlatıcılar
                   sb.delete("clients", detail.id).catch(e=>console.error("Müşteri sil hatası:", e));
                   (detail.payments||[]).forEach(p => {
@@ -1431,7 +1437,7 @@ OmniCod 📸`;
                 ))}
               </div>
             </div>
-            <Field label="Tutar (₺)" type="number" value={String(editPayment.amount)}
+            <Field label="Tutar" type="number" value={String(editPayment.amount)}
               onChange={v=>setEditPayment(p=>({...p,amount:v}))} required/>
             {editPayment.type==="Ödeme Sözü" && (
               <DatePicker label="Söz Verilen Tarih" value={editPayment.promiseDate}
@@ -1452,7 +1458,7 @@ OmniCod 📸`;
               padding:"12px 14px", fontSize:13, color:T.blueL }}>
               ℹ️ Sadece toplam sözleşme tutarını düzeltir. Alınan ödemeler değişmez.
             </div>
-            <Field label="Yeni Toplam Tutar (₺)" type="number" value={editTotal}
+            <Field label="Yeni Toplam Tutar" type="number" value={editTotal}
               onChange={setEditTotal} placeholder="0" required/>
             <div style={{ background:T.card2, borderRadius:12, padding:14 }}>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
@@ -1489,7 +1495,7 @@ OmniCod 📸`;
                 ))}
               </div>
             </div>
-            <Field label="Tutar (₺)" type="number" value={pForm.amount} onChange={pf("amount")} placeholder="Ne kadar?" required/>
+            <Field label="Tutar" type="number" value={pForm.amount} onChange={pf("amount")} placeholder="Ne kadar?" required/>
             {pForm.type==="Ödeme Alındı" && (
               <DatePicker label="Ödeme Tarihi" value={pForm.payDate} onChange={pf("payDate")}
                 note="Ödemenin gerçekleştiği tarih"/>
@@ -1547,13 +1553,20 @@ OmniCod 📸`;
                       </div>
                     </div>
                     <button onClick={()=>{
-                      const restored = Object.assign({}, c);
-                      delete restored.deletedAt;
+                      if(!clientLimitCheck.allowed) { setShowLimitModal(true); return; }
+                      const { deletedAt, _apts=[], _incomes=[], _reminders=[], ...restored } = c;
                       setData(p=>({
                         ...p,
                         clients: [...p.clients, restored],
+                        appointments: [...p.appointments, ..._apts.filter(a=>!p.appointments.some(x=>x.id===a.id))],
+                        incomes: [...p.incomes, ..._incomes.filter(i=>!p.incomes.some(x=>x.id===i.id))],
+                        reminders: [...p.reminders, ..._reminders.filter(r=>!p.reminders.some(x=>x.id===r.id))],
                         deletedClients: (p.deletedClients||[]).filter(x=>x.id!==c.id),
                       }));
+                      sb.upsert("clients", toDB.clients(restored)).catch(()=>{});
+                      _apts.forEach(a=>sb.upsert("appointments", toDB.appointments(a)).catch(()=>{}));
+                      _incomes.forEach(i=>sb.upsert("incomes", toDB.incomes(i)).catch(()=>{}));
+                      _reminders.forEach(r=>sb.upsert("reminders", toDB.reminders(r)).catch(()=>{}));
                     }}
                       style={{ background:T.green+"1A", border:`1px solid ${T.green}33`,
                         borderRadius:10, padding:"8px 12px", fontSize:12, fontWeight:600, color:T.greenL, flexShrink:0 }}>
@@ -1623,8 +1636,8 @@ OmniCod 📸`;
               ))}
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-              <Field label="Toplam Tutar (₺)" type="number" value={form.totalAmount} onChange={f("totalAmount")} placeholder="0"/>
-              <Field label="Alınan Kapora (₺)" type="number" value={form.paid} onChange={f("paid")} placeholder="0"/>
+              <Field label="Toplam Tutar" type="number" value={form.totalAmount} onChange={f("totalAmount")} placeholder="0"/>
+              <Field label="Alınan Kapora" type="number" value={form.paid} onChange={f("paid")} placeholder="0"/>
             </div>
             <Field label="Notlar" value={form.notes} onChange={f("notes")} textarea placeholder="Özel istekler, tercihler..."/>
             <Field label="Bizi Nereden Duydunuz?" value={form.referralSource} onChange={f("referralSource")} options={["","Instagram","Google","Tavsiye","Düğün Fuarı","Diğer"]}/>

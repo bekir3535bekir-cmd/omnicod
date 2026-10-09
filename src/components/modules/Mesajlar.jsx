@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
-import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
+import { fmt, fmtTL, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
+import { getPass, setPass, getSession, saveSession, clearSession, getStudioInfo } from "../../services/storage";
 
 export const Mesajlar = ({ data, setData, role }) => {
   const isAdmin = role === "admin";
@@ -47,7 +47,8 @@ export const Mesajlar = ({ data, setData, role }) => {
       .replace(/\{saat\}/g, apt.time||"")
       .replace(/\{konum\}/g, apt.location||"")
       .replace(/\{tip\}/g, apt.type||"Düğün")
-      .replace(/\{tutar\}/g, client?.totalAmount>0?fmt(client.totalAmount-client.paid):"");
+      .replace(/\{tutar\}/g, client?.totalAmount>0?fmtTL(client.totalAmount-client.paid):"")
+      .replace(/\{studyo\}/g, getStudioInfo().unvan || "Stüdyomuz");
   };
 
   const useTpl = (tpl) => {
@@ -67,8 +68,11 @@ export const Mesajlar = ({ data, setData, role }) => {
   const sendMsg = () => {
     if(!msg.trim()) return;
     const m={from:"me",text:msg.trim(),time:new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}),date:todayStr()};
-    setData(p=>({...p,messages:p.messages.map(x=>x.id===sel.id?{...x,chat:[...x.chat,m],lastMsg:msg.trim(),unread:0}:x)}));
-    setSel(s=>({...s,chat:[...s.chat,m]}));
+    const cur = data.messages.find(x=>x.id===sel.id) || sel;
+    const updated = {...cur, chat:[...(cur.chat||[]),m], lastMsg:msg.trim(), unread:0};
+    setData(p=>({...p,messages:p.messages.map(x=>x.id===sel.id?updated:x)}));
+    sb.upsert("messages", toDB.messages(updated)).catch(()=>{});
+    setSel(updated);
     setMsg("");
   };
 
@@ -76,6 +80,7 @@ export const Mesajlar = ({ data, setData, role }) => {
     if(!newName.trim()) return;
     const c={id:uid(),clientId:null,clientName:newName.trim(),unread:0,lastMsg:"",chat:[]};
     setData(p=>({...p,messages:[...p.messages,c]}));
+    sb.upsert("messages", toDB.messages(c)).catch(()=>{});
     setShowNew(false); setNewName(""); setSel(c);
   };
 

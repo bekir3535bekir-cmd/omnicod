@@ -1,5 +1,5 @@
 {
-  "name": "photoapp-dev",
+  "name": "studyom",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -10,7 +10,9 @@
     "mobile:sync": "vite build && cap sync",
     "mobile:open": "cap open android",
     "android:open": "cap open android",
-    "ios:open": "cap open ios"
+    "ios:open": "cap open ios",
+    "desktop": "vite build && electron .",
+    "desktop:build": "vite build && electron-builder --win"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.1",
@@ -24,6 +26,46 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
     "vite": "^8.2.2"
+  },
+  "productName": "STÜDYOM",
+  "description": "STÜDYOM — Fotoğrafçılık & Stüdyo Yönetim Sistemi",
+  "author": "STÜDYOM",
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "com.studyom.app",
+    "productName": "STÜDYOM",
+    "executableName": "Studyom",
+    "directories": {
+      "output": "release",
+      "buildResources": "resources"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "resources/icon.png",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "resources/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "STÜDYOM",
+      "artifactName": "Studyom-Kurulum-${version}.${ext}"
+    }
   }
 }

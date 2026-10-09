@@ -3,6 +3,8 @@ import { T } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { Card, Pill, PageHeader, GoldButton, Field } from "../common";
 import { uid, todayStr } from "../../utils/helpers";
+import { sb, toDB } from "../../services/supabase";
+import { canAddClient, canAddAppointment } from "../../services/plan";
 
 const MONTH_NAMES = {
   ocak: "01", subat: "02", şubat: "02", mart: "03", nisan: "04", mayis: "05", mayıs: "05",
@@ -12,17 +14,20 @@ const MONTH_NAMES = {
 
 // Metin akıllı ayrıştırma fonksiyonu
 export const parseVoiceCommand = (text) => {
-  const lower = (text || "").toLowerCase().trim();
+  const lower = (text || "").toLocaleLowerCase("tr-TR").trim();
   const year = new Date().getFullYear();
+  // Tarih ifadesi (örn: "15 temmuz", "24 ağustos 2027") — tür ve isim tespitinden önce metinden çıkarılır
+  const dateMatch = lower.match(/(\d{1,2})\s*(ocak|şubat|subat|mart|nisan|mayıs|mayis|haziran|temmuz|ağustos|agustos|eylül|eylul|ekim|kasım|kasim|aralık|aralik)(?:\s+(\d{4}))?/i);
+  const body = dateMatch ? lower.replace(dateMatch[0], " ") : lower;
 
   // Çekim Türü
   let type = "Dış Çekim";
-  if (lower.includes("düğün") || lower.includes("dugun")) type = "Düğün";
-  else if (lower.includes("nişan") || lower.includes("nisan")) type = "Nişan";
-  else if (lower.includes("kına") || lower.includes("kina")) type = "Kına";
-  else if (lower.includes("sünnet") || lower.includes("sunnet")) type = "Sünnet";
-  else if (lower.includes("save the date")) type = "Save The Date";
-  else if (lower.includes("stüdyo") || lower.includes("studyo")) type = "Stüdyo Portre";
+  if (body.includes("düğün") || body.includes("dugun")) type = "Düğün";
+  else if (body.includes("nişan") || body.includes("nisan")) type = "Nişan";
+  else if (body.includes("kına") || body.includes("kina")) type = "Kına";
+  else if (body.includes("sünnet") || body.includes("sunnet")) type = "Sünnet";
+  else if (body.includes("save the date")) type = "Save The Date";
+  else if (body.includes("stüdyo") || body.includes("studyo")) type = "Stüdyo Portre";
 
   // Saat (örn: 14:00, saat 16, saat 17 30)
   let time = "15:00";
@@ -41,42 +46,45 @@ export const parseVoiceCommand = (text) => {
   if (lower.includes("yarın") || lower.includes("yarin")) {
     const tmr = new Date();
     tmr.setDate(tmr.getDate() + 1);
-    date = tmr.toISOString().split("T")[0];
-  } else {
-    const dateRegex = /(\d{1,2})\s*(ocak|şubat|subat|mart|nisan|mayıs|mayis|haziran|temmuz|ağustos|agustos|eylül|eylul|ekim|kasım|kasim|aralık|aralik)/i;
-    const dateMatch = lower.match(dateRegex);
-    if (dateMatch) {
-      const day = dateMatch[1].padStart(2, "0");
-      const month = MONTH_NAMES[dateMatch[2].toLowerCase()] || "01";
-      date = `${year}-${month}-${day}`;
-    }
+    date = `${tmr.getFullYear()}-${String(tmr.getMonth()+1).padStart(2,"0")}-${String(tmr.getDate()).padStart(2,"0")}`;
+  } else if (dateMatch) {
+    const day = dateMatch[1].padStart(2, "0");
+    const month = MONTH_NAMES[dateMatch[2]] || "01";
+    let y = dateMatch[3] ? Number(dateMatch[3]) : year;
+    // Yıl söylenmediyse ve tarih geçmişte kaldıysa gelecek yılı kastediyordur
+    if (!dateMatch[3] && `${y}-${month}-${day}` < todayStr()) y += 1;
+    date = `${y}-${month}-${day}`;
   }
 
-  // Tutar ve Kapora (örn: 15000 lira, 15 bin, kapora 3000)
-  let totalAmount = 15000;
-  let deposit = 3000;
+  // Tutar ve Kapora (örn: "15 bin lira", "kapora 3 bin", "kaporası 2000")
+  // Söylenmeyen tutar 0 kalır — varsayılan rakam uydurulmaz
+  const toNum = (n, bin) => parseInt(n, 10) * (bin ? 1000 : 1);
+  let totalAmount = 0;
+  let deposit = 0;
 
-  const amountMatch = lower.match(/(\d+)\s*(?:bin)?\s*(?:lira|tl)/);
-  if (amountMatch) {
-    let num = parseInt(amountMatch[1], 10);
-    if (lower.includes(amountMatch[1] + " bin")) num *= 1000;
-    if (num > 0) totalAmount = num;
-  }
+  const depositMatch = lower.match(/kapora(?:s[ıi])?\s*(\d+)\s*(bin)?/);
+  if (depositMatch) deposit = toNum(depositMatch[1], depositMatch[2]);
 
-  const depositMatch = lower.match(/kapora\s*(\d+)/);
-  if (depositMatch) {
-    deposit = parseInt(depositMatch[1], 10);
-  }
+  // Toplam tutar: kapora ifadesi dışındaki ilk "X (bin) lira/tl"
+  const rest = depositMatch ? lower.replace(depositMatch[0], " ") : lower;
+  const amountMatch = rest.match(/(\d+)\s*(bin)?\s*(?:lira|tl|₺)/);
+  if (amountMatch) totalAmount = toNum(amountMatch[1], amountMatch[2]);
 
   // İsim tespiti (örn: "Ayşe ve Burak çiftine", "Zeynep Kaya için")
   let clientName = "Yeni Müşteri";
-  const nameMatch = lower.match(/([a-zçğıöşüA-ZÇĞİÖŞÜ\s&]+?)(?:\s+çiftine|\s+için|\s+dış|\s+düğün|\s+nişan|\s+randevusu)/i);
+  const nameMatch = body.match(/([a-zçğıöşüA-ZÇĞİÖŞÜ\s&'’]+?)(?:\s+çiftine|\s+için|\s+dış|\s+düğün|\s+nişan|\s+kına|\s+sünnet|\s+randevusu)/i);
   if (nameMatch && nameMatch[1].trim().length > 2) {
     const raw = nameMatch[1].trim();
     // Fazlalık kelimeleri temizle
-    const cleaned = raw.replace(/(?:ekle|yeni|randevu|saat\s*\d+|lira|tl|\d+)/gi, "").trim();
+    const cleaned = raw
+      .replace(/(?:^|\s)['’]?(?:da|de|ta|te)(?=\s|$)/gi, " ")   // "16:00'da" ekinden kalan
+      .replace(/\b(?:ekle|yeni|randevu|saat|lira|tl)\b|\d+/gi, " ")
+      .replace(/['’]/g, "")
+      .replace(/\s+/g, " ").trim();
     if (cleaned.length > 2) {
-      clientName = cleaned.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+      clientName = cleaned.split(" ")
+        .map(w => w === "ve" ? w : w.charAt(0).toLocaleUpperCase("tr-TR") + w.slice(1))
+        .join(" ");
     }
   }
 
@@ -140,22 +148,33 @@ export const SesliAsistan = ({ data, setData, setActive }) => {
   // Randevuyu ve müşteriyi kaydet
   const handleSave = () => {
     if (!parsed) return;
+    const exists = data.clients.some(c => c.name.toLowerCase() === parsed.clientName.toLowerCase());
+    if ((!exists && !canAddClient(data).allowed) || !canAddAppointment(data).allowed) {
+      alert("Plan limitine ulaşıldı. Devam etmek için Pro'ya geçebilirsiniz.");
+      if (setActive) setActive("planyonetimi");
+      return;
+    }
 
     const newClientId = uid();
     const newAptId = uid();
+    const depositId = uid();
 
     const newClient = {
       id: newClientId,
       name: parsed.clientName,
       phone: "",
+      email: "",
       type: parsed.type,
+      package: data.packages?.[0]?.name || "",
+      status: "aktif",
+      notes: `Sesli komutla eklendi: "${transcript}"`,
       totalAmount: parsed.totalAmount,
       paid: parsed.deposit,
       date: parsed.date,
       createdAt: todayStr(),
       process: {},
       payments: parsed.deposit > 0 ? [{
-        id: uid(),
+        id: depositId,
         amount: parsed.deposit,
         type: "Ödeme Alındı",
         method: "Nakit",
@@ -173,27 +192,33 @@ export const SesliAsistan = ({ data, setData, setActive }) => {
       type: parsed.type,
       status: "onaylı",
       location: "Stüdyo / Dış Mekan",
-      note: `Sesli komutla eklendi: "${transcript}"`
+      package: newClient.package,
+      totalAmount: parsed.totalAmount,
+      kapora: parsed.deposit,
+      reminderDays: 3,
+      notes: `Sesli komutla eklendi: "${transcript}"`
     };
+
+    const depositIncome = parsed.deposit > 0 ? {
+      id: depositId,
+      clientName: parsed.clientName,
+      amount: parsed.deposit,
+      type: "Kapora",
+      method: "Nakit",
+      date: todayStr(),
+      note: "Kapora ödemesi",
+      category: parsed.type
+    } : null;
 
     setData(prev => ({
       ...prev,
       clients: [newClient, ...prev.clients],
       appointments: [newAppointment, ...prev.appointments],
-      incomes: parsed.deposit > 0 ? [
-        {
-          id: uid(),
-          clientName: parsed.clientName,
-          amount: parsed.deposit,
-          type: "Ödeme",
-          method: "Nakit",
-          date: todayStr(),
-          note: "Kapora ödemesi",
-          category: parsed.type
-        },
-        ...prev.incomes
-      ] : prev.incomes
+      incomes: depositIncome ? [depositIncome, ...prev.incomes] : prev.incomes
     }));
+    sb.upsert("clients", toDB.clients(newClient)).catch(() => {});
+    sb.upsert("appointments", toDB.appointments(newAppointment)).catch(() => {});
+    if (depositIncome) sb.upsert("incomes", toDB.incomes(depositIncome)).catch(() => {});
 
     setSavedSuccess(true);
     setTimeout(() => {
@@ -313,11 +338,11 @@ export const SesliAsistan = ({ data, setData, setActive }) => {
             </div>
             <div>
               <div style={{ fontSize: 11, color: T.text3 }}>TOPLAM TUTAR</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: T.greenL, marginTop: 2 }}>₺{parsed.totalAmount.toLocaleString("tr-TR")}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: T.greenL, marginTop: 2 }}>{parsed.totalAmount.toLocaleString("tr-TR")}</div>
             </div>
             <div>
               <div style={{ fontSize: 11, color: T.text3 }}>ALINAN KAPORA</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: T.goldL, marginTop: 2 }}>₺{parsed.deposit.toLocaleString("tr-TR")}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: T.goldL, marginTop: 2 }}>{parsed.deposit.toLocaleString("tr-TR")}</div>
             </div>
           </div>
 
@@ -335,9 +360,7 @@ export const SesliAsistan = ({ data, setData, setActive }) => {
               🎉 Randevu Ajandaya Başarıyla Eklendi!
             </div>
           ) : (
-            <GoldButton full onClick={handleSave}>
-              ✅ Onayla ve Ajandaya Ekle
-            </GoldButton>
+            <GoldButton full onClick={handleSave} label="✅ Onayla ve Ajandaya Ekle"/>
           )}
         </Card>
       )}

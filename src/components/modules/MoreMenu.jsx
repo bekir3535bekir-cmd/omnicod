@@ -2,17 +2,27 @@ import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { PlanBadge, ProBadge } from "../common/ProGate";
 import { PLANS, getTrialInfo } from "../../services/plan";
 import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
+import { getPass, setPass, getSession, saveSession, clearSession, getStudioProfile, saveStudioProfile } from "../../services/storage";
 
 export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogout, themeKey = "sapphire", setThemeKey }) => {
   const [showSifre,   setShowSifre]   = useState(false);
   const [showAyarlar, setShowAyarlar] = useState(false);
   const [sForm, setSForm] = useState({ adminPass:"", personelPass:"" });
+  const [showFirma, setShowFirma] = useState(false);
+  const [firma, setFirma] = useState(null);
+  const ff = k => v => setFirma(p => ({ ...p, [k]: v }));
+  const openFirma = () => { setFirma(getStudioProfile()); setShowAyarlar(false); setTimeout(() => setShowFirma(true), 200); };
+  const saveFirma = () => {
+    const clean = Object.fromEntries(Object.entries(firma).map(([k, v]) => [k, typeof v === "string" ? v.trim() : v]));
+    saveStudioProfile(clean);
+    setShowFirma(false);
+    alert("✅ Firma bilgileri kaydedildi. Sözleşme, fatura ve kartvizitte bu bilgiler kullanılacak.");
+  };
   const saveSifre = () => {
     if(sForm.adminPass.length >= 4)    setPass("geses_admin_pass",    sForm.adminPass);
     if(sForm.personelPass.length >= 4) setPass("geses_personel_pass", sForm.personelPass);
@@ -45,7 +55,7 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
             <PlanBadge plan={plan}/>
           </div>
           <div style={{ fontSize:12, color:T.text3, marginTop:3 }}>
-            {isPro ? "Sınırsız çekim ve tüm özellikler aktif" : isTrial ? `Tüm özellikler açık • Kalan: ${trial.daysLeft} gün` : "20 çekim limiti • Pro'ya Yükselt (₺749/ay)"}
+            {isPro ? "Sınırsız çekim ve tüm özellikler aktif" : isTrial ? `Tüm özellikler açık • Kalan: ${trial.daysLeft} gün` : "20 çekim limiti • Pro'ya Yükselt (749/ay)"}
           </div>
         </div>
         <span style={{ fontSize:12, color:isPro?T.goldL:isTrial?T.blueL:T.goldL, fontWeight:600 }}>{isPro?"Yönet →":isTrial?"İncele →":"Yükselt →"}</span>
@@ -158,6 +168,21 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
             </div>
           </div>
 
+          {/* Firma & Kişi Bilgileri - sadece admin */}
+          {role==="admin" && (
+            <Card onClick={openFirma}
+              style={{ display:"flex", alignItems:"center", gap:14, padding:16, cursor:"pointer" }}>
+              <div style={{ background:T.blue+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
+                <Ic n="users" s={20} c={T.blueL}/>
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontWeight:600, fontSize:15 }}>Firma & Kişi Bilgileri</div>
+                <div style={{ fontSize:12, color:T.text3, marginTop:2 }}>Unvan, yetkili, iletişim, vergi ve IBAN</div>
+              </div>
+              <Ic n="back" s={16} c={T.text3} style={{ transform:"rotate(180deg)" }}/>
+            </Card>
+          )}
+
           {/* Şifre Değiştir - sadece admin */}
           {role==="admin" && (
             <Card onClick={()=>{ setShowAyarlar(false); setTimeout(()=>setShowSifre(true),200); }}
@@ -210,6 +235,33 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
                 padding:"12px 14px", color:T.text, fontSize:14, width:"100%", outline:"none" }}/>
           </div>
           <GoldButton label="Şifreleri Kaydet" icon="check" onClick={saveSifre} full/>
+        </div>
+      </BottomSheet>
+    )}
+
+    {/* Firma & Kişi Bilgileri BottomSheet */}
+    {showFirma && firma && (
+      <BottomSheet title="Firma & Kişi Bilgileri" onClose={()=>setShowFirma(false)}>
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <div style={{ fontSize:12, color:T.text3, lineHeight:1.6 }}>
+            Bu bilgiler sözleşme, fatura, kartvizit ve müşteriye giden mesajlarda kullanılır.
+          </div>
+          <div style={{ fontSize:13, fontWeight:700, color:T.text }}>🏢 Firma</div>
+          <Field label="Firma / Stüdyo Adı (Unvan)" value={firma.studio||""} onChange={ff("studio")} placeholder="Örn: Işık Fotoğrafçılık"/>
+          <Field label="Adres" value={firma.address||""} onChange={ff("address")} placeholder="Mahalle, cadde, ilçe / il"/>
+          <Field label="Firma Telefonu" type="tel" value={firma.phone||""} onChange={ff("phone")} placeholder="05xx xxx xx xx"/>
+          <Field label="E-posta" type="email" value={firma.email||""} onChange={ff("email")} placeholder="studyo@mail.com"/>
+          <Field label="Instagram" value={firma.instagram||""} onChange={ff("instagram")} placeholder="@kullaniciadi"/>
+
+          <div style={{ fontSize:13, fontWeight:700, color:T.text, marginTop:4 }}>👤 Yetkili Kişi</div>
+          <Field label="Ad Soyad" value={firma.name||""} onChange={ff("name")} placeholder="Sözleşmede imza atan kişi"/>
+
+          <div style={{ fontSize:13, fontWeight:700, color:T.text, marginTop:4 }}>🧾 Fatura Bilgileri</div>
+          <Field label="Vergi Dairesi" value={firma.vdaire||""} onChange={ff("vdaire")} placeholder="Örn: Gebze Vergi Dairesi"/>
+          <Field label="Vergi / TC Kimlik No" value={firma.vno||""} onChange={ff("vno")} placeholder="Vergi numarası"/>
+          <Field label="IBAN" value={firma.iban||""} onChange={ff("iban")} placeholder="TR.. .... .... .... .... .... .."/>
+
+          <GoldButton label="Bilgileri Kaydet" icon="check" onClick={saveFirma} full/>
         </div>
       </BottomSheet>
     )}

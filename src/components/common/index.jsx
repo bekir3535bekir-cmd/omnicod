@@ -153,12 +153,12 @@ export const CustomSelect = ({ value, onChange, options, placeholder="Seçiniz..
           left: 0,
           right: 0,
           zIndex: 9999,
-          background: "linear-gradient(145deg, rgba(26, 26, 34, 0.98) 0%, rgba(16, 16, 22, 0.98) 100%)",
+          background: T.isDark === false ? "#FFFFFF" : "linear-gradient(145deg, rgba(26, 26, 34, 0.98) 0%, rgba(16, 16, 22, 0.98) 100%)",
           backdropFilter: "blur(32px) saturate(190%)",
           WebkitBackdropFilter: "blur(32px) saturate(190%)",
           border: `1.5px solid ${T.gold}44`,
           borderRadius: 16,
-          boxShadow: "0 16px 40px rgba(0,0,0,0.9), 0 0 20px rgba(232, 197, 71, 0.15)",
+          boxShadow: T.isDark === false ? "0 16px 40px rgba(15,23,42,0.18)" : "0 16px 40px rgba(0,0,0,0.9), 0 0 20px rgba(232, 197, 71, 0.15)",
           padding: "6px",
           maxHeight: 240,
           overflowY: "auto"
@@ -323,27 +323,30 @@ const DatePicker = ({ label, value, onChange, required }) => {
   );
 };
 
-const BottomSheet = ({ title, onClose, footer, children }) => (
+const BottomSheet = ({ title, onClose, footer, children }) => {
+  // Açık temada pencere de açık renkli olmalı (koyu zemin + koyu yazı okunmuyordu)
+  const light = T.isDark === false;
+  return (
   <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
     {/* Backdrop */}
-    <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.8)", backdropFilter:"blur(16px)", WebkitBackdropFilter:"blur(16px)" }}/>
+    <div onClick={onClose} style={{ position:"absolute", inset:0, background: light ? "rgba(15,23,42,0.45)" : "rgba(0,0,0,0.8)", backdropFilter:"blur(16px)", WebkitBackdropFilter:"blur(16px)" }}/>
     {/* Modal Box */}
     <div className="modal-pop" style={{
       position:"relative", zIndex:1,
-      background:"linear-gradient(145deg, rgba(22, 22, 28, 0.96) 0%, rgba(14, 14, 18, 0.98) 100%)",
+      background: light ? "linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 100%)" : "linear-gradient(145deg, rgba(22, 22, 28, 0.96) 0%, rgba(14, 14, 18, 0.98) 100%)",
       backdropFilter:"blur(36px) saturate(200%)",
       WebkitBackdropFilter:"blur(36px) saturate(200%)",
       borderRadius:28,
-      border:"1px solid rgba(255, 255, 255, 0.12)",
-      boxShadow:"0 32px 80px rgba(0,0,0,0.95), inset 0 1px 1px rgba(255,255,255,0.22)",
+      border: light ? `1px solid ${T.border}` : "1px solid rgba(255, 255, 255, 0.12)",
+      boxShadow: light ? "0 24px 60px rgba(15,23,42,0.25)" : "0 32px 80px rgba(0,0,0,0.95), inset 0 1px 1px rgba(255,255,255,0.22)",
       maxWidth:440, width:"100%",
       maxHeight:"90vh",
       display:"flex", flexDirection:"column",
       overflow: "hidden"
     }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 20px 14px", borderBottom:`1px solid ${T.border}`, background:"rgba(22, 22, 28, 0.8)", backdropFilter:"blur(20px)", zIndex:10 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 20px 14px", borderBottom:`1px solid ${T.border}`, background: light ? "rgba(255,255,255,0.92)" : "rgba(22, 22, 28, 0.8)", backdropFilter:"blur(20px)", zIndex:10 }}>
         <span style={{ fontFamily:"Playfair Display", fontSize:19, fontWeight:700, color:T.goldL }}>{title}</span>
-        <button onClick={onClose} style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${T.border}`,
+        <button onClick={onClose} style={{ background: light ? T.card2 : "rgba(255,255,255,0.06)", border:`1px solid ${T.border}`,
           borderRadius:99, width:34, height:34, display:"flex", alignItems:"center", justifyContent:"center" }}>
           <Ic n="close" s={15} c={T.text2}/>
         </button>
@@ -357,7 +360,7 @@ const BottomSheet = ({ title, onClose, footer, children }) => (
         <div style={{
           padding:"14px 20px 18px",
           borderTop:`1px solid ${T.border}`,
-          background:"rgba(18, 18, 22, 0.95)",
+          background: light ? "rgba(255,255,255,0.95)" : "rgba(18, 18, 22, 0.95)",
           backdropFilter:"blur(24px)",
           WebkitBackdropFilter:"blur(24px)",
           zIndex:10
@@ -367,7 +370,8 @@ const BottomSheet = ({ title, onClose, footer, children }) => (
       )}
     </div>
   </div>
-);
+  );
+};
 
 const EmptyState = ({ icon, title, sub, action, onAction }) => (
   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"56px 24px", gap:16 }}>

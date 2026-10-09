@@ -2,22 +2,68 @@ import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE , initProcess, isComplete } from "../../constants/templates";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, initProcess, isComplete } from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo, WeatherCard, CekimGunuModu } from "../common";
 import { UsageBadge, ProGate } from "../common/ProGate";
-import { canAddAppointment } from "../../services/plan";
+import { canAddAppointment, canAddClient } from "../../services/plan";
+import { staffIdsOf, staffNameOf, assignmentNotifications, assignmentWhatsApp } from "../../services/staffNotify";
 import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
+import { getPass, setPass, getSession, saveSession, clearSession, getStudioInfo } from "../../services/storage";
+
+// Randevuya personel atama (çoklu seçim)
+const StaffPicker = ({ team, value, onChange }) => {
+  const toggle = id => onChange(value.includes(id) ? value.filter(x => x !== id) : [...value, id]);
+  return (
+    <div>
+      <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:6, display:"flex", alignItems:"center", gap:6 }}>
+        <span>👤</span> Görevli Personel / Fotoğrafçı
+        <span style={{ fontSize:10, color:T.text3, fontWeight:400 }}>(birden fazla seçilebilir — seçilenlere bildirim gider)</span>
+      </div>
+      {team.length === 0 ? (
+        <div style={{ fontSize:12, color:T.text3, background:T.card2, border:`1px dashed ${T.border}`, borderRadius:12, padding:"10px 12px" }}>
+          Henüz ekip üyesi yok. "Ekip & Shift" bölümünden personel ekleyebilirsiniz.
+        </div>
+      ) : (
+        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+          {team.map(m => {
+            const on = value.includes(m.id);
+            return (
+              <button key={m.id} type="button" onClick={() => toggle(m.id)}
+                style={{ background: on ? T.gold+"33" : T.card2, border:`1px solid ${on ? T.gold : T.border}`,
+                  borderRadius:20, padding:"6px 12px", fontSize:12, color: on ? T.goldL : T.text2,
+                  cursor:"pointer", fontWeight: on ? 600 : 400 }}>
+                {on ? "✓ " : ""}{m.name}{!m.phone ? " (tel yok)" : ""}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const Ajanda = ({ data, setData, role, plan, setActive }) => {
   const isAdmin = role === "admin";
   const [showAdd,   setShowAdd]   = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [limitInfo, setLimitInfo] = useState(null); // hangi limit doldu: randevu / müşteri
+  const [notifyInfo, setNotifyInfo] = useState(null); // personel bilgilendirme penceresi
+
+  // Atanan personele uygulama içi bildirim oluşturur ve WhatsApp bilgilendirme penceresini açar
+  const notifyStaff = (apt, memberIds) => {
+    const team = data.team || [];
+    const ids = memberIds.filter(id => team.some(m => m.id === id));
+    if (!ids.length) return;
+    const notes = assignmentNotifications(apt, ids, team);
+    setData(p => ({ ...p, notifications: [...(p.notifications || []), ...notes] }));
+    notes.forEach(n => sb.upsert("notifications", toDB.notifications(n)).catch(() => {}));
+    setNotifyInfo({ apt, members: ids.map(id => team.find(m => m.id === id)) });
+  };
   const [detailId,  setDetailId]  = useState(null);
   const [statusFilter, setStatusFilter] = useState("aktif");
   const [showCekim, setShowCekim] = useState(false);
   const [cekimApt,  setCekimApt]  = useState(null);
-  const F = { clientName:"", date:"", time:"14:00", location:"", type:"Düğün", package:"Bronz Paket", notes:"", reminderDays:3, status:"onaylı", totalAmount:"", kapora:"", extraDates:[], staffName:"", equipmentReady:false, equipmentReadyBy:"", equipmentReadyAt:"" };
+  const F = { clientName:"", clientPhone:"", date:"", time:"14:00", location:"", type:"Düğün", package:"Bronz Paket", notes:"", reminderDays:3, status:"onaylı", totalAmount:"", kapora:"", extraDates:[], staffName:"", equipmentReady:false, equipmentReadyBy:"", equipmentReadyAt:"" };
   const [form, setForm] = useState(F);
   const f = k => v => setForm(p=>({...p,[k]:v}));
   const [editApt, setEditApt] = useState(null);
@@ -46,6 +92,15 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
     const kapora = Number(form.kapora)||0;
 
     const existingClient = data.clients.find(c=>c.name.toLowerCase()===form.clientName.toLowerCase());
+    // Yeni isimle randevu yeni müşteri oluşturur: müşteri limitine de tabi
+    if(!existingClient) {
+      const clientCheck = canAddClient(data);
+      if(!clientCheck.allowed) {
+        setLimitInfo({ check:clientCheck, label:"Müşteri" });
+        setShowLimitModal(true);
+        return;
+      }
+    }
 
     const kaporaId = uid();
     const kaporaPayment = kapora > 0 ? [{
@@ -70,6 +125,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
     if(existingClient) {
       const mergedClient = {
         ...existingClient,
+        phone: existingClient.phone || (form.clientPhone||"").trim(),
         totalAmount: total>0 ? total : existingClient.totalAmount,
         paid: existingClient.paid + kapora,
         payments: [...(existingClient.payments||[]), ...kaporaPayment],
@@ -79,7 +135,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
       syncedClientForDB = mergedClient;
     } else {
       const newClient = {
-        id: newClientId, name: form.clientName, phone:"", email:"",
+        id: newClientId, name: form.clientName, phone:(form.clientPhone||"").trim(), email:"",
         type: form.type, package: form.package, date: form.date,
         totalAmount: total, paid: kapora,
         notes: form.notes, status:"aktif", extraDates: cleanExtraDates,
@@ -122,6 +178,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
     newReminders.forEach(r => sb.upsert("reminders", toDB.reminders(r)).catch(()=>{}));
     if(kaporaIncome) sb.upsert("incomes", toDB.incomes(kaporaIncome)).catch(()=>{});
     setShowAdd(false); setForm(F);
+    notifyStaff(newA, staffIdsOf(newA, data.team||[]));
   };
 
   const del = id => {
@@ -139,7 +196,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
     setForm({ clientName:apt.clientName, date:"", time:apt.time||"", location:apt.location||"",
       type:apt.type, package:apt.package, notes:apt.notes||"", reminderDays:3,
       status:"bekliyor", totalAmount:apt.totalAmount||"", kapora:"", extraDates:[],
-      staffName:apt.staffName||"", equipmentReady:false, equipmentReadyBy:"", equipmentReadyAt:"" });
+      staffName:apt.staffName||"", staffIds:staffIdsOf(apt, data.team||[]), equipmentReady:false, equipmentReadyBy:"", equipmentReadyAt:"" });
     setShowAdd(true);
   };
 
@@ -177,7 +234,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
         </div>
       )}
 
-      <div style={{ padding:"0 20px" }}>
+      <div className="card-list" style={{ padding:"0 20px" }}>
         {filtered.length === 0 ? (
           <EmptyState icon="calendar" title="Randevu Bulunamadı"
             sub="Yeni bir randevu ekleyerek takibine başla." action="İlk Randevuyu Ekle" onAction={handleOpenAdd}/>
@@ -270,7 +327,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
                     const cl = data.clients.find(c => c.name.toLowerCase() === a.clientName.toLowerCase() || c.id === a.clientId);
                     const rawPh = cl?.phone || "";
                     const ph = rawPh.replace(/\D/g, "").replace(/^0/, "");
-                    const msg = `Merhaba ${a.clientName}! ${fmtDate(a.date)} tarihindeki saat ${a.time || "14:00"}'da gerçekleşecek ${a.type} çekiminiz için hatırlatmak istedik. Görüşmek üzere! — StudyoApp`;
+                    const msg = `Merhaba ${a.clientName}! ${fmtDate(a.date)} tarihindeki saat ${a.time || "14:00"}'da gerçekleşecek ${a.type} çekiminiz için hatırlatmak istedik. Görüşmek üzere! — ${getStudioInfo().unvan || "Stüdyomuz"}`;
                     if (ph) {
                       window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`, "_blank");
                     } else {
@@ -438,7 +495,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
             return (
               <button
                 onClick={() => {
-                  const msg = `Merhaba ${detail.clientName}! ${fmtDate(detail.date)} tarihindeki saat ${detail.time || "14:00"}'da gerçekleşecek ${detail.type} çekiminiz için hatırlatmak istedik. Sorularınız için bize yazabilirsiniz! — StudyoApp`;
+                  const msg = `Merhaba ${detail.clientName}! ${fmtDate(detail.date)} tarihindeki saat ${detail.time || "14:00"}'da gerçekleşecek ${detail.type} çekiminiz için hatırlatmak istedik. Sorularınız için bize yazabilirsiniz! — ${getStudioInfo().unvan || "Stüdyomuz"}`;
                   if (ph) {
                     window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`, "_blank");
                   } else {
@@ -525,52 +582,9 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
             </div>
             <Field label="Notlar" value={editApt.notes||""} onChange={v=>setEditApt(p=>({...p,notes:v}))} textarea placeholder="Özel istekler..."/>
 
-            {/* Görevli Personel (Ekipman Kontrolü Atanacak Kişi) */}
-            <div>
-              <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:6, display:"flex", alignItems:"center", gap:6 }}>
-                <span>👤</span> Görevli Personel / Fotoğrafçı
-                <span style={{ fontSize:10, color:T.text3, fontWeight:400 }}>(Ekipman kontrolü bu personele iletilir)</span>
-              </div>
-              {data.team && data.team.length > 0 && (
-                <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
-                  {data.team.map(member => (
-                    <button
-                      key={member.id}
-                      type="button"
-                      onClick={() => setEditApt(p => ({ ...p, staffName: member.name }))}
-                      style={{
-                        background: editApt.staffName === member.name ? T.gold + "33" : T.card2,
-                        border: `1px solid ${editApt.staffName === member.name ? T.gold : T.border}`,
-                        borderRadius: 20,
-                        padding: "5px 12px",
-                        fontSize: 12,
-                        color: editApt.staffName === member.name ? T.goldL : T.text2,
-                        cursor: "pointer",
-                        fontWeight: editApt.staffName === member.name ? 600 : 400
-                      }}
-                    >
-                      {member.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <input
-                value={editApt.staffName || ""}
-                onChange={e => setEditApt(p => ({ ...p, staffName: e.target.value }))}
-                placeholder="Örn: Ayşe Yılmaz, Mehmet..."
-                style={{
-                  width: "100%",
-                  background: T.card2,
-                  border: `1px solid ${T.border}`,
-                  borderRadius: 12,
-                  padding: "12px 14px",
-                  color: T.text,
-                  fontSize: 14,
-                  outline: "none",
-                  boxSizing: "border-box"
-                }}
-              />
-            </div>
+            {/* Görevli Personel — birden fazla kişi atanabilir, atananlara bildirim gider */}
+            <StaffPicker team={data.team||[]} value={staffIdsOf(editApt, data.team||[])}
+              onChange={ids => setEditApt(p => ({ ...p, staffIds: ids, staffName: staffNameOf(ids, data.team||[]) }))}/>
 
             <GoldButton label="Değişiklikleri Kaydet" icon="check" full onClick={()=>{
               if(!editApt.clientName||!editApt.date) return;
@@ -623,7 +637,10 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
                 };
                 sb.upsert("clients", toDB.clients(syncedClient)).catch(e=>console.error("Müşteri senkron hatası:",e));
               }
+              const beforeIds = staffIdsOf(data.appointments.find(a=>a.id===editApt.id), data.team||[]);
+              const addedIds = staffIdsOf(updatedApt, data.team||[]).filter(id=>!beforeIds.includes(id));
               setEditApt(null);
+              notifyStaff(updatedApt, addedIds);
             }}/>
           </div>
         </BottomSheet>
@@ -644,6 +661,9 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
                   padding:"9px 14px", fontSize:12, color:T.blueL, display:"flex", gap:8, alignItems:"center" }}>
                   <Ic n="info" s={13} c={T.blueL}/> Müşteriler listesine otomatik eklenecek
                 </div>
+            )}
+            {form.clientName.length>1 && !data.clients.some(c=>c.name.toLowerCase()===form.clientName.toLowerCase() && c.phone) && (
+              <Field label="Telefon" type="tel" value={form.clientPhone} onChange={f("clientPhone")} placeholder="05xx xxx xx xx"/>
             )}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
               <DatePicker label="Tarih" value={form.date} onChange={f("date")} required/>
@@ -714,60 +734,17 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
             </div>
             <Field label="Notlar" value={form.notes} onChange={f("notes")} textarea placeholder="Özel istekler, dikkat edilecekler..."/>
 
-            {/* Görevli Personel (Ekipman Kontrolü Atanacak Kişi) */}
-            <div>
-              <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:6, display:"flex", alignItems:"center", gap:6 }}>
-                <span>👤</span> Görevli Personel / Fotoğrafçı
-                <span style={{ fontSize:10, color:T.text3, fontWeight:400 }}>(Ekipman kontrolü bu personele iletilir)</span>
-              </div>
-              {data.team && data.team.length > 0 && (
-                <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
-                  {data.team.map(member => (
-                    <button
-                      key={member.id}
-                      type="button"
-                      onClick={() => setForm(p => ({ ...p, staffName: member.name }))}
-                      style={{
-                        background: form.staffName === member.name ? T.gold + "33" : T.card2,
-                        border: `1px solid ${form.staffName === member.name ? T.gold : T.border}`,
-                        borderRadius: 20,
-                        padding: "5px 12px",
-                        fontSize: 12,
-                        color: form.staffName === member.name ? T.goldL : T.text2,
-                        cursor: "pointer",
-                        fontWeight: form.staffName === member.name ? 600 : 400
-                      }}
-                    >
-                      {member.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <input
-                value={form.staffName || ""}
-                onChange={e => setForm(p => ({ ...p, staffName: e.target.value }))}
-                placeholder="Örn: Ayşe Yılmaz, Mehmet..."
-                style={{
-                  width: "100%",
-                  background: T.card2,
-                  border: `1px solid ${T.border}`,
-                  borderRadius: 12,
-                  padding: "12px 14px",
-                  color: T.text,
-                  fontSize: 14,
-                  outline: "none",
-                  boxSizing: "border-box"
-                }}
-              />
-            </div>
+            {/* Görevli Personel — birden fazla kişi atanabilir, atananlara bildirim gider */}
+            <StaffPicker team={data.team||[]} value={staffIdsOf(form, data.team||[])}
+              onChange={ids => setForm(p => ({ ...p, staffIds: ids, staffName: staffNameOf(ids, data.team||[]) }))}/>
 
             {/* Ödeme Bilgileri */}
             <div style={{ background:T.card2, borderRadius:14, padding:14 }}>
               <div style={{ fontSize:12, color:T.text3, fontWeight:600, textTransform:"uppercase",
                 letterSpacing:"0.5px", marginBottom:12 }}>💰 Ödeme Bilgileri</div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                <Field label="Toplam Tutar (₺)" type="number" value={form.totalAmount} onChange={f("totalAmount")} placeholder="0"/>
-                <Field label="Alınan Kapora (₺)" type="number" value={form.kapora} onChange={f("kapora")} placeholder="0"/>
+                <Field label="Toplam Tutar" type="number" value={form.totalAmount} onChange={f("totalAmount")} placeholder="0"/>
+                <Field label="Alınan Kapora" type="number" value={form.kapora} onChange={f("kapora")} placeholder="0"/>
               </div>
               {(Number(form.totalAmount)>0 || Number(form.kapora)>0) && (
                 <div className="fade-in" style={{ marginTop:10, display:"flex", justifyContent:"space-between",
@@ -816,9 +793,40 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
       )}
 
       {/* Randevu Limiti Doldu Modal */}
+      {notifyInfo && (
+        <BottomSheet title="Personeli Bilgilendir" onClose={()=>setNotifyInfo(null)}>
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            <div style={{ background:T.green+"1A", border:`1px solid ${T.green}33`, borderRadius:12, padding:"10px 14px", fontSize:12.5, color:T.greenL, lineHeight:1.5 }}>
+              ✅ Atanan personele uygulama içi bildirim gönderildi. Personel girişinde zil simgesinde görecekler.
+            </div>
+            <div style={{ fontSize:12.5, color:T.text2, lineHeight:1.5 }}>
+              <b>{notifyInfo.apt.clientName}</b> — {notifyInfo.apt.type} görevini WhatsApp ile de iletebilirsiniz:
+            </div>
+            {notifyInfo.members.map(m => {
+              const link = assignmentWhatsApp(m, notifyInfo.apt);
+              return (
+                <div key={m.id} style={{ display:"flex", alignItems:"center", gap:10, background:T.card2, border:`1px solid ${T.border}`, borderRadius:12, padding:"10px 12px" }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:14, fontWeight:600, color:T.text }}>{m.name}</div>
+                    <div style={{ fontSize:11.5, color:T.text3 }}>{m.phone || "Telefon kayıtlı değil — Ekip'ten ekleyin"}</div>
+                  </div>
+                  {link && (
+                    <button onClick={()=>window.open(link, "_blank")}
+                      style={{ background:"#25D36622", border:"1px solid #25D36655", color:"#25D366", borderRadius:10, padding:"8px 12px", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                      💬 WhatsApp
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+            <GoldButton label="Tamam" full onClick={()=>setNotifyInfo(null)}/>
+          </div>
+        </BottomSheet>
+      )}
+
       {showLimitModal && (
-        <BottomSheet title="Randevu Limiti" onClose={()=>setShowLimitModal(false)}>
-          <ProGate check={aptLimitCheck} featureLabel="Randevu" onUpgrade={()=>{ setShowLimitModal(false); setActive && setActive("planyonetimi"); }} />
+        <BottomSheet title={`${limitInfo?.label||"Randevu"} Limiti`} onClose={()=>{ setShowLimitModal(false); setLimitInfo(null); }}>
+          <ProGate check={limitInfo?.check||aptLimitCheck} featureLabel={limitInfo?.label||"Randevu"} onUpgrade={()=>{ setShowLimitModal(false); setLimitInfo(null); setActive && setActive("planyonetimi"); }} />
         </BottomSheet>
       )}
 

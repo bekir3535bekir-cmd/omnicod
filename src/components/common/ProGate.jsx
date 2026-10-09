@@ -32,7 +32,7 @@ export const ProGate = ({ check, proOnly, featureLabel, onUpgrade, children }) =
           <strong>{featureLabel}</strong> özelliği Pro planda kullanılabilir.
         </div>
         <div style={{ fontSize: 13, color: T.text3, marginBottom: 20 }}>
-          Aylık sadece <span style={{ color: T.goldL, fontWeight: 700 }}>₺{PLANS.pro.price}</span> ile tüm özellikleri açın.
+          Aylık sadece <span style={{ color: T.goldL, fontWeight: 700 }}>{PLANS.pro.price}</span> ile tüm özellikleri açın.
         </div>
         <button
           onClick={onUpgrade}
@@ -48,7 +48,7 @@ export const ProGate = ({ check, proOnly, featureLabel, onUpgrade, children }) =
             boxShadow: `0 4px 20px ${T.gold}40`,
           }}
         >
-          👑 Pro'ya Geç — ₺{PLANS.pro.price}/ay
+          👑 Pro'ya Geç — {PLANS.pro.price}/ay
         </button>
       </div>
     );
@@ -122,7 +122,7 @@ export const ProGate = ({ check, proOnly, featureLabel, onUpgrade, children }) =
             boxShadow: `0 4px 20px ${T.gold}40`,
           }}
         >
-          👑 Pro'ya Geç — ₺{PLANS.pro.price}/ay
+          👑 Pro'ya Geç — {PLANS.pro.price}/ay
         </button>
       </div>
     );

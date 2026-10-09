@@ -157,11 +157,11 @@ export const PlanYonetimi = ({ data, plan, setPlanState, setActive }) => {
               Pro'ya Yükselt
             </div>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 4, marginBottom: 4 }}>
-              <span style={{ fontFamily: "Playfair Display", fontSize: 42, fontWeight: 700, color: T.goldL }}>₺{PLANS.pro.price}</span>
+              <span style={{ fontFamily: "Playfair Display", fontSize: 42, fontWeight: 700, color: T.goldL }}>{PLANS.pro.price}</span>
               <span style={{ fontSize: 16, color: T.text3 }}>/ay</span>
             </div>
             <div style={{ fontSize: 12, color: T.text3, marginBottom: 16 }}>
-              veya ₺{PLANS.pro.priceYearly}/yıl ile %17 tasarruf
+              veya {PLANS.pro.priceYearly}/yıl ile %17 tasarruf
             </div>
             <GoldButton
               label="👑 Lisans Kodu ile Aktive Et"
@@ -225,7 +225,8 @@ export const PlanYonetimi = ({ data, plan, setPlanState, setActive }) => {
           </button>
         )}
 
-        {/* Test & Simülasyon Araçları */}
+        {/* Test & Simülasyon Araçları — yalnızca geliştirme sunucusunda, canlı sürümde görünmez */}
+        {import.meta.env.DEV && (
         <Card style={{ padding: 16, marginBottom: 20, background: T.card2, border: `1px dashed ${T.border}` }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 6 }}>
             🧪 SaaS Deneme Test Araçları
@@ -268,14 +269,8 @@ export const PlanYonetimi = ({ data, plan, setPlanState, setActive }) => {
             </button>
           </div>
         </Card>
+        )}
 
-        {/* Destek */}
-        <Card style={{ padding: 16, marginBottom: 30, textAlign: "center" }}>
-          <div style={{ fontSize: 12, color: T.text3, lineHeight: 1.6 }}>
-            Sorularınız mı var? 📧 destek@omnicod.com
-            <br />WhatsApp: 0532 000 00 00
-          </div>
-        </Card>
       </div>
 
       {/* Aktivasyon Modal */}
@@ -290,7 +285,7 @@ export const PlanYonetimi = ({ data, plan, setPlanState, setActive }) => {
               label="Lisans Kodu"
               value={licenseKey}
               onChange={setLicenseKey}
-              placeholder="OMNICOD-PRO-XXXX"
+              placeholder="Lisans kodunuz"
             />
             {msg && (
               <div style={{

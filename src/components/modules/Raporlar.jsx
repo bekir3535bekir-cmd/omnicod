@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { sb, fromDB, toDB } from "../../services/supabase";
 import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
@@ -391,7 +391,7 @@ export const Raporlar = ({ data }) => {
                 <div style={{ display:"flex", alignItems:"baseline", gap:8 }}>
                   {rateLoading
                     ? <div style={{ fontSize:28, color:T.text3 }}>⏳ Yükleniyor...</div>
-                    : <><span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:36, fontWeight:700, color:T.goldL }}>₺{parseFloat(currentRate).toFixed(2)}</span>
+                    : <><span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:36, fontWeight:700, color:T.goldL }}>{parseFloat(currentRate).toFixed(2)}</span>
                        <span style={{ fontSize:14, color:T.text3 }}>= 1 USD</span></>
                   }
                 </div>
@@ -411,7 +411,7 @@ export const Raporlar = ({ data }) => {
                     style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:12,
                       padding:"12px 14px", color:T.text, fontSize:14, width:"100%" }}>
                     {Object.keys(USD_TRY_RATES).map(y=>(
-                      <option key={y} value={y}>{y} (₺{USD_TRY_RATES[y]})</option>
+                      <option key={y} value={y}>{y} ({USD_TRY_RATES[y]})</option>
                     ))}
                   </select>
                 </div>
@@ -430,14 +430,14 @@ export const Raporlar = ({ data }) => {
                     <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:22, fontWeight:700, color:T.blueL }}>
                       ${Math.round(usdAtYear).toLocaleString("tr-TR")}
                     </div>
-                    <div style={{ fontSize:11, color:T.text3, marginTop:3 }}>kur: ₺{historicRate}</div>
+                    <div style={{ fontSize:11, color:T.text3, marginTop:3 }}>kur: {historicRate}</div>
                   </div>
                   <div style={{ background:T.gold+"1A", border:`1px solid ${T.gold}33`, borderRadius:12, padding:14, textAlign:"center" }}>
                     <div style={{ fontSize:11, color:T.text3, marginBottom:4 }}>Bugünkü Değeri</div>
                     <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:22, fontWeight:700, color:T.goldL }}>
                       ${Math.round(usdToday).toLocaleString("tr-TR")}
                     </div>
-                    <div style={{ fontSize:11, color:T.text3, marginTop:3 }}>kur: ₺{rate}</div>
+                    <div style={{ fontSize:11, color:T.text3, marginTop:3 }}>kur: {rate}</div>
                   </div>
                 </div>
               ) : (
@@ -472,7 +472,7 @@ export const Raporlar = ({ data }) => {
                             <span style={{ fontSize:13, fontWeight:600 }}>{c.name}</span>
                           </div>
                           <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-                            <span style={{ fontSize:11, color:T.text3 }}>{yr} · ₺{USD_TRY_RATES[yr]}</span>
+                            <span style={{ fontSize:11, color:T.text3 }}>{yr} · {USD_TRY_RATES[yr]}</span>
                             <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:700, color:T.blueL }}>
                               ${c.usd.toLocaleString("tr-TR")}
                             </span>
@@ -504,7 +504,7 @@ export const Raporlar = ({ data }) => {
                     <div style={{ flex:1, background:T.card2, borderRadius:99, height:6 }}>
                       <div style={{ background:T.gold, borderRadius:99, height:"100%", width:`${r/maxR*100}%`, transition:"width 0.4s" }}/>
                     </div>
-                    <span style={{ fontSize:12, fontWeight:600, color:T.goldL, fontFamily:"'DM Sans',sans-serif", minWidth:44, textAlign:"right" }}>₺{r}</span>
+                    <span style={{ fontSize:12, fontWeight:600, color:T.goldL, fontFamily:"'DM Sans',sans-serif", minWidth:44, textAlign:"right" }}>{r}</span>
                   </div>
                 );
               })}

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
-import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
+import { fmt, fmtTL, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
+import { getPass, setPass, getSession, saveSession, clearSession, getStudioInfo } from "../../services/storage";
 
 export const Teklif = ({ data, setData, role }) => {
   const isAdmin = role === "admin";
@@ -74,25 +74,27 @@ export const Teklif = ({ data, setData, role }) => {
 
   const sendWA = (q) => {
     const client = data.clients.find(c=>c.name.toLowerCase()===q.clientName.toLowerCase());
-    const phone  = client?.phone?.replace(/\D/g,"").replace(/^0/,"");
+    const digits = (client?.phone||"").replace(/\D/g,"").replace(/^0/,"");
+    const phone  = digits && (digits.startsWith("90") ? digits : "90"+digits);
+    const studio = getStudioInfo().unvan || "Stüdyomuz";
     const lines  = [
       `Merhaba ${q.clientName} hanım/bey,`,
       ``,
-      `OmniCod olarak hazırladığımız fiyat teklifimiz:`,
+      `${studio} olarak hazırladığımız fiyat teklifimiz:`,
       ``,
-      q.package ? `📦 Paket: ${q.package} — ${fmt(q.basePrice)}` : "",
-      ...q.items.map(i=>`➕ ${i.label}: ${fmt(i.amount)}`),
-      q.discount>0 ? `🎁 İndirim: -${fmt(q.discount)}` : "",
+      q.package ? `📦 Paket: ${q.package} — ${fmtTL(q.basePrice)}` : "",
+      ...q.items.map(i=>`➕ ${i.label}: ${fmtTL(i.amount)}`),
+      q.discount>0 ? `🎁 İndirim: -${fmtTL(q.discount)}` : "",
       ``,
-      `💰 TOPLAM: ${fmt(q.total)}`,
+      `💰 TOPLAM: ${fmtTL(q.total)}`,
       ``,
       q.note ? `📝 Not: ${q.note}` : "",
       ``,
       `Sorularınız için her zaman ulaşabilirsiniz. 📸`,
-    ].filter(l=>l!==null&&l!==undefined&&!(l===""&&lines?.[lines.indexOf(l)-1]==="")).join("\n");
+    ].filter((l,i,arr)=>l!=null && !(l==="" && arr[i-1]==="")).join("\n");
 
     const url = phone
-      ? `https://wa.me/90${phone}?text=${encodeURIComponent(lines)}`
+      ? `https://wa.me/${phone}?text=${encodeURIComponent(lines)}`
       : `https://wa.me/?text=${encodeURIComponent(lines)}`;
     window.open(url, "_blank");
   };
@@ -184,7 +186,7 @@ export const Teklif = ({ data, setData, role }) => {
           <div style={{ marginBottom:16 }}>
             <div style={{ fontSize:13, fontWeight:600, color:T.text, marginBottom:10 }}>3. İndirim (opsiyonel)</div>
             <input type="number" value={simDiscount} onChange={e=>setSimDiscount(e.target.value)}
-              placeholder="İndirim tutarı ₺"
+              placeholder="İndirim tutarı"
               style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12,
                 padding:"12px 14px", color:T.text, fontSize:14, width:"100%", outline:"none" }}/>
           </div>
@@ -334,12 +336,12 @@ export const Teklif = ({ data, setData, role }) => {
                   placeholder="Kalem adı (Drone, Albüm...)"
                   style={{ flex:2, background:T.card3, border:`1px solid ${T.border}`, borderRadius:10, padding:"10px 12px", color:T.text, fontSize:13 }}/>
                 <input value={customItem.amount} onChange={e=>setCustomItem(p=>({...p,amount:e.target.value}))}
-                  placeholder="₺" type="number"
+                  placeholder="Tutar" type="number"
                   style={{ flex:1, background:T.card3, border:`1px solid ${T.border}`, borderRadius:10, padding:"10px 12px", color:T.text, fontSize:13 }}/>
                 <button onClick={addItem} style={{ background:T.gold+"22", border:`1px solid ${T.gold}44`, borderRadius:10, padding:"0 12px", color:T.gold, fontWeight:700, fontSize:18 }}>+</button>
               </div>
             </div>
-            <Field label="İndirim (₺)" type="number" value={form.discount} onChange={f("discount")} placeholder="0"/>
+            <Field label="İndirim" type="number" value={form.discount} onChange={f("discount")} placeholder="0"/>
             <Field label="Not" value={form.note} onChange={f("note")} textarea rows={2} placeholder="Geçerlilik süresi, özel şartlar..."/>
             <div style={{ background:T.gold+"1A", border:`1px solid ${T.gold}33`, borderRadius:12, padding:14 }}>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>

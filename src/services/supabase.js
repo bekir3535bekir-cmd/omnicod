@@ -1,8 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 
-export const IS_DEV = import.meta.env.VITE_DEV_MODE !== "false";
-export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://jlnodwzhljbzevasdhtd.supabase.co";
-export const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_3xYfYyHGjy3Fx6MqDWFPpw_Wgt1KHFm";
+// STÜDYOM kendi veritabanını kullanır: adres/anahtar yalnızca .env üzerinden verilir.
+// Kodda sabit (fallback) bir veritabanı adresi YOKTUR — verilmezse uygulama tamamen yerel modda çalışır.
+export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
+export const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+export const IS_DEV = import.meta.env.VITE_DEV_MODE !== "false" || !SUPABASE_URL || !SUPABASE_KEY;
 
 export const supabase = (SUPABASE_URL && SUPABASE_KEY && !IS_DEV) 
   ? createClient(SUPABASE_URL, SUPABASE_KEY)
@@ -79,7 +81,7 @@ export const sb = {
 
 export const toDB = {
   clients: r => ({ id:String(r.id), name:r.name, phone:r.phone||"", email:r.email||"", type:r.type, package:r.package, notes:r.notes||"", date:r.date||"", total_amount:r.totalAmount||0, paid:r.paid||0, status:r.status, payments:r.payments||[], process:{...(r.process||{}), extraDates:r.extraDates||[]}, referral_source:r.referralSource||"", referral_name:r.referralName||"", anniversary_date:r.anniversaryDate||"" }),
-  appointments: r => ({ id:String(r.id), client_name:r.clientName||"", client_id:String(r.clientId||""), date:r.date||"", time:r.time||"", location:r.location||"", type:r.type||"Düğün", package:r.package||"Bronz Paket", notes:r.notes||"", reminder_days:r.reminderDays||3, status:r.status||"onaylı", total_amount:Number(r.totalAmount)||0, kapora:Number(r.kapora)||0 }),
+  appointments: r => ({ id:String(r.id), client_name:r.clientName||"", client_id:String(r.clientId||""), date:r.date||"", time:r.time||"", location:r.location||"", type:r.type||"Düğün", package:r.package||"Bronz Paket", notes:r.notes||"", reminder_days:r.reminderDays||3, status:r.status||"onaylı", total_amount:Number(r.totalAmount)||0, kapora:Number(r.kapora)||0, staff_name:r.staffName||"", staff_ids:r.staffIds||[] }),
   packages: r => ({ id:String(r.id), name:r.name, price:r.price||0, color:r.color, includes:r.includes||[], note:r.note||"" }),
   incomes: r => ({ id:String(r.id), client_name:r.clientName||"", amount:r.amount||0, type:r.type||"", method:r.method||"Nakit", date:r.date||"", note:r.note||"", category:r.category||"" }),
   expenses: r => ({ id:String(r.id), amount:r.amount||0, category:r.category||"", description:r.description||"", date:r.date||"", method:r.method||"Nakit" }),
@@ -91,12 +93,14 @@ export const toDB = {
   quotes:    r => ({ id:String(r.id), client_name:r.clientName||"", package:r.package||"", base_price:r.basePrice||0, items:r.items||[], discount:r.discount||0, total:r.total||0, note:r.note||"", date:r.date||"", status:r.status||"taslak" }),
   locations: r => ({ id:String(r.id), name:r.name||"", address:r.address||"", note:r.note||"" }),
   messages:  r => ({ id:String(r.id), client_id:String(r.clientId||""), client_name:r.clientName||"", unread:r.unread||0, last_msg:r.lastMsg||"", chat:r.chat||[] }),
+  notifications: r => ({ id:String(r.id), team_id:String(r.teamId||""), member_name:r.memberName||"", appointment_id:String(r.appointmentId||""), title:r.title||"", body:r.body||"", created_at:r.createdAt||"", date:r.date||"", read:!!r.read }),
   notes:     r => ({ id:String(r.id), text:r.text||"", tag:r.tag||"genel", date:r.date||"", time:r.time||"00:00", starred:r.starred||false }),
 };
 
 export const fromDB = {
   clients: r => ({ ...r, totalAmount: r.total_amount, payments: r.payments||[], process: r.process||{}, referralSource: r.referral_source||"", referralName: r.referral_name||"", anniversaryDate: r.anniversary_date||"", extraDates: (r.process||{}).extraDates||[] }),
-  appointments: r => ({ ...r, clientName: r.client_name, clientId: r.client_id||"", reminderDays: r.reminder_days||3, totalAmount: r.total_amount||0, extraDates: [] }),
+  appointments: r => ({ ...r, clientName: r.client_name, clientId: r.client_id||"", reminderDays: r.reminder_days||3, totalAmount: r.total_amount||0, extraDates: [], staffName: r.staff_name||"", staffIds: Array.isArray(r.staff_ids) ? r.staff_ids : undefined }),
+  notifications: r => ({ ...r, teamId: r.team_id, memberName: r.member_name, appointmentId: r.appointment_id, createdAt: r.created_at }),
   packages: r => ({ ...r, includes: r.includes||[] }),
   incomes: r => ({ ...r, clientName: r.client_name }),
   expenses: r => r,

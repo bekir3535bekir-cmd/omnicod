@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
-import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, LEGACY_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE, LEGACY_MASTER_CODE, isComplete } from "../../constants/templates";
+import { fmt, fmtTL, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS_HASHES, DEFAULT_PERSONEL_PASS_HASHES, isComplete } from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession, getAuthUser, saveAuthUser, generateVerificationCode, verifyEmailCode } from "../../services/storage";
+import { getPass, setPass, verifyPass, getSession, saveSession, clearSession, getAuthUser, saveAuthUser, verifyAuthUserPass, generateVerificationCode, verifyEmailCode, getStudioInfo } from "../../services/storage";
 import { resetTrial } from "../../services/plan";
 
 
@@ -40,7 +40,7 @@ export const HizliNot = ({ data, setData }) => {
     <>
       {/* Floating buton */}
       <button onClick={()=>setOpen(true)}
-        style={{ position:"fixed", bottom:90, right:"max(16px, calc(50% - 200px))", zIndex:80,
+        style={{ position:"fixed", bottom:"var(--fab-bottom-1, 90px)", right:"var(--fab-right, max(16px, calc(50% - 200px)))", zIndex:80,
           width:50, height:50, borderRadius:99,
           background:`linear-gradient(135deg,${T.gold},${T.goldD})`,
           border:"none", boxShadow:`0 4px 20px ${T.gold}50`,
@@ -100,7 +100,7 @@ export const HizliArama = ({ data, setActive }) => {
   return (
     <>
       <button onClick={()=>setOpen(true)}
-        style={{ position:"fixed", bottom:148, right:"max(16px, calc(50% - 200px))", zIndex:80,
+        style={{ position:"fixed", bottom:"var(--fab-bottom-2, 148px)", right:"var(--fab-right, max(16px, calc(50% - 200px)))", zIndex:80,
           width:50, height:50, borderRadius:99,
           background:T.card2, border:`1px solid ${T.border}`,
           boxShadow:`0 4px 16px rgba(0,0,0,0.3)`,
@@ -349,7 +349,7 @@ export const IsAsistani = ({ data, setData, role }) => {
     const thisWeekLabel = `${weekStart.toLocaleDateString("tr-TR",{day:"numeric",month:"long"})} – ${weekEnd.toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"})}`;
 
     const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/>
-<title>OmniCod — Haftalık Rapor</title>
+<title>${getStudioInfo().unvan || "Stüdyomuz"} — Haftalık Rapor</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:Arial,sans-serif; color:#1a1a1a; padding:32px; max-width:700px; margin:0 auto; }
@@ -370,14 +370,14 @@ export const IsAsistani = ({ data, setData, role }) => {
   .apt-card .meta { font-size:11px; color:#888; margin-top:2px; }
   @media print { body { padding:20px; } }
 </style></head><body>
-<h1>OmniCod</h1>
+<h1>${getStudioInfo().unvan || "Stüdyomuz"}</h1>
 <div class="sub">Haftalık Rapor — ${now.toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric",weekday:"long"})}</div>
 
 <h2>📊 Geçen Hafta Özeti</h2>
 <div class="sub" style="margin-bottom:10px">${lastWeekLabel}</div>
 <div class="stat-grid">
   <div class="stat"><div class="num">${lastWeekApts.length}</div><div class="lbl">Çekim</div></div>
-  <div class="stat"><div class="num">${lastWeekIncome>0?((lastWeekIncome/1000).toFixed(1)+"B ₺"):"0 ₺"}</div><div class="lbl">Gelir</div></div>
+  <div class="stat"><div class="num">${fmtTL(lastWeekIncome)}</div><div class="lbl">Gelir</div></div>
 </div>
 ${lastWeekApts.length > 0 ? `
 <div style="margin-top:12px">
@@ -392,7 +392,7 @@ ${lastWeekApts.map(a=>`
 <div class="sub" style="margin-bottom:10px">${thisWeekLabel}</div>
 <div class="stat-grid">
   <div class="stat"><div class="num">${thisWeekApts.length}</div><div class="lbl">Planlanan Çekim</div></div>
-  <div class="stat"><div class="num">${weekIncome>0?((weekIncome/1000).toFixed(1)+"B ₺"):"0 ₺"}</div><div class="lbl">Bu Hafta Gelir</div></div>
+  <div class="stat"><div class="num">${fmtTL(weekIncome)}</div><div class="lbl">Bu Hafta Gelir</div></div>
 </div>
 ${thisWeekApts.length > 0 ? `
 <div style="margin-top:12px">
@@ -400,7 +400,7 @@ ${thisWeekApts.map(a=>{
   const client = data.clients.find(c=>c.name===a.clientName);
   const debt = client ? client.totalAmount - client.paid : 0;
   return `<div class="apt-card">
-    <div class="name">${a.clientName} ${debt>0?`<span class="badge orange">⏳ ${(debt/1000).toFixed(0)}K₺ kalan</span>`:''}</div>
+    <div class="name">${a.clientName} ${debt>0?`<span class="badge orange">⏳ ${fmtTL(debt)} kalan</span>`:''}</div>
     <div class="meta">${fmtDate(a.date)}${a.time?" • "+a.time:""} • ${a.type} • ${a.package}${a.location?" • "+a.location:""}</div>
   </div>`;
 }).join("")}
@@ -410,16 +410,16 @@ ${overduePayments.length > 0 ? `
 <h2>💸 Geciken Ödemeler</h2>
 ${overduePayments.map(c=>{
   const p = (c.payments||[]).find(x=>x.type==="Ödeme Sözü"&&x.promiseDate&&x.promiseDate<today);
-  return `<div class="row"><span class="label">${c.name}</span><span class="val red">${fmt(p?.amount||0)} — Söz: ${fmtDate(p?.promiseDate)}</span></div>`;
+  return `<div class="row"><span class="label">${c.name}</span><span class="val red">${fmtTL(p?.amount||0)} — Söz: ${fmtDate(p?.promiseDate)}</span></div>`;
 }).join("")}` : ""}
 
 ${pendingPayments.length > 0 ? `
 <h2>💰 Bekleyen Ödemeler</h2>
 ${pendingPayments.slice(0,5).map(c=>`
-<div class="row"><span class="label">${c.name}</span><span class="val orange">${fmt(c.totalAmount-c.paid)}</span></div>`).join("")}` : ""}
+<div class="row"><span class="label">${c.name}</span><span class="val orange">${fmtTL(c.totalAmount-c.paid)}</span></div>`).join("")}` : ""}
 
 <div style="margin-top:40px;font-size:11px;color:#bbb;text-align:center;border-top:1px solid #eee;padding-top:16px">
-  OmniCod • Otomatik Haftalık Rapor • ${now.toLocaleDateString("tr-TR")}
+  ${getStudioInfo().unvan || "Stüdyomuz"} • Otomatik Haftalık Rapor • ${now.toLocaleDateString("tr-TR")}
 </div>
 </body></html>`;
 
@@ -573,7 +573,7 @@ ${pendingPayments.slice(0,5).map(c=>`
                       <div style={{ fontSize:13, fontWeight:600 }}>{c.name}</div>
                       <div style={{ fontSize:11, color:T.redL }}>Söz: {fmtDate(pending?.promiseDate)} — {fmt(pending?.amount||0)}</div>
                     </div>
-                    {ph && <button onClick={()=>window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(`Merhaba ${c.name.split(" ")[0]} 👋\nÖdeme hatırlatması için ulaştık.\nOmniCod 📸`)}`, "_blank")}
+                    {ph && <button onClick={()=>window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(`Merhaba ${c.name.split(" ")[0]} 👋\nÖdeme hatırlatması için ulaştık.\n${getStudioInfo().unvan || "Stüdyomuz"} 📸`)}`, "_blank")}
                       style={{ background:"#25D36622", border:"1px solid #25D36644", borderRadius:10,
                         padding:"6px 10px", fontSize:11, fontWeight:700, color:"#25D366", flexShrink:0 }}>WA 💬</button>}
                   </div>
@@ -690,7 +690,7 @@ ${pendingPayments.slice(0,5).map(c=>`
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:13, color:colorMap[s.type]||T.text2, lineHeight:1.5 }}>{s.text}</div>
                     {s.phone && (
-                      <button onClick={()=>window.open(`https://wa.me/90${s.phone.replace(/\D/g,"").replace(/^0/,"")}?text=${encodeURIComponent("Merhaba! OmniCod'dan arıyoruz.")}`, "_blank")}
+                      <button onClick={()=>window.open(`https://wa.me/90${s.phone.replace(/\D/g,"").replace(/^0/,"")}?text=${encodeURIComponent(`Merhaba! ${getStudioInfo().unvan || "Stüdyomuz"} olarak ulaşıyoruz.`)}`, "_blank")}
                         style={{ marginTop:8, background:"#25D36622", border:"1px solid #25D36644",
                           borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, color:"#25D366" }}>
                         WA ile Ara 💬
@@ -1763,7 +1763,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
 };
 
 
-export const LoginScreen = ({ onLogin, data }) => {
+export const LoginScreen = ({ onLogin, data, team = [] }) => {
   const [mode, setMode] = useState("login"); // "login" | "register" | "verify" | "personel" | "musteri"
   
   // Login state
@@ -1786,8 +1786,10 @@ export const LoginScreen = ({ onLogin, data }) => {
 
   // Personel & Müşteri state
   const [personelPass, setPersonelPass] = useState("");
+  const [personelId, setPersonelId]     = useState("");
   const [personelErr, setPersonelErr]   = useState(false);
   const [musteriName, setMusteriName]   = useState("");
+  const [musteriTel, setMusteriTel]     = useState("");
   const [errMusteri, setErrMusteri]     = useState(false);
 
   // Stüdyo Sahibi / Admin Giriş Mantığı
@@ -1802,11 +1804,10 @@ export const LoginScreen = ({ onLogin, data }) => {
     }
 
     const savedUser = getAuthUser();
-    const adminStoredPass = getPass("geses_admin_pass", DEFAULT_ADMIN_PASS);
 
     // 1. Kayıtlı kullanıcı kontrolü
     if (savedUser && (savedUser.email?.toLowerCase() === email || savedUser.name?.toLowerCase() === email)) {
-      if (savedUser.password === pass || pass === MASTER_CODE || pass === LEGACY_MASTER_CODE) {
+      if (verifyAuthUserPass(pass)) {
         if (!savedUser.verified) {
           // Henüz doğrulanmamışsa onay ekranına gönder
           setRegEmail(savedUser.email);
@@ -1820,8 +1821,8 @@ export const LoginScreen = ({ onLogin, data }) => {
       }
     }
 
-    // 2. Master kod veya varsayılan admin şifresi kontrolü (veya tek şifre ile hızlı giriş)
-    if (pass === MASTER_CODE || pass === LEGACY_MASTER_CODE || pass === adminStoredPass || pass === LEGACY_ADMIN_PASS || email === adminStoredPass || email === MASTER_CODE) {
+    // 2. Stüdyo admin şifresi kontrolü (kendi şifresi yoksa varsayılan şifre)
+    if (verifyPass("geses_admin_pass", pass, DEFAULT_ADMIN_PASS_HASHES)) {
       onLogin("admin");
       return;
     }
@@ -1901,9 +1902,14 @@ export const LoginScreen = ({ onLogin, data }) => {
 
   // Personel Girişi
   const tryPersonel = () => {
-    const staffPass = getPass("geses_personel_pass", "geses123");
-    if (personelPass === MASTER_CODE || personelPass === LEGACY_MASTER_CODE || personelPass === staffPass || personelPass === "omnicod123" || personelPass === DEFAULT_PERSONEL_PASS) {
-      onLogin("personel");
+    // Ekipte kayıtlı personel varsa kim olduğunu seçmeli (bildirimler kişiye özel gösterilir)
+    if (team.length > 0 && !personelId) {
+      setPersonelErr("Lütfen adınızı seçin");
+      setTimeout(() => setPersonelErr(false), 2000);
+      return;
+    }
+    if (verifyPass("geses_personel_pass", personelPass.trim(), DEFAULT_PERSONEL_PASS_HASHES)) {
+      onLogin("personel", undefined, personelId || undefined);
       return;
     }
     setPersonelErr(true);
@@ -1913,8 +1919,13 @@ export const LoginScreen = ({ onLogin, data }) => {
   // Müşteri Girişi
   const tryMusteri = () => {
     const name = musteriName.trim().toLowerCase();
-    if (!name) return;
-    const found = (data || []).find(c => c.name.toLowerCase() === name);
+    const tel4 = musteriTel.replace(/\D/g, "");
+    if (!name || tel4.length !== 4) return;
+    // İsim tek başına yeterli değil: kayıtlı telefonun son 4 hanesi de eşleşmeli
+    const found = (data || []).find(c => {
+      const phone = String(c.phone || "").replace(/\D/g, "");
+      return (c.name || "").toLowerCase() === name && phone.length >= 4 && phone.slice(-4) === tel4;
+    });
     if (found) {
       onLogin("musteri", found.id);
     } else {
@@ -2076,7 +2087,7 @@ export const LoginScreen = ({ onLogin, data }) => {
         }
       `}</style>
 
-      {/* ─── LOGO & BAŞLIK (StudyoApp & Kamera Diyaframı) ─── */}
+      {/* ─── LOGO & BAŞLIK (STÜDYOM & Kamera Diyaframı) ─── */}
       <div style={{ position: "relative", zIndex: 1, textAlign: "center", marginBottom: 26 }}>
         {/* Çok Katmanlı Altın Lens Diyaframı */}
         <div style={{
@@ -2255,13 +2266,13 @@ export const LoginScreen = ({ onLogin, data }) => {
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div>
                   <div style={{ fontSize: 12, color: T.text3, marginBottom: 6, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
-                    <span>✉️</span> E-posta veya Stüdyo Şifresi
+                    <span>✉️</span> E-posta veya Stüdyo Adı
                   </div>
                   <input
                     value={loginEmail}
                     onChange={e => setLoginEmail(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleOwnerLogin()}
-                    placeholder="ornek@gmail.com veya şifreniz"
+                    placeholder="ornek@gmail.com"
                     autoFocus
                     style={{
                       background: "rgba(255,255,255,0.04)",
@@ -2534,8 +2545,22 @@ export const LoginScreen = ({ onLogin, data }) => {
                   👤
                 </div>
                 <div style={{ fontSize:16, fontWeight:700, color:"#E2E8F0" }}>Personel Girişi</div>
-                <div style={{ fontSize:12, color:T.text3, marginTop:3 }}>Personel şifrenizi girin</div>
+                <div style={{ fontSize:12, color:T.text3, marginTop:3 }}>{team.length > 0 ? "Adınızı seçin ve personel şifrenizi girin" : "Personel şifrenizi girin"}</div>
               </div>
+
+              {team.length > 0 && (
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center", marginBottom:12 }}>
+                  {team.map(m => (
+                    <button key={m.id} type="button" onClick={() => setPersonelId(m.id)}
+                      style={{ background: personelId===m.id ? "rgba(59,130,246,0.22)" : "rgba(255,255,255,0.05)",
+                        border: `1.5px solid ${personelId===m.id ? "rgba(59,130,246,0.8)" : "rgba(255,255,255,0.12)"}`,
+                        color: personelId===m.id ? "#93C5FD" : "#CBD5E1", borderRadius:99, padding:"7px 14px",
+                        fontSize:13, fontWeight: personelId===m.id ? 700 : 500, cursor:"pointer" }}>
+                      {m.name}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <input type="password" value={personelPass} onChange={e=>setPersonelPass(e.target.value)}
                 onKeyDown={e=>e.key==="Enter"&&tryPersonel()}
@@ -2544,13 +2569,13 @@ export const LoginScreen = ({ onLogin, data }) => {
                 style={{ background:"rgba(255,255,255,0.05)",
                   border:`1.5px solid ${personelErr ? T.red+"80" : "rgba(59,130,246,0.3)"}`,
                   borderRadius:12, padding:"13px 14px",
-                  color:T.text, fontSize:18, outline:"none", width:"100%",
+                  color:"#E2E8F0", fontSize:18, outline:"none", width:"100%",
                   letterSpacing:"4px", textAlign:"center", boxSizing:"border-box", marginBottom:12 }}/>
 
               {personelErr && (
                 <div style={{ fontSize:12, color:T.redL, textAlign:"center",
                   background:T.red+"15", borderRadius:10, padding:"8px 0", marginBottom:12 }}>
-                  ❌ Hatalı personel şifresi
+                  ❌ {typeof personelErr === "string" ? personelErr : "Hatalı personel şifresi"}
                 </div>
               )}
 
@@ -2597,10 +2622,20 @@ export const LoginScreen = ({ onLogin, data }) => {
                   color:T.text, fontSize:14, outline:"none", width:"100%",
                   marginBottom:12, boxSizing:"border-box" }}/>
 
+              <input value={musteriTel} onChange={e=>setMusteriTel(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                onKeyDown={e=>e.key==="Enter"&&tryMusteri()}
+                placeholder="Telefonunuzun son 4 hanesi"
+                inputMode="numeric" maxLength={4}
+                style={{ background:"rgba(255,255,255,0.05)",
+                  border:`1.5px solid ${errMusteri ? T.red+"80" : T.gold+"30"}`,
+                  borderRadius:12, padding:"13px 14px",
+                  color:T.text, fontSize:14, outline:"none", width:"100%",
+                  marginBottom:12, boxSizing:"border-box" }}/>
+
               {errMusteri && (
                 <div style={{ fontSize:12, color:T.redL, textAlign:"center",
                   background:T.red+"15", borderRadius:10, padding:"8px 0", marginBottom:12 }}>
-                  ❌ Kayıtlı müşteri bulunamadı
+                  ❌ Bilgiler eşleşmedi — stüdyonuzdan giriş linki isteyebilirsiniz
                 </div>
               )}
 

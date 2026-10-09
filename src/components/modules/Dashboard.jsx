@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE, isComplete } from "../../constants/templates";
+import { MSG_TEMPLATES, PROCESS_STEPS, SIRKET, isComplete } from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { PlanBadge, UsageBadge } from "../common/ProGate";
 import { canAddAppointment, getTrialInfo } from "../../services/plan";
 import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession, getAuthUser } from "../../services/storage";
+import { getPass, setPass, getSession, saveSession, clearSession, getAuthUser, getStudioInfo, getStaffId } from "../../services/storage";
 
 // ─── GÜNÜN FOTOĞRAF ÇEKİM TEKNİKLERİ KOLEKSİYONU ────────────────────────
 export const PHOTO_TECHNIQUES = [
@@ -395,7 +395,8 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
 
   // Karşılama ve kullanıcı bilgisi
   const authUser = getAuthUser();
-  const userName = authUser?.name || authUser?.studio || (isAdmin ? (SIRKET?.ad || "Stüdyo Yöneticisi") : "Personel");
+  const staffMember = !isAdmin ? (data.team||[]).find(m => m.id === getStaffId()) : null;
+  const userName = isAdmin ? (getStudioInfo().ad || authUser?.name || "Stüdyo Yöneticisi") : (staffMember?.name || "Personel");
   const greeting = getGreetingInfo(now.getHours());
 
   // Günün Çekim Tekniği (Sayfanın en altında stüdyo rehberi olarak gösterilir)

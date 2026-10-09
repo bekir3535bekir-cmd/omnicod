@@ -2,6 +2,8 @@
 // PLAN SERVİSİ — 7 Günlük Ücretsiz Deneme + Basic & Pro SaaS
 // ════════════════════════════════════════════════
 
+import { sha256 } from "../utils/secret";
+
 const PREFIX = import.meta.env.VITE_DEV_MODE === "false" ? "geses_" : "geses_dev_";
 
 // ─── Plan Tanımları ──────────────────────────────
@@ -162,20 +164,21 @@ export const getPlanExpiry = () => {
 };
 
 // ─── Lisans Kodu Sistemi ─────────────────────────
-const VALID_LICENSES = [
-  "OMNICOD-PRO-2026",
-  "OMNICOD-PRO-PREMIUM",
-  "OMNICOD-749",
-  "OMNICOD-FOREVER",
-  "GESES-PRO-2026",
-  "GESES-PRO-PREMIUM",
-  "STUDIO-PRO-749",
-  "GESES-FOREVER",
+// Geçerli lisans kodlarının SHA-256 özetleri (kodlar düz metin olarak tutulmaz)
+const VALID_LICENSE_HASHES = [
+  "5d94e90cd086bdc27e3a9dc7992a6f7847dfade8e0d341b5754d372d359238b9",
+  "6eee9b62a5c472fa57482caccc272f3e24d197b549087ed1977cac0e60a54204",
+  "efbdfe9f105184dbce2db2705a3945cb96d061e04e1e4170101baf0eb45bf425",
+  "7fdbe4bf20842cbf8974cee46bc051e4bfdebc9de537b20ed8325b0c372634b5",
+  "e9eb2e8c8e9d3db22bf7d4a0164f2e340dbffe70a5c53b33fa0d68f998239fd5",
+  "786661f61b36b6baca56dfce4081aba425613ba010305f13e235bd242dbd840a",
+  "992d119d119d42fdb39f04a263fdbc6edbc278780f3a2198eed3ede534b78345",
+  "75943e4c13c4ed0d94bb2afb1c345c4646cceb0f412748e73bc467357b131ec2",
 ];
 
 export const activatePro = (licenseKey) => {
   const key = (licenseKey || "").trim().toUpperCase();
-  if (VALID_LICENSES.includes(key)) {
+  if (key && VALID_LICENSE_HASHES.includes(sha256("studyom-license:" + key))) {
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + 30);
     setPlan("pro", expiry.toISOString());

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { UsageBadge, ProGate } from "../common/ProGate";
 import { canAddTeamMember } from "../../services/plan";
@@ -70,7 +70,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
   };
   const savePayment = () => {
     const amt = Number(pForm.amount)||0;
-    if(!amt || !selMember) return;
+    if(!(amt > 0) || !selMember) return;
     setData(p=>({...p,
       team:p.team.map(m=>m.id===selMember?.id
         ? {...m, totalPaid:pForm.type==="Ödeme"?(m.totalPaid||0)+amt:m.totalPaid,
@@ -150,8 +150,8 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                     </div>
                   </div>
 
-                  {/* Finance */}
-                  <div style={{ borderTop:`1px solid ${T.border}`, paddingTop:12, marginBottom:12 }}>
+                  {/* Finance — ücret bilgileri yalnızca yöneticiye görünür */}
+                  {isAdmin && <div style={{ borderTop:`1px solid ${T.border}`, paddingTop:12, marginBottom:12 }}>
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:10 }}>
                       {[["Kazanç",fmt(earned),T.gold],["Ödenen",fmt(paid),T.greenL],["Kalan",fmt(debt),debt>0?T.orangeL:T.text3]].map(([l,v,c])=>(
                         <div key={l} style={{ background:T.card2, borderRadius:10, padding:"8px", textAlign:"center" }}>
@@ -169,7 +169,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                         <div style={{ fontSize:11, color:T.text3, marginTop:4, textAlign:"right" }}>{pct}% ödendi</div>
                       </div>
                     )}
-                  </div>
+                  </div>}
 
                   {/* Actions */}
                   <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
@@ -363,8 +363,8 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
             <Field label="Ad Soyad" value={mForm.name} onChange={mf("name")} placeholder="Ad Soyad" required/>
             <Field label="Rol" value={mForm.role} onChange={mf("role")} options={["Baş Fotoğrafçı","Fotoğrafçı","Kameraman","Video Editörü","Asistan","Diğer"]}/>
             <Field label="Telefon" type="tel" value={mForm.phone} onChange={mf("phone")} placeholder="05xx xxx xx xx"/>
-            <Field label="Başlangıç Kazanç (₺)" type="number" value={mForm.totalEarned} onChange={mf("totalEarned")} placeholder="0" note="Opsiyonel"/>
-            <Field label="Başlangıç Ödenen (₺)" type="number" value={mForm.totalPaid} onChange={mf("totalPaid")} placeholder="0" note="Opsiyonel"/>
+            <Field label="Başlangıç Kazanç" type="number" value={mForm.totalEarned} onChange={mf("totalEarned")} placeholder="0" note="Opsiyonel"/>
+            <Field label="Başlangıç Ödenen" type="number" value={mForm.totalPaid} onChange={mf("totalPaid")} placeholder="0" note="Opsiyonel"/>
             <GoldButton label="Üyeyi Kaydet" icon="check" onClick={saveMember} full/>
           </div>
         </BottomSheet>
@@ -431,7 +431,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                 </button>
               ))}
             </div>
-            <Field label="Tutar (₺)" type="number" value={pForm.amount} onChange={pf("amount")} placeholder="0" required/>
+            <Field label="Tutar" type="number" value={pForm.amount} onChange={pf("amount")} placeholder="0" required/>
             <Field label="Tarih" type="date" value={pForm.date} onChange={pf("date")}/>
             <Field label="Not" value={pForm.note} onChange={pf("note")} placeholder="Açıklama..."/>
             <GoldButton label="Kaydet" icon="check" onClick={savePayment} full/>

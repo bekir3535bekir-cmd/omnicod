@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { sb, fromDB, toDB } from "../../services/supabase";
 import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
@@ -14,9 +14,12 @@ export const Galeri = ({ data, setData, role }) => {
   const [showAdd, setShowAdd] = useState(false);
   const F = { category:"Düğün", title:"", url:"" };
   const [form, setForm] = useState(F);
-  const cats = ["Tümü",...[...new Set(data.gallery.map(g=>g.category))]];
-  const filtered = filter==="Tümü"?data.gallery:data.gallery.filter(g=>g.category===filter);
+  // Müşteriye özel (proofing) fotoğraflar portföyde gösterilmez
+  const portfolio = data.gallery.filter(g=>!g.clientId);
+  const cats = ["Tümü",...[...new Set(portfolio.map(g=>g.category))]];
+  const filtered = filter==="Tümü"?portfolio:portfolio.filter(g=>g.category===filter);
   const save = () => {
+    if(!form.title.trim() && !form.url.trim()) return;
     const newG = {...form, id:uid()};
     setData(p=>({...p, gallery:[...p.gallery, newG]}));
     sb.upsert("gallery", toDB.gallery(newG)).catch(()=>{});
@@ -25,8 +28,8 @@ export const Galeri = ({ data, setData, role }) => {
 
   return (
     <div className="fade-in">
-      <PageHeader title="Portföy" sub={`${data.gallery.length} fotoğraf`} action={isAdmin} onAction={()=>setShowAdd(true)} actionLabel="Ekle"/>
-      {data.gallery.length>0 && (
+      <PageHeader title="Portföy" sub={`${portfolio.length} fotoğraf`} action={isAdmin} onAction={()=>setShowAdd(true)} actionLabel="Ekle"/>
+      {portfolio.length>0 && (
         <div style={{ display:"flex", gap:8, overflowX:"auto", padding:"0 20px 16px" }}>
           {cats.map(c=>(
             <button key={c} onClick={()=>setFilter(c)}

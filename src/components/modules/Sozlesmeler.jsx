@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
-import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
+import { fmt, fmtTL, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
+import { getPass, setPass, getSession, saveSession, clearSession, getStudioInfo } from "../../services/storage";
 
 export const Sozlesmeler = ({ data, setData, role }) => {
   const isAdmin = role === "admin";
@@ -33,6 +33,7 @@ export const Sozlesmeler = ({ data, setData, role }) => {
 
   const printContract = (c) => {
     const pkg = data.packages.find(p=>p.name===c.package) || {};
+    const S = getStudioInfo();
     const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -56,7 +57,7 @@ export const Sozlesmeler = ({ data, setData, role }) => {
 <body>
   <div class="header">
     <div>
-      <h1 class="title">${SIRKET?.unvan || "OMNICOD"}</h1>
+      <h1 class="title">${S.unvan || "Fotoğraf Stüdyosu"}</h1>
       <div style="font-size: 12px; color: #666; margin-top: 4px;">Fotoğrafçılık & Prodüksiyon Hizmet Sözleşmesi</div>
     </div>
     <div>
@@ -69,9 +70,9 @@ export const Sozlesmeler = ({ data, setData, role }) => {
     <tr><th>Seçilen Paket</th><td>${c.package}</td></tr>
     <tr><th>Etkinlik Tarihi</th><td>${fmtDate(c.eventDate)}</td></tr>
     <tr><th>İmza Tarihi</th><td>${fmtDate(c.signDate)}</td></tr>
-    <tr><th>Toplam Hizmet Bedeli</th><td><strong>${fmt(c.total)}</strong></td></tr>
-    <tr><th>Alınan Kapora</th><td>${fmt(c.deposit)}</td></tr>
-    <tr><th>Kalan Bakiye</th><td><strong style="color:#c53030">${fmt(Math.max(0, (c.total||0) - (c.deposit||0)))}</strong></td></tr>
+    <tr><th>Toplam Hizmet Bedeli</th><td><strong>${fmtTL(c.total)}</strong></td></tr>
+    <tr><th>Alınan Kapora</th><td>${fmtTL(c.deposit)}</td></tr>
+    <tr><th>Kalan Bakiye</th><td><strong style="color:#c53030">${fmtTL(Math.max(0, (c.total||0) - (c.deposit||0)))}</strong></td></tr>
   </table>
 
   ${pkg.includes && pkg.includes.length > 0 ? `
@@ -90,7 +91,7 @@ export const Sozlesmeler = ({ data, setData, role }) => {
   <div class="signs">
     <div class="sign-box">
       <strong>Hizmet Veren (Stüdyo)</strong><br/>
-      ${SIRKET?.ad || "Stüdyo Yetkilisi"}<br/>
+      ${S.ad || "Stüdyo Yetkilisi"}<br/>
       İmza / Kaşe
     </div>
     <div class="sign-box">
@@ -181,8 +182,8 @@ export const Sozlesmeler = ({ data, setData, role }) => {
               <DatePicker label="Etkinlik Tarihi" value={form.eventDate} onChange={f("eventDate")}/>
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-              <Field label="Toplam (₺)" type="number" value={form.total} onChange={f("total")}/>
-              <Field label="Kapora (₺)" type="number" value={form.deposit} onChange={f("deposit")}/>
+              <Field label="Toplam" type="number" value={form.total} onChange={f("total")}/>
+              <Field label="Kapora" type="number" value={form.deposit} onChange={f("deposit")}/>
             </div>
             <Field label="Sözleşme Şartları" value={form.terms} onChange={f("terms")} textarea rows={4}/>
             <GoldButton label="Sözleşmeyi Kaydet" icon="check" onClick={save} full/>

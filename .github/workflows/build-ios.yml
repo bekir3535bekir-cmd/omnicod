@@ -1,4 +1,4 @@
-name: Build iOS (OmniCod)
+name: Build iOS (STÜDYOM)
 
 on:
   push:
@@ -47,12 +47,12 @@ jobs:
           mkdir -p build-output/Payload
           cp -r ios/build/Build/Products/Release-iphoneos/App.app build-output/Payload/
           cd build-output
-          zip -qr OmniCod.ipa Payload/
-          ls -lh OmniCod.ipa
+          zip -qr Studyom.ipa Payload/
+          ls -lh Studyom.ipa
 
       - name: 🚀 Upload iOS IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: OmniCod-iOS
-          path: build-output/OmniCod.ipa
+          name: Studyom-iOS
+          path: build-output/Studyom.ipa
           retention-days: 14

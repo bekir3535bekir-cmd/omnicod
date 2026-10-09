@@ -62,7 +62,8 @@ const RealQRCode = ({ text, size = 190 }) => {
   );
 };
 
-export const DijitalKartvizit = () => {
+export const DijitalKartvizit = ({ role = "admin" }) => {
+  const isAdmin = role === "admin";
   const [profile, setProfile] = useState(() => getStudioProfile());
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState(profile);
@@ -87,7 +88,6 @@ TEL;TYPE=CELL,VOICE:${profile.phone}
 EMAIL:${profile.email}
 ADR;TYPE=WORK:;;${profile.address};;;Turkey
 NOTE:Düğün, Nişan, Dış Çekim ve Özel Gün Fotoğrafçılığı
-URL:https://studyoapp.com
 END:VCARD`;
 
     const blob = new Blob([vCardData], { type: "text/vcard;charset=utf-8;" });
@@ -161,8 +161,8 @@ END:VCARD`;
         sub="Düğün salonlarında ve çekimlerde davetlilerle tek tıkla paylaşabileceğiniz akıllı QR kartvizit"
       />
 
-      {/* Üst Düzenle Butonu */}
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+      {/* Üst Düzenle Butonu — stüdyo/fatura bilgilerini yalnızca yönetici değiştirebilir */}
+      {isAdmin && <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
         <button
           onClick={() => { setEditForm(profile); setShowEdit(true); }}
           style={{
@@ -181,7 +181,7 @@ END:VCARD`;
         >
           <span>✏️</span> Bilgilerimi Düzenle
         </button>
-      </div>
+      </div>}
 
       {/* Apple Liquid Glass Kartvizit */}
       <div style={{
@@ -467,6 +467,28 @@ END:VCARD`;
               value={editForm.address}
               onChange={v => setEditForm(p => ({ ...p, address: v }))}
               placeholder="İlçe / İl"
+            />
+
+            <div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>
+              Fatura & sözleşme bilgileri (belgelerde görünür, isteğe bağlı)
+            </div>
+            <Field
+              label="Vergi Dairesi"
+              value={editForm.vdaire || ""}
+              onChange={v => setEditForm(p => ({ ...p, vdaire: v }))}
+              placeholder="Örn: Gebze Vergi Dairesi"
+            />
+            <Field
+              label="Vergi No"
+              value={editForm.vno || ""}
+              onChange={v => setEditForm(p => ({ ...p, vno: v }))}
+              placeholder="Vergi / TC Kimlik No"
+            />
+            <Field
+              label="IBAN"
+              value={editForm.iban || ""}
+              onChange={v => setEditForm(p => ({ ...p, iban: v }))}
+              placeholder="TR.. .... .... .... .... .... .."
             />
 
             <GoldButton label="Kaydet ve Güncelle" onClick={handleSaveEdit} full style={{ marginTop: 8 }} />

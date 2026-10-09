@@ -1,9 +1,10 @@
 import React, { useState, useRef } from "react";
 import { T } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
-import { fmtDate, uid } from "../../utils/helpers";
+import { fmtDate, uid, publicAppUrl } from "../../utils/helpers";
 import { Card, Pill, GoldButton, Field, PageHeader } from "../common";
 import { sb, toDB } from "../../services/supabase";
+import { getStudioInfo } from "../../services/storage";
 
 // Örnek gerçek düğün & dış çekim fotoğrafları (Hızlı test ve demo için)
 const DEMO_WEDDING_PHOTOS = [
@@ -143,18 +144,20 @@ export const Portal = ({ data, setData }) => {
   };
 
   // 3. Müşteri linkini panoya kopyalama ve WhatsApp ile gönderme
-  const clientPortalUrl = `${window.location.origin}?proof=${selClient}`;
+  const clientPortalUrl = publicAppUrl() ? `${publicAppUrl()}/?proof=${selClient}` : "";
 
   const copyLink = () => {
+    if (!clientPortalUrl) return alert("Müşteri linki oluşturulamadı: web sürümünün adresi ayarlanmamış (.env → VITE_PUBLIC_URL).");
     navigator.clipboard.writeText(clientPortalUrl);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
   };
 
   const sendLinkViaWhatsApp = () => {
+    if (!clientPortalUrl) return alert("Müşteri linki oluşturulamadı: web sürümünün adresi ayarlanmamış (.env → VITE_PUBLIC_URL).");
     if (!client?.phone) return;
     const cleanPh = client.phone.replace(/\D/g, "").replace(/^0/, "");
-    const msg = `Merhaba ${client.name}! Çekim fotoğraflarınız hazır! 🎉\n\nAşağıdaki linke tıklayarak evinizden telefonunuzla fotoğraflarınızı inceleyebilir ve albümünüz için beğendiklerinizi ❤️ seçebilirsiniz:\n\n🔗 ${clientPortalUrl}\n\nKeyifli seçimler dileriz! — StudyoApp`;
+    const msg = `Merhaba ${client.name}! Çekim fotoğraflarınız hazır! 🎉\n\nAşağıdaki linke tıklayarak evinizden telefonunuzla fotoğraflarınızı inceleyebilir ve albümünüz için beğendiklerinizi ❤️ seçebilirsiniz:\n\n🔗 ${clientPortalUrl}\n\nKeyifli seçimler dileriz! — ${getStudioInfo().unvan || "Stüdyomuz"}`;
     window.open(`https://wa.me/90${cleanPh}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -191,7 +194,7 @@ export const Portal = ({ data, setData }) => {
                 setSelections(s ? JSON.parse(s) : {});
               } catch(e) {}
             }}
-            options={["", ...data.clients.map(c => c.id)]}
+            options={[{ value:"", label:"(Seçim Yapılmadı)" }, ...data.clients.map(c => ({ value:c.id, label:c.name }))]}
           />
 
           {client && (
