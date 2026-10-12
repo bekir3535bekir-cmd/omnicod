@@ -4,79 +4,58 @@ import { createClient } from "@supabase/supabase-js";
 // Kodda sabit (fallback) bir veritabanı adresi YOKTUR — verilmezse uygulama tamamen yerel modda çalışır.
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 export const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+// IS_DEV: yerel mod (veritabanı yok, veriler yalnızca bu cihazda)
 export const IS_DEV = import.meta.env.VITE_DEV_MODE !== "false" || !SUPABASE_URL || !SUPABASE_KEY;
+export const IS_CLOUD = !IS_DEV;
 
-export const supabase = (SUPABASE_URL && SUPABASE_KEY && !IS_DEV) 
-  ? createClient(SUPABASE_URL, SUPABASE_KEY)
+// Oturum (giriş) bilgisi cihazda saklanır; aynı hesapla her cihazdan aynı veriye erişilir
+export const supabase = IS_CLOUD
+  ? createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } })
   : null;
+
+// Kayıtlar stüdyo bazında benzersiz: (studio_id, id). studio_id veritabanında otomatik doldurulur.
+const CONFLICT = "studio_id,id";
+const warn = (op, table, error) => console.warn(`sb.${op} ${table}:`, error?.message || error);
 
 export const sb = {
   get: async (table) => {
-    if (IS_DEV) {
-      console.log(`[DEV SAFE] sb.get(${table}) - isolated fallback`);
-      return null;
-    }
-    try {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*`, {
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-      });
-      return r.ok ? await r.json() : null;
-    } catch(e) {
-      console.warn(`sb.get ${table} error:`, e);
-      return null;
-    }
+    if (!supabase) return null;
+    const { data, error } = await supabase.from(table).select("*");
+    if (error) { warn("get", table, error); return null; }
+    return data;
   },
   insert: async (table, data) => {
-    if (IS_DEV) {
-      console.log(`[DEV SAFE PROTECTED] insert into ${table}`, data);
-      return;
-    }
-    try {
-      await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-        method: "POST",
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" },
-        body: JSON.stringify(data)
-      });
-    } catch(e) { console.warn(`sb.insert ${table} error:`, e); }
+    if (!supabase) return;
+    const { error } = await supabase.from(table).upsert(data, { onConflict: CONFLICT });
+    if (error) warn("insert", table, error);
   },
   delete: async (table, id) => {
-    if (IS_DEV) {
-      console.log(`[DEV SAFE PROTECTED] delete from ${table} id=${id}`);
-      return;
-    }
-    try {
-      await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
-        method: "DELETE",
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-      });
-    } catch(e) { console.warn(`sb.delete ${table} error:`, e); }
+    if (!supabase) return;
+    const { error } = await supabase.from(table).delete().eq("id", String(id));
+    if (error) warn("delete", table, error);
   },
   update: async (table, id, data) => {
-    if (IS_DEV) {
-      console.log(`[DEV SAFE PROTECTED] update ${table} id=${id}`, data);
-      return;
-    }
-    try {
-      await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
-        method: "PATCH",
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-    } catch(e) { console.warn(`sb.update ${table} error:`, e); }
+    if (!supabase) return;
+    const { error } = await supabase.from(table).update(data).eq("id", String(id));
+    if (error) warn("update", table, error);
   },
   upsert: async (table, data) => {
-    if (IS_DEV) {
-      console.log(`[DEV SAFE] upsert ${table} - skipped in dev mode`);
-      return;
+    if (!supabase) return;
+    const { error } = await supabase.from(table).upsert(data, { onConflict: CONFLICT });
+    if (error) warn("upsert", table, error);
+  },
+  // Toplu kayıt: tablo başına tek istek
+  upsertMany: async (table, rows) => {
+    if (!supabase || !rows?.length) return;
+    for (let i = 0; i < rows.length; i += 500) {
+      const { error } = await supabase.from(table).upsert(rows.slice(i, i + 500), { onConflict: CONFLICT });
+      if (error) warn("upsertMany", table, error);
     }
-    try {
-      await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-        method: "POST",
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" },
-        body: JSON.stringify(data)
-      });
-    } catch(e) { console.warn(`sb.upsert ${table} error:`, e); }
-  }
+  },
+  rpc: async (fn, args) => {
+    if (!supabase) return { data: null, error: { message: "Veritabanı bağlı değil" } };
+    return supabase.rpc(fn, args);
+  },
 };
 
 export const toDB = {

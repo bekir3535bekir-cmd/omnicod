@@ -48,3 +48,4 @@ ios/App/App/public/
 
 # Masaüstü kurulum çıktıları
 release/
+!.env.production

@@ -8,6 +8,10 @@ const path = require("path");
 // Windows bildirimlerinin uygulama adıyla görünmesi için
 app.setAppUserModelId("com.studyom.app");
 
+// Tarayıcı kimliğinde (User-Agent) Türkçe karakter olmasın: Electron uygulama adını ("STÜDYOM") ekliyor,
+// "Ü" harfi sunucuya bozuk gidiyor ve Supabase oturum açarken "Database error granting user" hatası veriyor.
+app.userAgentFallback = app.userAgentFallback.replace(/[^\x20-\x7E]/g, "").replace(/STDYOM/g, "Studyom");
+
 // Uygulama ikinci kez açılırsa yeni pencere yerine mevcut pencereyi öne getir
 if (!app.requestSingleInstanceLock()) {
   app.quit();

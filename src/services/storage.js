@@ -1,5 +1,7 @@
 import { hashSecret, isHashed, matchSecret } from "../utils/secret";
 import { SIRKET } from "../constants/templates";
+import { IS_CLOUD } from "./supabase";
+import { saveStudioProfileRemote } from "./auth";
 
 const PREFIX = import.meta.env.VITE_DEV_MODE === "false" ? "geses_" : "geses_dev_";
 
@@ -134,12 +136,55 @@ export const verifyEmailCode = (email, inputCode) => {
   }
 };
 
+// ─── BULUT STÜDYOSU (giriş yapan hesabın stüdyosu) ────────────────────
+let cloudStudio = null;
+try { cloudStudio = JSON.parse(localStorage.getItem(PREFIX + "cloud_studio") || "null"); } catch(e) {}
+
+export const getCurrentStudio = () => cloudStudio;
+
+// Sunucudan gelen stüdyo bilgisini cihaza uygula: firma bilgileri ve plan/deneme
+export const setCurrentStudio = (s) => {
+  cloudStudio = s || null;
+  try {
+    if (!s) { localStorage.removeItem(PREFIX + "cloud_studio"); return; }
+    localStorage.setItem(PREFIX + "cloud_studio", JSON.stringify(s));
+    const profile = { ...(s.profile || {}) };
+    if (!profile.studio) profile.studio = s.name || "";
+    localStorage.setItem(PREFIX + "studio_profile", JSON.stringify(profile));
+    if (s.trial_start) localStorage.setItem(PREFIX + "trial_start", s.trial_start);
+    if (s.plan === "pro") {
+      localStorage.setItem(PREFIX + "plan", "pro");
+      if (s.plan_expiry) localStorage.setItem(PREFIX + "plan_expiry", s.plan_expiry);
+    } else if (s.plan === "basic") {
+      localStorage.setItem(PREFIX + "plan", "basic");
+    } else {
+      localStorage.removeItem(PREFIX + "plan");
+      localStorage.removeItem(PREFIX + "plan_expiry");
+    }
+  } catch(e) {}
+};
+
+// Çıkışta bu cihazdaki stüdyo verilerini temizle (aynı cihazda başka hesap öncekinin verisini görmesin)
+export const clearCloudSession = () => {
+  cloudStudio = null;
+  try {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(PREFIX) && (k.startsWith(PREFIX + "app_data") ||
+          ["cloud_studio","studio_profile","trial_start","plan","plan_expiry","role","client_id","staff_id"].some(x => k === PREFIX + x))) keys.push(k);
+    }
+    keys.forEach(k => localStorage.removeItem(k));
+  } catch(e) {}
+};
+
 // ─── STÜDYO PROFİL & KARTVİZİT BİLGİLERİ ─────────────────────────────
 export const getStudioProfile = () => {
   try {
     const raw = localStorage.getItem(PREFIX + "studio_profile");
     if (raw) return JSON.parse(raw);
   } catch(e) {}
+  if (IS_CLOUD) return { name:"", studio: cloudStudio?.name || "", phone:"", email:"", address:"", instagram:"" };
   const auth = getAuthUser();
   // Kayıtlı (yeni) bir stüdyo varsa varsayılan firmanın iletişim bilgileri gösterilmez
   if (auth) return {
@@ -168,9 +213,10 @@ export const getStudioInfo = () => {
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(PREFIX + "studio_profile") || "null"); } catch(e) {}
   const auth = getAuthUser();
-  if (!saved && !auth) return SIRKET;
+  if (!IS_CLOUD && !saved && !auth) return SIRKET;
   const p = saved || getStudioProfile();
-  const sameOwner = (p.name || "").trim().toLowerCase() === SIRKET.ad.toLowerCase();
+  // Bulutta her stüdyo yalnızca kendi bilgilerini kullanır
+  const sameOwner = !IS_CLOUD && (p.name || "").trim().toLowerCase() === SIRKET.ad.toLowerCase();
   const own = (v, def) => (v && String(v).trim()) || (sameOwner ? def : "");
   return {
     ad:     own(p.name, SIRKET.ad),
@@ -189,12 +235,21 @@ export const saveStudioProfile = (profile) => {
   try {
     localStorage.setItem(PREFIX + "studio_profile", JSON.stringify(profile));
   } catch(e) {}
+  // Bulutta: firma bilgileri stüdyo kaydına yazılır (telefon ve bilgisayarda aynı görünür)
+  if (IS_CLOUD) {
+    saveStudioProfileRemote(profile)
+      .then(() => { if (cloudStudio) setCurrentStudio({ ...cloudStudio, profile, name: profile.studio || cloudStudio.name }); })
+      .catch(e => console.warn("Firma bilgileri kaydedilemedi:", e.message));
+  }
 };
 
 // ─── UYGULAMA VERİ YEDEKLEME & YEREL VERİTABANI ────────────────────────
+// Bulutta önbellek stüdyo bazında tutulur
+const dataKey = () => PREFIX + "app_data" + (IS_CLOUD && cloudStudio?.studio_id ? "_" + cloudStudio.studio_id : "");
+
 export const getLocalData = () => {
   try {
-    const raw = localStorage.getItem(PREFIX + "app_data");
+    const raw = localStorage.getItem(dataKey());
     return raw ? JSON.parse(raw) : null;
   } catch(e) { return null; }
 };
@@ -202,7 +257,7 @@ export const getLocalData = () => {
 export const saveLocalData = (data) => {
   try {
     if (!data) return;
-    localStorage.setItem(PREFIX + "app_data", JSON.stringify(data));
+    localStorage.setItem(dataKey(), JSON.stringify(data));
   } catch(e) {}
 };
 

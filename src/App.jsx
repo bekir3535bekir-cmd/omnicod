@@ -3,8 +3,10 @@ import { T, DARK_THEME, LIGHT_THEME, SAPPHIRE_THEME, EMERALD_THEME, NORDIC_LIGHT
 import { Ic } from "./constants/icons";
 import { fmt, fmtDate, todayStr, uid } from "./utils/helpers";
 import { INIT } from "./constants/initialData";
-import { sb, fromDB, toDB, IS_DEV } from "./services/supabase";
-import { getSession, getClientId, getStaffId, saveSession, clearSession, getLocalData, saveLocalData, getStudioInfo } from "./services/storage";
+import { sb, fromDB, toDB, IS_DEV, IS_CLOUD } from "./services/supabase";
+import { getAuthSession, onAuthChange, fetchMyStudio, signOut, fetchProofData } from "./services/auth";
+import { CloudAuth } from "./components/modules/CloudAuth";
+import { getSession, getClientId, getStaffId, saveSession, clearSession, getLocalData, saveLocalData, getStudioInfo, getCurrentStudio, setCurrentStudio, clearCloudSession } from "./services/storage";
 import { getPlan, isProFeature } from "./services/plan";
 import { Logo, BottomSheet } from "./components/common";
 import { ProGate } from "./components/common/ProGate";
@@ -33,9 +35,13 @@ import { DijitalKartvizit } from "./components/modules/DijitalKartvizit";
 import { SesliAsistan } from "./components/modules/SesliAsistan";
 import { HizliNot, HizliArama, GeceModu, IsAsistani, NotDefteri, MusteriPortali, LoginScreen } from "./components/modules/AppModals";
 
+// Bulutta yeni stüdyo boş başlar (demo personel eklenmez)
+const EMPTY_CLOUD = { ...INIT, clients: [], team: [], notifications: [], deletedClients: [] };
+
 export default function App() {
   const [data, setData]       = useState(() => {
     const local = getLocalData();
+    if (IS_CLOUD) return local || EMPTY_CLOUD;
     if (!local) return INIT;
     if (!local.team || local.team.length === 0) {
       return { ...local, team: INIT.team };
@@ -62,15 +68,23 @@ export default function App() {
   };
   const [loading, setLoading]     = useState(false);
   const [loadError, setLoadError] = useState(false);
-  const [dbReady, setDbReady] = useState(true);
+  const [dbReady, setDbReady] = useState(!IS_CLOUD);
   const [role, setRole] = useState(() => {
     try {
       // Not: ?role= parametresi bilerek desteklenmiyor (girişi atlatıyordu)
       const p = new URLSearchParams(window.location.search);
       if (p.get("proof") || p.get("portal")) return "musteri";
     } catch(e) {}
+    if (IS_CLOUD) return getCurrentStudio()?.role || null;
     return getSession();
   });
+  // Bulut oturum durumu: checking → signedOut / noStudio / ready
+  const [cloudPhase, setCloudPhase] = useState(() => {
+    if (!IS_CLOUD) return "local";
+    try { const q = new URLSearchParams(window.location.search); if (q.get("proof") || q.get("portal")) return "customer"; } catch(e) {}
+    return "checking";
+  });
+  const [skipStaffPick, setSkipStaffPick] = useState(false);
   const [showGece, setShowGece] = useState(false);
 
   // Veri değişikliklerini anında yerel depolamaya kaydet
@@ -152,16 +166,61 @@ export default function App() {
       try { localStorage.setItem("studyom_os_notified", JSON.stringify([...shown, ...fresh.map(n => n.id)].slice(-300))); } catch (e) {}
     }
   }, [role, staffId, myUnread.length]);
+  // Giriş yapan hesabın stüdyosunu uygula (rol, personel kaydı, plan, firma bilgileri, önbellek)
+  const applyStudio = (s) => {
+    setCurrentStudio(s);
+    setRole(s.role);
+    setStaffId(s.team_id || null);
+    setPlanState(getPlan());
+    if (cloudPhase !== "ready") {
+      // İlk açılış: önce bu stüdyonun önbelleği gösterilir, ardından sunucudan güncel veri yüklenir
+      setData(getLocalData() || EMPTY_CLOUD);
+      setDbReady(false);
+      setCloudPhase("ready");
+    }
+  };
+  const goSignedOut = () => {
+    clearCloudSession();
+    setRole(null); setStaffId(null); setSkipStaffPick(false);
+    setData(EMPTY_CLOUD); setDbReady(false);
+    setCloudPhase("signedOut");
+  };
+  useEffect(() => {
+    if (!IS_CLOUD || cloudPhase === "customer") return;
+    let alive = true;
+    (async () => {
+      const session = await getAuthSession();
+      if (!alive) return;
+      if (!session) { goSignedOut(); return; }
+      try {
+        const s = await fetchMyStudio();
+        if (!alive) return;
+        if (!s) { setCloudPhase("noStudio"); return; }
+        applyStudio(s);
+      } catch (e) {
+        // İnternet yoksa son bilinen stüdyoyla aç (veriler önbellekten)
+        const cached = getCurrentStudio();
+        if (cached) applyStudio(cached); else goSignedOut();
+      }
+    })();
+    const off = onAuthChange(session => { if (alive && !session) goSignedOut(); });
+    return () => { alive = false; off(); };
+  }, []);
+
   const handleLogin = (r, clientId, loginStaffId) => {
     saveSession(r, clientId, loginStaffId);
     setRole(r);
     if(clientId) setMusteriClientId(clientId);
     setStaffId(loginStaffId || null);
   };
-  const handleLogout = () => { clearSession(); setRole(null); setStaffId(null); };
+  const handleLogout = () => {
+    if (IS_CLOUD) { signOut(); goSignedOut(); return; }
+    clearSession(); setRole(null); setStaffId(null);
+  };
 
   // Uygulama açılınca Supabase'den yükle (IS_DEV iken yerel veriyi koru!)
   useEffect(() => {
+    if (IS_CLOUD && cloudPhase !== "ready") return;
     const load = async () => {
       if (IS_DEV) {
         const local = getLocalData();
@@ -186,6 +245,7 @@ export default function App() {
         ]);
 
         if (!clients && !appointments) {
+          // Sunucuya ulaşılamadı: önbellekteki veriyle devam et
           setDbReady(true);
           return;
         }
@@ -201,12 +261,13 @@ export default function App() {
         );
 
         const local = getLocalData();
-        const baseClients = (loadedClients && loadedClients.length > 0) ? loadedClients : (local?.clients || INIT.clients);
+        // Bulutta sunucu tek doğru kaynaktır; boşsa boş gösterilir (başka verilere düşülmez)
+        const baseClients = IS_CLOUD ? loadedClients : ((loadedClients && loadedClients.length > 0) ? loadedClients : (local?.clients || INIT.clients));
 
         setData({
           clients:        baseClients,
           appointments:   (appointments||[]).map(fromDB.appointments),
-          packages:       (packages||[]).length > 0 ? (packages||[]).map(fromDB.packages) : INIT.packages,
+          packages:       (packages||[]).length > 0 ? (packages||[]).map(fromDB.packages) : (IS_CLOUD && role !== "admin" ? [] : INIT.packages),
           incomes:        [...loadedIncomes, ...missingIncomes],
           expenses:       (expenses||[]).map(fromDB.expenses),
           reminders:      (reminders||[]).map(fromDB.reminders),
@@ -231,14 +292,14 @@ export default function App() {
     };
     load();
 
-    // Realtime polling: yalnızca canlı Supabase modunda çalıştır (IS_DEV iken veriyi ezmesin!)
+    // Diğer cihazlardaki değişiklikleri al (30 sn'de bir)
     if (!IS_DEV) {
       const pollInterval = setInterval(() => {
         if(!window._gesesSaving) load();
       }, 30000);
       return () => clearInterval(pollInterval);
     }
-  }, []);
+  }, [cloudPhase]);
 
   // Geçmiş tarihli randevuları otomatik tamamlandı yap
   useEffect(() => {
@@ -263,25 +324,23 @@ export default function App() {
   const isSyncingRef = useRef(false);
   const syncTimerRef = useRef(null);
   useEffect(() => {
-    if(!dbReady) return;
+    if(!dbReady || !IS_CLOUD) return;
 
     const sync = async () => {
       if(isSyncingRef.current) return;
       isSyncingRef.current = true;
       window._gesesSaving  = true;
 
-      const tables   = ["clients","appointments","packages","incomes","expenses","reminders","contracts","team","shifts","gallery","quotes","messages","locations","notes"];
-      const dataKeys = ["clients","appointments","packages","incomes","expenses","reminders","contracts","team","shifts","gallery","quotes","messages","locations","notes"];
+      const FINANCE = ["incomes","expenses","contracts","quotes"];
+      const tables  = ["clients","appointments","packages","incomes","expenses","reminders","contracts","team","shifts","gallery","quotes","messages","locations","notes","notifications"]
+        .filter(tb => role === "admin" || !FINANCE.includes(tb));
 
-      for(let i=0; i<tables.length; i++) {
-        const table  = tables[i];
-        const rows   = data[dataKeys[i]] || [];
+      for(const table of tables) {
+        const rows   = data[table] || [];
         const toDBFn = toDB[table];
-        if(!toDBFn) continue;
-        for(const row of rows) {
-          try { await sb.upsert(table, toDBFn(row)); } catch(e) {
-            console.error(`Upsert hatası [${table}]:`, e);
-          }
+        if(!toDBFn || !rows.length) continue;
+        try { await sb.upsertMany(table, rows.map(toDBFn)); } catch(e) {
+          console.error(`Kayıt hatası [${table}]:`, e);
         }
       }
 
@@ -298,9 +357,51 @@ export default function App() {
     };
   }, [data, dbReady]);
 
+  // Bulut müşteri portalı: giriş yapmadan yalnızca kendi müşteri numarasının verisi alınır
+  const [proof, setProof] = useState({ loading: false, data: null, error: false });
+  useEffect(() => {
+    if (!IS_CLOUD || role !== "musteri" || !musteriClientId) return;
+    let alive = true;
+    setProof({ loading: true, data: null, error: false });
+    fetchProofData(musteriClientId).then(r => {
+      if (!alive) return;
+      if (!r || !r.client) { setProof({ loading: false, data: null, error: true }); return; }
+      setProof({ loading: false, error: false, data: {
+        ...EMPTY_CLOUD,
+        clients: [fromDB.clients(r.client)],
+        appointments: (r.appointments || []).map(fromDB.appointments),
+        gallery: (r.gallery || []).map(fromDB.gallery),
+      }});
+    }).catch(() => alive && setProof({ loading: false, data: null, error: true }));
+    return () => { alive = false; };
+  }, [role, musteriClientId]);
+
   // Update global T on theme change
   const currentTheme = THEME_PALETTES[themeKey] || SAPPHIRE_THEME;
   setGlobalTheme(currentTheme);
+
+  const Splash = ({ text }) => (
+    <>
+      <style>{makeCSS(T)}</style>
+      <div style={{ minHeight:"100vh", background:T.bg, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:16 }}>
+        <Logo/>
+        <div style={{ fontSize:13, color:T.text3 }}>{text}</div>
+      </div>
+    </>
+  );
+
+  // ── Bulut: giriş / stüdyo kurulumu ──
+  if (IS_CLOUD && role !== "musteri") {
+    if (cloudPhase === "checking") return <Splash text="Oturum kontrol ediliyor..."/>;
+    if (cloudPhase === "signedOut" || cloudPhase === "noStudio") return (
+      <CloudAuth key={cloudPhase} stage={cloudPhase} onReady={s => s ? applyStudio(s) : null}
+        onCustomer={id => { setMusteriClientId(id); setRole("musteri"); setCloudPhase("customer"); }}
+        onLogout={goSignedOut}/>
+    );
+    if (cloudPhase === "ready" && role === "personel" && !staffId && !skipStaffPick && dbReady && (data.team||[]).length > 0) return (
+      <CloudAuth stage="pickStaff" team={data.team} onReady={s => s ? applyStudio(s) : setSkipStaffPick(true)} onLogout={goSignedOut}/>
+    );
+  }
 
   if(!role) return (
     <>
@@ -309,13 +410,32 @@ export default function App() {
     </>
   );
 
-  if(role === "musteri") return (
-    <>
-      <style>{makeCSS(T)}</style>
-      <MusteriPortali data={data} clientId={musteriClientId}
-        onLogout={()=>{ clearSession(); setRole(null); setMusteriClientId(null); }}/>
-    </>
-  );
+  if(role === "musteri") {
+    const leavePortal = () => {
+      clearSession(); setRole(null); setMusteriClientId(null);
+      if (IS_CLOUD) { try { window.history.replaceState(null, "", window.location.pathname); } catch(e) {} goSignedOut(); }
+    };
+    if (IS_CLOUD && (proof.loading || (!proof.data && !proof.error))) return <Splash text="Yükleniyor..."/>;
+    if (IS_CLOUD && proof.error) return (
+      <>
+        <style>{makeCSS(T)}</style>
+        <div style={{ minHeight:"100vh", background:T.bg, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:14, padding:24, textAlign:"center" }}>
+          <Logo/>
+          <div style={{ fontSize:17, fontWeight:700, color:T.text }}>Bu link geçersiz</div>
+          <div style={{ fontSize:13, color:T.text3, lineHeight:1.6 }}>Link süresi dolmuş veya hatalı olabilir.<br/>Lütfen stüdyonuzdan yeni bir link isteyin.</div>
+          <button onClick={leavePortal} style={{ marginTop:8, background:T.card2, border:`1px solid ${T.border}`, color:T.text2, borderRadius:12, padding:"10px 18px" }}>Giriş ekranına dön</button>
+        </div>
+      </>
+    );
+    return (
+      <>
+        <style>{makeCSS(T)}</style>
+        <MusteriPortali data={IS_CLOUD ? proof.data : data} clientId={musteriClientId} onLogout={leavePortal}/>
+      </>
+    );
+  }
+
+  if (IS_CLOUD && !dbReady && !(data.clients||[]).length) return <Splash text="Veriler yükleniyor..."/>;
 
   if(loadError && !loading) return (
     <>

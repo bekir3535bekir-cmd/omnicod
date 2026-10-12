@@ -6,8 +6,9 @@ import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../cons
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { PlanBadge, ProBadge } from "../common/ProGate";
 import { PLANS, getTrialInfo } from "../../services/plan";
-import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession, getStudioProfile, saveStudioProfile } from "../../services/storage";
+import { sb, fromDB, toDB, IS_CLOUD } from "../../services/supabase";
+import { changePassword } from "../../services/auth";
+import { getPass, setPass, getSession, saveSession, clearSession, getStudioProfile, saveStudioProfile, getCurrentStudio } from "../../services/storage";
 
 export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogout, themeKey = "sapphire", setThemeKey }) => {
   const [showSifre,   setShowSifre]   = useState(false);
@@ -23,7 +24,18 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
     setShowFirma(false);
     alert("✅ Firma bilgileri kaydedildi. Sözleşme, fatura ve kartvizitte bu bilgiler kullanılacak.");
   };
-  const saveSifre = () => {
+  const [codeCopied, setCodeCopied] = useState(false);
+  const joinCode = IS_CLOUD && role === "admin" ? getCurrentStudio()?.join_code : null;
+  const saveSifre = async () => {
+    // Bulutta: giriş yapan kişinin kendi hesap şifresi değişir (tüm cihazlarda geçerli)
+    if (IS_CLOUD) {
+      if (sForm.adminPass.length < 6) { alert("Yeni şifre en az 6 karakter olmalı."); return; }
+      try { await changePassword(sForm.adminPass); }
+      catch (e) { alert("Şifre değiştirilemedi: " + e.message); return; }
+      setShowSifre(false); setSForm({ adminPass:"", personelPass:"" });
+      alert("✅ Şifreniz değiştirildi. Diğer cihazlarda yeni şifreyle giriş yapın.");
+      return;
+    }
     if(sForm.adminPass.length >= 4)    setPass("geses_admin_pass",    sForm.adminPass);
     if(sForm.personelPass.length >= 4) setPass("geses_personel_pass", sForm.personelPass);
     setShowSifre(false);
@@ -183,16 +195,34 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
             </Card>
           )}
 
-          {/* Şifre Değiştir - sadece admin */}
-          {role==="admin" && (
+          {/* Personel katılım kodu (bulut, admin) */}
+          {joinCode && (
+            <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:16 }}>
+              <div style={{ fontWeight:600, fontSize:15, color:T.text }}>Personel Katılım Kodu</div>
+              <div style={{ fontSize:12, color:T.text3, marginTop:2, lineHeight:1.5 }}>
+                Personeliniz uygulamada "Personel olarak katıl" seçeneğiyle bu kodu girerek stüdyonuza bağlanır.
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:12 }}>
+                <div style={{ flex:1, fontFamily:"monospace", fontSize:24, fontWeight:800, letterSpacing:6, color:T.goldL,
+                  background:T.card2, border:`1px dashed ${T.gold}66`, borderRadius:12, padding:"8px 0", textAlign:"center" }}>{joinCode}</div>
+                <button onClick={()=>{ navigator.clipboard?.writeText(joinCode).catch(()=>{}); setCodeCopied(true); setTimeout(()=>setCodeCopied(false),2000); }}
+                  style={{ background:T.gold+"22", border:`1px solid ${T.gold}55`, color:T.goldL, borderRadius:10, padding:"10px 12px", fontSize:12.5, fontWeight:700, cursor:"pointer" }}>
+                  {codeCopied ? "✓ Kopyalandı" : "Kopyala"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Şifre Değiştir - yerelde sadece admin, bulutta herkes kendi şifresini */}
+          {(role==="admin" || IS_CLOUD) && (
             <Card onClick={()=>{ setShowAyarlar(false); setTimeout(()=>setShowSifre(true),200); }}
               style={{ display:"flex", alignItems:"center", gap:14, padding:16, cursor:"pointer" }}>
               <div style={{ background:T.red+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
                 <Ic n="warn" s={20} c={T.redL}/>
               </div>
               <div style={{ flex:1 }}>
-                <div style={{ fontWeight:600, fontSize:15 }}>Şifreleri Değiştir</div>
-                <div style={{ fontSize:12, color:T.text3, marginTop:2 }}>Admin ve personel şifrelerini güncelle</div>
+                <div style={{ fontWeight:600, fontSize:15 }}>{IS_CLOUD ? "Şifremi Değiştir" : "Şifreleri Değiştir"}</div>
+                <div style={{ fontSize:12, color:T.text3, marginTop:2 }}>{IS_CLOUD ? "Hesabınızın giriş şifresini güncelleyin" : "Admin ve personel şifrelerini güncelle"}</div>
               </div>
               <Ic n="back" s={16} c={T.text3} style={{ transform:"rotate(180deg)" }}/>
             </Card>
@@ -212,7 +242,16 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
 
     {/* Şifreleri Değiştir BottomSheet */}
     {showSifre && (
-      <BottomSheet title="Şifreleri Değiştir" onClose={()=>setShowSifre(false)}>
+      <BottomSheet title={IS_CLOUD ? "Şifremi Değiştir" : "Şifreleri Değiştir"} onClose={()=>setShowSifre(false)}>
+        {IS_CLOUD ? (
+          <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+            <div style={{ fontSize:13, color:T.text3, lineHeight:1.6 }}>Yeni şifre tüm cihazlarda (telefon ve bilgisayar) geçerli olur. En az 6 karakter.</div>
+            <input type="password" value={sForm.adminPass} onChange={e=>setSForm(p=>({...p,adminPass:e.target.value}))}
+              placeholder="Yeni şifre" autoComplete="new-password"
+              style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:12, padding:"12px 14px", color:T.text, fontSize:14, width:"100%", outline:"none" }}/>
+            <GoldButton label="Şifreyi Değiştir" icon="check" onClick={saveSifre} full/>
+          </div>
+        ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
           <div style={{ background:T.orange+"1A", border:`1px solid ${T.orange}33`, borderRadius:12,
             padding:"12px 14px", fontSize:13, color:T.orangeL }}>
@@ -236,6 +275,7 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
           </div>
           <GoldButton label="Şifreleri Kaydet" icon="check" onClick={saveSifre} full/>
         </div>
+        )}
       </BottomSheet>
     )}
 
