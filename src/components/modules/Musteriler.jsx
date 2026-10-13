@@ -501,7 +501,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
 
   const SMART_FILTERS = [
     { id:"Tümü",            label:"Tümü" },
-    { id:"bekleyen_odeme",  label:"💰 Bekleyen Ödeme" },
+    ...(isAdmin ? [{ id:"bekleyen_odeme",  label:"💰 Bekleyen Ödeme" }] : []),
     { id:"bekleyen_teslim", label:"📦 Bekleyen Teslim" },
     { id:"tamamlandi",      label:"✅ Tamamlandı" },
     ...data.packages.map(p=>({ id:p.name, label:p.name })),
@@ -551,7 +551,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
               borderRadius:99, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center" }}>
             <Ic n="eye" s={16} c={searchOpen?T.bg:T.text2}/>
           </button>
-          <GoldButton label="Ekle" icon="plus" onClick={handleOpenAdd} sm/>
+          {isAdmin && <GoldButton label="Ekle" icon="plus" onClick={handleOpenAdd} sm/>}
         </div>
       </div>
 
@@ -607,9 +607,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
           {[
             {id:"isim",      label:"A-Z"},
             {id:"tarih",     label:"📅 Tarih"},
-            {id:"fiyat_cok", label:"💰 ↓"},
-            {id:"fiyat_az",  label:"💰 ↑"},
-            {id:"kalan",     label:"⏳ Borç"},
+            ...(isAdmin ? [{id:"fiyat_cok", label:"💰 ↓"}, {id:"fiyat_az",  label:"💰 ↑"}, {id:"kalan",     label:"⏳ Borç"}] : []),
             {id:"tur",       label:"🎯 Tür"},
             {id:"paket",     label:"📦 Paket"},
           ].map(s=>(

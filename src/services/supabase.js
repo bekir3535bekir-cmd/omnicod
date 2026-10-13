@@ -60,7 +60,7 @@ export const sb = {
 
 export const toDB = {
   clients: r => ({ id:String(r.id), name:r.name, phone:r.phone||"", email:r.email||"", type:r.type, package:r.package, notes:r.notes||"", date:r.date||"", total_amount:r.totalAmount||0, paid:r.paid||0, status:r.status, payments:r.payments||[], process:{...(r.process||{}), extraDates:r.extraDates||[]}, referral_source:r.referralSource||"", referral_name:r.referralName||"", anniversary_date:r.anniversaryDate||"" }),
-  appointments: r => ({ id:String(r.id), client_name:r.clientName||"", client_id:String(r.clientId||""), date:r.date||"", time:r.time||"", location:r.location||"", type:r.type||"Düğün", package:r.package||"Bronz Paket", notes:r.notes||"", reminder_days:r.reminderDays||3, status:r.status||"onaylı", total_amount:Number(r.totalAmount)||0, kapora:Number(r.kapora)||0, staff_name:r.staffName||"", staff_ids:r.staffIds||[] }),
+  appointments: r => ({ id:String(r.id), client_name:r.clientName||"", client_id:String(r.clientId||""), date:r.date||"", time:r.time||"", location:r.location||"", type:r.type||"Düğün", package:r.package||"Bronz Paket", notes:r.notes||"", reminder_days:r.reminderDays||3, status:r.status||"onaylı", total_amount:Number(r.totalAmount)||0, kapora:Number(r.kapora)||0, staff_name:r.staffName||"", staff_ids:r.staffIds||[], approval:r.approval||"onaylandı", requested_by:String(r.requestedBy||""), request_info:r.requestInfo||{} }),
   packages: r => ({ id:String(r.id), name:r.name, price:r.price||0, color:r.color, includes:r.includes||[], note:r.note||"" }),
   incomes: r => ({ id:String(r.id), client_name:r.clientName||"", amount:r.amount||0, type:r.type||"", method:r.method||"Nakit", date:r.date||"", note:r.note||"", category:r.category||"" }),
   expenses: r => ({ id:String(r.id), amount:r.amount||0, category:r.category||"", description:r.description||"", date:r.date||"", method:r.method||"Nakit" }),
@@ -78,7 +78,7 @@ export const toDB = {
 
 export const fromDB = {
   clients: r => ({ ...r, totalAmount: r.total_amount, payments: r.payments||[], process: r.process||{}, referralSource: r.referral_source||"", referralName: r.referral_name||"", anniversaryDate: r.anniversary_date||"", extraDates: (r.process||{}).extraDates||[] }),
-  appointments: r => ({ ...r, clientName: r.client_name, clientId: r.client_id||"", reminderDays: r.reminder_days||3, totalAmount: r.total_amount||0, extraDates: [], staffName: r.staff_name||"", staffIds: Array.isArray(r.staff_ids) ? r.staff_ids : undefined }),
+  appointments: r => ({ ...r, clientName: r.client_name, clientId: r.client_id||"", reminderDays: r.reminder_days||3, totalAmount: r.total_amount||0, extraDates: [], staffName: r.staff_name||"", staffIds: Array.isArray(r.staff_ids) ? r.staff_ids : undefined, approval: r.approval||"onaylandı", requestedBy: r.requested_by||"", requestInfo: r.request_info||{} }),
   notifications: r => ({ ...r, teamId: r.team_id, memberName: r.member_name, appointmentId: r.appointment_id, createdAt: r.created_at }),
   packages: r => ({ ...r, includes: r.includes||[] }),
   incomes: r => ({ ...r, clientName: r.client_name }),

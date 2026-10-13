@@ -6,7 +6,8 @@ import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../cons
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { UsageBadge, ProGate } from "../common/ProGate";
 import { canAddTeamMember } from "../../services/plan";
-import { sb, fromDB, toDB } from "../../services/supabase";
+import { sb, fromDB, toDB, IS_CLOUD } from "../../services/supabase";
+import { fetchStaffAccounts, createStaffAccount, setStaffPassword, removeStaffAccount, normalizePhone } from "../../services/auth";
 import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
 
 export const Ekip = ({ data, setData, role, plan, setActive }) => {
@@ -18,6 +19,24 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
   const [showPay,    setShowPay]    = useState(false);
   const [confirmDel, setConfirmDel] = useState(null);
   const [selMember,  setSelMember]  = useState(null);
+  // Personel uygulama girişi (bulut): hangi üyenin hesabı var
+  const [accounts, setAccounts] = useState({});        // team_id → telefon
+  const [accessFor, setAccessFor] = useState(null);    // pencerede düzenlenen üye
+  const [accForm, setAccForm] = useState({ phone:"", password:"" });
+  const [accMsg, setAccMsg] = useState(null);
+  const [accBusy, setAccBusy] = useState(false);
+  const loadAccounts = () => {
+    if (!IS_CLOUD || role !== "admin") return;
+    fetchStaffAccounts().then(list => setAccounts(Object.fromEntries((list || []).map(a => [String(a.team_id), a.phone])))).catch(() => {});
+  };
+  useEffect(loadAccounts, []);
+  const openAccess = (m) => { setAccessFor(m); setAccForm({ phone: m.phone || "", password: "" }); setAccMsg(null); };
+  const accRun = async (fn, okText) => {
+    setAccBusy(true); setAccMsg(null);
+    try { await fn(); setAccMsg({ ok: true, text: okText }); loadAccounts(); setAccForm(f => ({ ...f, password: "" })); }
+    catch (e) { setAccMsg({ ok: false, text: e.message }); }
+    finally { setAccBusy(false); }
+  };
   const [weekOffset, setWeekOffset] = useState(0);
   const FM = { name:"", role:"Fotoğrafçı", phone:"", color:T.blue, salary:0, totalEarned:0, totalPaid:0 };
   const FS = { teamId:"", title:"", date:"", start:"08:00", end:"18:00", location:"", note:"" };
@@ -51,6 +70,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
     setShowMember(false); setMForm(FM);
   };
   const delMember = (id) => {
+    if (IS_CLOUD && accounts[String(id)]) removeStaffAccount(id).then(loadAccounts).catch(()=>{});
     sb.delete("team", id).catch(()=>{});
     setData(p => {
       const memberShifts = p.shifts.filter(s=>s.teamId===id);
@@ -187,6 +207,11 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                       style={{ flex:1, background:T.green+"1A", border:`1px solid ${T.green}33`,
                         borderRadius:10, padding:"9px", fontSize:12, fontWeight:600, color:T.greenL }}>
                       + Ödeme Yap
+                    </button>}
+                    {isAdmin && IS_CLOUD && <button onClick={()=>openAccess(m)}
+                      style={{ flex:"1 1 100%", background:accounts[String(m.id)]?T.green+"1A":T.card2, border:`1px solid ${accounts[String(m.id)]?T.green+"55":T.border}`,
+                        borderRadius:10, padding:"9px", fontSize:12, fontWeight:600, color:accounts[String(m.id)]?T.greenL:T.text2 }}>
+                      {accounts[String(m.id)] ? `📱 Uygulama girişi açık · 0${accounts[String(m.id)]}` : "📱 Uygulama Girişi Oluştur"}
                     </button>}
                     {isAdmin && <button onClick={()=>setConfirmDel(m.id)}
                       style={{ background:T.red+"1A", border:`1px solid ${T.red}33`,
@@ -443,6 +468,50 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
       {showLimitModal && (
         <BottomSheet title="Ekip Limiti" onClose={()=>setShowLimitModal(false)}>
           <ProGate check={teamLimitCheck} featureLabel="Ekip Üyesi" onUpgrade={()=>{ setShowLimitModal(false); setActive && setActive("planyonetimi"); }} />
+        </BottomSheet>
+      )}
+      {accessFor && (
+        <BottomSheet title={`${accessFor.name} — Uygulama Girişi`} onClose={()=>!accBusy && setAccessFor(null)}>
+          {(() => {
+            const has = accounts[String(accessFor.id)];
+            const inp = { background:T.card2, border:`1px solid ${T.border}`, borderRadius:12, padding:"12px 14px", color:T.text, fontSize:14, width:"100%", outline:"none", boxSizing:"border-box" };
+            return (
+              <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                <div style={{ fontSize:12.5, color:T.text3, lineHeight:1.6 }}>
+                  {has
+                    ? <>Bu personel STÜDYOM uygulamasına <b style={{ color:T.text }}>0{has}</b> numarası ve sizin belirlediğiniz şifreyle giriş yapıyor. Kendisine atanan görevleri ve bildirimleri görür; gelir-gider ve firma bilgilerini göremez.</>
+                    : <>Personel uygulamayı telefonuna veya bilgisayarına indirip <b style={{ color:T.text }}>"Personel girişi"</b> ekranından bu telefon numarası ve şifreyle girer.</>}
+                </div>
+                {!has && (
+                  <input type="tel" value={accForm.phone} onChange={e=>setAccForm(f=>({ ...f, phone:e.target.value }))} placeholder="Telefon (05xx xxx xx xx)" style={inp}/>
+                )}
+                <input type="text" value={accForm.password} onChange={e=>setAccForm(f=>({ ...f, password:e.target.value }))}
+                  placeholder={has ? "Yeni şifre (en az 6 karakter)" : "Şifre (en az 6 karakter)"} style={inp} autoComplete="new-password"/>
+                {accMsg && <div style={{ fontSize:12.5, color:accMsg.ok?T.greenL:T.redL, lineHeight:1.5 }}>{accMsg.text}</div>}
+                {!has ? (
+                  <GoldButton label={accBusy ? "Oluşturuluyor..." : "Girişi Oluştur"} full onClick={()=>!accBusy && accRun(async () => {
+                    await createStaffAccount(accessFor.id, accForm.phone, accForm.password);
+                    // Telefon numarası ekip kaydına da yazılır
+                    const ph = normalizePhone(accForm.phone);
+                    if (!normalizePhone(accessFor.phone || "")) {
+                      const upd = { ...accessFor, phone: "0" + ph };
+                      setData(p => ({ ...p, team: p.team.map(x => x.id === upd.id ? upd : x) }));
+                      sb.upsert("team", toDB.team(upd)).catch(()=>{});
+                    }
+                  }, `Giriş oluşturuldu. Personel "Personel girişi" ekranından 0${normalizePhone(accForm.phone)} numarası ve belirlediğiniz şifreyle girebilir.`)}/>
+                ) : (
+                  <>
+                    <GoldButton label={accBusy ? "Kaydediliyor..." : "Şifreyi Değiştir"} full onClick={()=>!accBusy && accRun(
+                      () => setStaffPassword(accessFor.id, accForm.password), "Şifre değiştirildi. Personel yeni şifreyle giriş yapmalı.")}/>
+                    <button onClick={()=>{ if (!accBusy && confirm(`${accessFor.name} uygulamaya artık giriş yapamayacak. Devam edilsin mi?`)) accRun(() => removeStaffAccount(accessFor.id), "Uygulama erişimi kaldırıldı."); }}
+                      style={{ background:"transparent", border:`1px solid ${T.red}55`, color:T.redL, borderRadius:12, padding:"11px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+                      Uygulama Erişimini Kaldır
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })()}
         </BottomSheet>
       )}
     </div>

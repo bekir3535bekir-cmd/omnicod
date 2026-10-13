@@ -425,9 +425,15 @@ const Logo = ({ compact, showText = true }) => (
     }}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" fill="none">
         {/* Arkadaki Ajanda / Takvim (Zümrüt / Turkuaz #00B594) */}
-        <rect x="44" y="16" width="6" height="10" rx="3" fill="#00B594"/>
-        <rect x="68" y="16" width="6" height="10" rx="3" fill="#00B594"/>
-        <path d="M 37 32 H 74 C 77.5 32 80 34.5 80 38 V 74 C 80 75 79 76 78 76 H 75 C 74 76 74 75 74 74 V 39 C 74 38 73 37 72 37 H 42 C 39 37 37 39 37 42 V 46 H 31 V 38 C 31 34.5 33.5 32 37 32 Z" fill="#00B594"/>
+        {/* Makinenin biraz üstünde durur ki ajanda belli olsun */}
+        <rect x="38" y="15" width="46" height="44" rx="7" fill="#00B594"/>
+        <rect x="42" y="25" width="38" height="30" rx="3.5" fill="#0B1220"/>
+        <rect x="48" y="9" width="5" height="11" rx="2.5" fill="#00B594" stroke="#0B1220" strokeWidth="1.5"/>
+        <rect x="69" y="9" width="5" height="11" rx="2.5" fill="#00B594" stroke="#0B1220" strokeWidth="1.5"/>
+        <circle cx="62" cy="31" r="2.6" fill="#00B594"/>
+        <circle cx="70" cy="31" r="2.6" fill="#00B594"/>
+        <circle cx="70" cy="39" r="2.6" fill="#00B594"/>
+        <circle cx="62" cy="39" r="2.6" fill="#00B594" opacity="0.55"/>
         
         {/* Öndeki Kamera Gövdesi (Kraliyet Mavisi #3B5AF6) */}
         <path d="M 35 44 L 40 37 C 41 35.5 42.5 35 44 35 H 56 C 57.5 35 59 35.5 60 37 L 65 44 H 71 C 74.5 44 77 46.5 77 50 V 78 C 77 81.5 74.5 84 71 84 H 29 C 25.5 84 23 81.5 23 78 V 50 C 23 46.5 25.5 44 29 44 Z" fill="#3B5AF6"/>
@@ -437,14 +443,13 @@ const Logo = ({ compact, showText = true }) => (
       </svg>
     </div>
     {showText && (
-      <div style={{ display:"flex", flexDirection:"column", gap:1 }}>
-        <div style={{ display:"flex", alignItems:"baseline", gap:compact?1:2 }}>
-          <span style={{ fontFamily:"'Plus Jakarta Sans', sans-serif", fontSize:compact?19:23, fontWeight:800,
-            color:T.text, letterSpacing:compact?1.2:1.8, lineHeight:1 }}>STÜDYO</span>
-          <span style={{ fontFamily:"'Plus Jakarta Sans', sans-serif", fontSize:compact?19:23, fontWeight:900,
-            color:"#3B5AF6", letterSpacing:compact?1:1.5, lineHeight:1 }}>M</span>
-        </div>
-        <div style={{ height:1.5, background:"linear-gradient(90deg, #3B5AF6, #00B594, transparent)", width:"90%" }}/>
+      <div style={{ display:"flex", alignItems:"center", gap:compact ? 3 : 4,
+        fontFamily:"'Plus Jakarta Sans', sans-serif", fontSize:compact ? 18 : 22, fontWeight:800, lineHeight:1 }}>
+        <span style={{ color:T.text, letterSpacing:"0.06em", marginRight:"-0.03em" }}>STÜDYO</span>
+        {/* M: ikondaki kamera mavisiyle rozet */}
+        <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center",
+          height:"1.1em", minWidth:"1.1em", padding:"0 0.16em", borderRadius:"0.26em",
+          background:"#3B5AF6", color:"#FFFFFF", boxShadow:"inset 0 1px 0 rgba(255,255,255,0.22)" }}>M</span>
       </div>
     )}
   </div>

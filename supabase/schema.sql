@@ -127,7 +127,8 @@ create table if not exists public.weekly_reports (
 
 -- ── Her tabloya stüdyo bağlantısı + güvenlik kuralı ──────────────
 -- studio_id otomatik doldurulur (uygulamanın göndermesine gerek yok).
--- Finans tabloları yalnızca admin'e açıktır; diğerleri stüdyodaki herkese.
+-- Personel tablolara doğrudan erişemez (yalnızca mesajlar ve bildirimler).
+-- Personel verileri staff_data() ile, tutar/ödeme/maaş/fiyat alanları ÇIKARILMIŞ olarak alır.
 do $$
 declare t text;
 begin
@@ -147,17 +148,22 @@ begin
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists studyom_giris_yapan_kullanici on public.%I', t);
     execute format('drop policy if exists studyom_kendi_studyosu on public.%I', t);
-    if t in ('incomes','expenses','contracts','quotes','weekly_reports') then
-      execute format('create policy studyom_kendi_studyosu on public.%I for all to authenticated
-        using (studio_id = public.current_studio_id() and public.current_role_in_studio() = ''admin'')
-        with check (studio_id = public.current_studio_id() and public.current_role_in_studio() = ''admin'')', t);
-    else
+    if t in ('messages','notifications') then
       execute format('create policy studyom_kendi_studyosu on public.%I for all to authenticated
         using (studio_id = public.current_studio_id())
         with check (studio_id = public.current_studio_id())', t);
+    else
+      execute format('create policy studyom_kendi_studyosu on public.%I for all to authenticated
+        using (studio_id = public.current_studio_id() and public.current_role_in_studio() = ''admin'')
+        with check (studio_id = public.current_studio_id() and public.current_role_in_studio() = ''admin'')', t);
     end if;
   end loop;
 end $$;
+
+-- Randevu onayı: personelin eklediği randevu yönetici onaylayana kadar "bekliyor" durumundadır
+alter table public.appointments add column if not exists approval text not null default 'onaylandı';
+alter table public.appointments add column if not exists requested_by text not null default '';
+alter table public.appointments add column if not exists request_info jsonb not null default '{}'::jsonb;
 
 -- Stüdyo ve üyelik tabloları: kullanıcı yalnızca kendi stüdyosunu görür
 alter table public.studios enable row level security;
@@ -204,7 +210,7 @@ end $$;
 -- Personelin kendini Ekip listesindeki kaydıyla eşleştirmesi (bildirimler için)
 create or replace function public.set_my_team_id(p_team_id text) returns void
 language sql security definer set search_path = public as $$
-  update studio_members set team_id = p_team_id where user_id = auth.uid()
+  update studio_members set team_id = p_team_id where user_id = auth.uid() and (team_id is null or role = 'admin')
 $$;
 
 -- Firma & kişi bilgilerini kaydet (yalnızca admin)
@@ -247,18 +253,157 @@ language sql stable security definer set search_path = public as $$
           select id, name, type, date, package, process, total_amount, paid from clients where id = p_client_id) c),
       'appointments', coalesce((select json_agg(a) from (
           select id, client_id, client_name, date, time, location, type, package, status
-          from appointments where client_id = p_client_id) a), '[]'::json),
+          from appointments where client_id = p_client_id and approval <> 'bekliyor') a), '[]'::json),
       'gallery', coalesce((select json_agg(g) from (
           select id, title, category, url, client_id, emoji, color from gallery where client_id = p_client_id) g), '[]'::json)
     )
   else null end
 $$;
 
+-- ── Personel hesapları (yönetici oluşturur, şifreyi yönetici belirler) ──
+-- Personel telefon numarası + şifre ile giriş yapar. Sistem içinde hesabın e-postası
+-- p<telefon>@personel.studyom.app biçimindedir (bu adrese e-posta gönderilmez).
+
+-- Yeni açılan personel hesabını yöneticinin stüdyosuna bağla
+create or replace function public.add_staff(p_user_id uuid, p_team_id text) returns void
+language plpgsql security definer set search_path = public, auth as $$
+declare v_studio uuid := public.current_studio_id(); v_email text;
+begin
+  if public.current_role_in_studio() is distinct from 'admin' then raise exception 'Yetki yok'; end if;
+  -- Yalnızca az önce açılmış personel hesapları bağlanabilir (başkasının hesabı ele geçirilemez)
+  select email into v_email from auth.users where id = p_user_id and created_at > now() - interval '15 minutes';
+  if v_email is null or v_email not like '%@personel.studyom.app' then raise exception 'Geçersiz personel hesabı'; end if;
+  if exists (select 1 from studio_members where user_id = p_user_id) then raise exception 'Bu hesap zaten bir stüdyoya bağlı'; end if;
+  if exists (select 1 from studio_members where studio_id = v_studio and team_id = p_team_id) then
+    raise exception 'Bu personelin zaten bir giriş hesabı var';
+  end if;
+  insert into studio_members(studio_id, user_id, role, team_id) values (v_studio, p_user_id, 'personel', p_team_id);
+  update auth.users set email_confirmed_at = coalesce(email_confirmed_at, now()) where id = p_user_id;
+end $$;
+
+-- Stüdyonun personel hesapları (hangi ekip üyesinin giriş hesabı var)
+create or replace function public.staff_accounts() returns json
+language sql stable security definer set search_path = public, auth as $$
+  select coalesce(json_agg(json_build_object('team_id', m.team_id,
+           'phone', substr(split_part(u.email, '@', 1), 2))), '[]'::json)
+  from studio_members m join auth.users u on u.id = m.user_id
+  where m.studio_id = public.current_studio_id() and m.role = 'personel'
+    and public.current_role_in_studio() = 'admin'
+$$;
+
+-- Yönetici personelin şifresini değiştirir
+create or replace function public.set_staff_password(p_team_id text, p_password text) returns void
+language plpgsql security definer set search_path = public, auth, extensions as $$
+declare v_uid uuid;
+begin
+  if public.current_role_in_studio() is distinct from 'admin' then raise exception 'Yetki yok'; end if;
+  if length(coalesce(p_password, '')) < 6 then raise exception 'Şifre en az 6 karakter olmalı'; end if;
+  select user_id into v_uid from studio_members
+    where studio_id = public.current_studio_id() and team_id = p_team_id and role = 'personel';
+  if v_uid is null then raise exception 'Personel hesabı bulunamadı'; end if;
+  update auth.users set encrypted_password = extensions.crypt(p_password, extensions.gen_salt('bf')), updated_at = now()
+    where id = v_uid;
+end $$;
+
+-- Yönetici personelin uygulama erişimini kaldırır (hesap silinir)
+create or replace function public.remove_staff(p_team_id text) returns void
+language plpgsql security definer set search_path = public, auth as $$
+declare v_uid uuid;
+begin
+  if public.current_role_in_studio() is distinct from 'admin' then raise exception 'Yetki yok'; end if;
+  select user_id into v_uid from studio_members
+    where studio_id = public.current_studio_id() and team_id = p_team_id and role = 'personel';
+  if v_uid is null then return; end if;
+  delete from auth.users where id = v_uid;
+end $$;
+
+-- Hesabımı sil (App Store / Google Play zorunluluğu)
+-- Yönetici silerse: stüdyo, tüm verileri ve personel hesapları da silinir.
+create or replace function public.delete_my_account() returns void
+language plpgsql security definer set search_path = public, auth as $$
+declare v_studio uuid := public.current_studio_id(); v_role text := public.current_role_in_studio(); v_me uuid := auth.uid();
+begin
+  if v_me is null then raise exception 'Giriş yapılmamış'; end if;
+  if v_role = 'admin' then
+    delete from auth.users where id in (select user_id from studio_members where studio_id = v_studio and user_id <> v_me);
+    delete from studios where id = v_studio;
+  end if;
+  delete from auth.users where id = v_me;
+end $$;
+
+-- ── Personel verisi (finans alanları olmadan) ─────────────────────
+-- Personel müşteri, randevu, paket, ekip ve vardiya bilgilerini görür;
+-- tutar, kapora, ödemeler, paket fiyatı, maaş ve ücret alanları hiç gönderilmez.
+create or replace function public.staff_data() returns json
+language plpgsql stable security definer set search_path = public as $$
+declare v_studio uuid := public.current_studio_id(); v_me text;
+begin
+  if v_studio is null then raise exception 'Stüdyo bulunamadı'; end if;
+  select team_id into v_me from studio_members where user_id = auth.uid();
+  return json_build_object(
+    'clients', coalesce((select json_agg(c) from (
+        select id, name, phone, email, type, package, notes, date, status, process,
+               referral_source, referral_name, anniversary_date
+        from clients where studio_id = v_studio) c), '[]'::json),
+    'appointments', coalesce((select json_agg(a) from (
+        select id, client_name, client_id, date, time, location, type, package, notes, reminder_days, status,
+               staff_name, staff_ids, approval, requested_by, request_info
+        from appointments where studio_id = v_studio
+          and (approval <> 'bekliyor' or requested_by = coalesce(v_me, '-'))) a), '[]'::json),
+    'packages', coalesce((select json_agg(p) from (
+        select id, name, color, includes, note from packages where studio_id = v_studio) p), '[]'::json),
+    'team', coalesce((select json_agg(m) from (
+        select id, name, role, phone, color from team where studio_id = v_studio) m), '[]'::json),
+    'shifts', coalesce((select json_agg(s) from (
+        select id, member_id, member_name, date, appointment_id, client_name, type, status, title, start, "end", location, note
+        from shifts where studio_id = v_studio) s), '[]'::json),
+    'locations', coalesce((select json_agg(l) from (
+        select id, name, address, note from locations where studio_id = v_studio) l), '[]'::json)
+  );
+end $$;
+
+-- Personel randevu ekler: "bekliyor" olarak kaydedilir, yöneticiye bildirim gider.
+-- Tutar/kapora alınmaz; yönetici onaylarken girer.
+create or replace function public.submit_appointment(p jsonb) returns void
+language plpgsql security definer set search_path = public as $$
+declare v_studio uuid := public.current_studio_id(); v_me text; v_name text; v_id text := left(coalesce(p->>'id', ''), 64);
+begin
+  if v_studio is null then raise exception 'Stüdyo bulunamadı'; end if;
+  if v_id = '' or coalesce(trim(p->>'client_name'), '') = '' or coalesce(p->>'date', '') !~ '^\d{4}-\d{2}-\d{2}$' then
+    raise exception 'Müşteri adı ve tarih gerekli';
+  end if;
+  if exists (select 1 from appointments where studio_id = v_studio and id = v_id) then raise exception 'Bu randevu zaten kayıtlı'; end if;
+  select team_id into v_me from studio_members where user_id = auth.uid();
+  select name into v_name from team where studio_id = v_studio and id = v_me;
+  insert into appointments(studio_id, id, client_name, client_id, date, time, location, type, package, notes,
+                           reminder_days, status, staff_name, staff_ids, approval, requested_by, request_info)
+  values (v_studio, v_id, left(trim(p->>'client_name'), 200), '', p->>'date', left(coalesce(p->>'time', ''), 5),
+          left(coalesce(p->>'location', ''), 300), left(coalesce(p->>'type', 'Düğün'), 50), left(coalesce(p->>'package', ''), 100),
+          left(coalesce(p->>'notes', ''), 2000), coalesce(nullif(p->>'reminder_days', '')::int, 3), 'onaylı',
+          left(coalesce(p->>'staff_name', ''), 300),
+          case when jsonb_typeof(p->'staff_ids') = 'array' then p->'staff_ids' else '[]'::jsonb end,
+          'bekliyor', coalesce(v_me, ''),
+          jsonb_build_object('client_phone', left(coalesce(p->>'client_phone', ''), 30),
+                             'extra_dates', case when jsonb_typeof(p->'extra_dates') = 'array' then p->'extra_dates' else '[]'::jsonb end,
+                             'requested_by_name', coalesce(v_name, 'Personel'),
+                             'requested_at', to_char(now() at time zone 'Europe/Istanbul', 'YYYY-MM-DD"T"HH24:MI:SS')));
+  insert into notifications(studio_id, id, team_id, member_name, appointment_id, title, body, created_at, date, read)
+  values (v_studio, 'onay-' || v_id, 'admin', coalesce(v_name, 'Personel'), v_id,
+          'Onay bekleyen randevu: ' || left(trim(p->>'client_name'), 120) || ' — ' || left(coalesce(p->>'type', 'Düğün'), 50),
+          coalesce(v_name, 'Personel') || ' ekledi · ' || to_char(to_date(p->>'date', 'YYYY-MM-DD'), 'DD.MM.YYYY')
+            || coalesce(' · ' || nullif(left(p->>'location', 120), ''), ''),
+          to_char(now() at time zone 'Europe/Istanbul', 'YYYY-MM-DD"T"HH24:MI:SS'), p->>'date', false);
+end $$;
+
 -- Fonksiyon yetkileri
 revoke all on function public.create_studio(text), public.join_studio(text), public.set_my_team_id(text),
   public.my_studio(), public.proof_data(text), public.current_studio_id(), public.current_role_in_studio(),
-  public.update_studio_profile(jsonb), public.find_client(text, text) from public;
+  public.update_studio_profile(jsonb), public.find_client(text, text),
+  public.add_staff(uuid, text), public.staff_accounts(), public.set_staff_password(text, text),
+  public.remove_staff(text), public.delete_my_account(), public.staff_data(), public.submit_appointment(jsonb) from public;
 grant execute on function public.create_studio(text), public.join_studio(text), public.set_my_team_id(text),
   public.my_studio(), public.current_studio_id(), public.current_role_in_studio(),
-  public.update_studio_profile(jsonb) to authenticated;
+  public.update_studio_profile(jsonb),
+  public.add_staff(uuid, text), public.staff_accounts(), public.set_staff_password(text, text),
+  public.remove_staff(text), public.delete_my_account(), public.staff_data(), public.submit_appointment(jsonb) to authenticated;
 grant execute on function public.proof_data(text), public.find_client(text, text) to anon, authenticated;

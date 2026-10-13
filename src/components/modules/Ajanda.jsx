@@ -7,7 +7,8 @@ import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, Pag
 import { UsageBadge, ProGate } from "../common/ProGate";
 import { canAddAppointment, canAddClient } from "../../services/plan";
 import { staffIdsOf, staffNameOf, assignmentNotifications, assignmentWhatsApp } from "../../services/staffNotify";
-import { sb, fromDB, toDB } from "../../services/supabase";
+import { sb, fromDB, toDB, IS_CLOUD } from "../../services/supabase";
+import { submitAppointment } from "../../services/auth";
 import { getPass, setPass, getSession, saveSession, clearSession, getStudioInfo } from "../../services/storage";
 
 // Randevuya personel atama (çoklu seçim)
@@ -42,8 +43,15 @@ const StaffPicker = ({ team, value, onChange }) => {
   );
 };
 
-export const Ajanda = ({ data, setData, role, plan, setActive }) => {
+export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId }) => {
   const isAdmin = role === "admin";
+  // Onay bekleyen randevular ayrı listelenir; takvim, limit ve sayımlar yalnızca onaylılarla yapılır
+  const pending = (fullData.appointments || []).filter(a => a.approval === "bekliyor");
+  const data = pending.length ? { ...fullData, appointments: fullData.appointments.filter(a => a.approval !== "bekliyor") } : fullData;
+  const [requestSent, setRequestSent] = useState(null);   // personel: "Yönetici onayı bekleniyor" penceresi
+  const [approveApt, setApproveApt] = useState(null);     // yönetici: onay penceresi
+  const [approveForm, setApproveForm] = useState({ totalAmount:"", kapora:"" });
+  const [busy, setBusy] = useState(false);
   const [showAdd,   setShowAdd]   = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [limitInfo, setLimitInfo] = useState(null); // hangi limit doldu: randevu / müşteri
@@ -72,7 +80,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
   const aptLimitCheck = canAddAppointment(data);
 
   // detail her zaman data'dan türetiliyor → tek kaynak
-  const detail = detailId ? data.appointments.find(a => a.id === detailId) || null : null;
+  const detail = detailId ? fullData.appointments.find(a => a.id === detailId) || null : null;
 
   const handleOpenAdd = () => {
     if (!aptLimitCheck.allowed) {
@@ -82,12 +90,39 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
     setShowAdd(true);
   };
 
+  // Personel: randevu talebi gönderir, yönetici onaylayınca sisteme eklenir
+  const sendRequest = async () => {
+    if (busy) return;
+    const req = { ...form, id: uid(), totalAmount: 0, kapora: 0, extraDates: (form.extraDates||[]).filter(Boolean) };
+    setBusy(true);
+    try {
+      if (IS_CLOUD) await submitAppointment(req);
+    } catch (e) {
+      alert("Randevu gönderilemedi: " + e.message);
+      setBusy(false);
+      return;
+    }
+    const me = (data.team||[]).find(m => String(m.id) === String(staffId));
+    const local = { ...req, approval: "bekliyor", requestedBy: String(staffId||""),
+      requestInfo: { client_phone: req.clientPhone||"", extra_dates: req.extraDates, requested_by_name: me?.name || "Personel" } };
+    setData(p => ({ ...p, appointments: [...p.appointments, local] }));
+    setBusy(false);
+    setShowAdd(false); setForm(F);
+    setRequestSent(local);
+  };
+
   const save = () => {
     if(!form.clientName||!form.date) return;
+    if(!isAdmin) { sendRequest(); return; }
     if(!aptLimitCheck.allowed) {
       setShowLimitModal(true);
       return;
     }
+    if(commitAppointment(form)) { setShowAdd(false); setForm(F); }
+  };
+
+  // Randevuyu sisteme ekler (müşteri kartı, hatırlatıcı, kapora). fromRequest: onaylanan personel talebi
+  const commitAppointment = (form, fromRequest = null) => {
     const total  = Number(form.totalAmount)||0;
     const kapora = Number(form.kapora)||0;
 
@@ -98,7 +133,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
       if(!clientCheck.allowed) {
         setLimitInfo({ check:clientCheck, label:"Müşteri" });
         setShowLimitModal(true);
-        return;
+        return false;
       }
     }
 
@@ -117,7 +152,8 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
 
     // clientId: varolan müşteriden al, yoksa yeni müşteri id'si sonra atanacak
     const newClientId = existingClient ? existingClient.id : uid();
-    const newA = { ...form, id:uid(), clientId: existingClient ? existingClient.id : newClientId };
+    const newA = { ...form, id: fromRequest ? fromRequest.id : uid(), clientId: existingClient ? existingClient.id : newClientId,
+      approval: "onaylandı", requestedBy: fromRequest?.requestedBy || "", requestInfo: fromRequest?.requestInfo || {} };
 
     let updatedClients;
     let syncedClientForDB;
@@ -167,7 +203,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
 
     setData(p=>({
       ...p,
-      appointments: [...p.appointments, newA],
+      appointments: fromRequest ? p.appointments.map(a => a.id === newA.id ? newA : a) : [...p.appointments, newA],
       clients:      updatedClients,
       incomes:      kaporaIncome ? [...p.incomes, kaporaIncome] : p.incomes,
       reminders:    [...p.reminders, ...newReminders]
@@ -177,8 +213,36 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
     sb.upsert("clients", toDB.clients(syncedClientForDB)).catch(e=>console.error("Müşteri kayıt hatası:",e));
     newReminders.forEach(r => sb.upsert("reminders", toDB.reminders(r)).catch(()=>{}));
     if(kaporaIncome) sb.upsert("incomes", toDB.incomes(kaporaIncome)).catch(()=>{});
-    setShowAdd(false); setForm(F);
+    if (fromRequest?.requestedBy) tellRequester(fromRequest, true);
     notifyStaff(newA, staffIdsOf(newA, data.team||[]));
+    return true;
+  };
+
+  // Talebi gönderen personele sonucu bildir
+  const tellRequester = (apt, ok) => {
+    const n = { id: uid(), teamId: String(apt.requestedBy), memberName: apt.requestInfo?.requested_by_name || "",
+      appointmentId: apt.id,
+      title: ok ? `Randevu onaylandı: ${apt.clientName} — ${apt.type || "Çekim"}` : `Randevu talebi onaylanmadı: ${apt.clientName}`,
+      body: `${apt.date ? fmtDate(apt.date) : ""}${apt.location ? " • " + apt.location : ""}${ok ? " • Sisteme eklendi" : " • Yönetici reddetti"}`,
+      createdAt: new Date().toISOString(), date: todayStr(), read: false };
+    setData(p => ({ ...p, notifications: [...(p.notifications||[]), n] }));
+    sb.upsert("notifications", toDB.notifications(n)).catch(()=>{});
+  };
+  const openApprove = (apt) => { setApproveApt(apt); setApproveForm({ totalAmount:"", kapora:"" }); };
+  const approve = () => {
+    const apt = approveApt;
+    if (!apt) return;
+    if (!aptLimitCheck.allowed) { setApproveApt(null); setShowLimitModal(true); return; }
+    const src = { ...F, ...apt, clientPhone: apt.requestInfo?.client_phone || "", extraDates: apt.requestInfo?.extra_dates || [],
+      totalAmount: approveForm.totalAmount, kapora: approveForm.kapora };
+    if (commitAppointment(src, apt)) setApproveApt(null);
+  };
+  const reject = (apt) => {
+    if (!confirm(`${apt.clientName} randevu talebi reddedilsin mi? Talep silinir ve personele bildirilir.`)) return;
+    sb.delete("appointments", apt.id).catch(()=>{});
+    setData(p => ({ ...p, appointments: p.appointments.filter(a => a.id !== apt.id) }));
+    if (apt.requestedBy) tellRequester(apt, false);
+    setApproveApt(null);
   };
 
   const del = id => {
@@ -211,10 +275,50 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
 
   return (
     <div className="fade-in">
-      <PageHeader title="Ajanda" sub={`${data.appointments.length} randevu`} action onAction={handleOpenAdd} actionLabel="Randevu Ekle"/>
+      <PageHeader title="Ajanda" sub={`${data.appointments.length} randevu`} action onAction={handleOpenAdd} actionLabel={isAdmin ? "Randevu Ekle" : "Randevu Talebi"}/>
+
+      {/* Onay bekleyen randevular: yönetici onaylar / reddeder, personel kendi talebinin durumunu görür */}
+      {pending.length > 0 && (
+        <div style={{ padding:"0 20px 16px" }}>
+          <div style={{ fontSize:12, fontWeight:700, color:T.orangeL, textTransform:"uppercase", letterSpacing:0.6, marginBottom:10 }}>
+            ⏳ {isAdmin ? `Onayınızı bekleyen randevular (${pending.length})` : "Yönetici onayı bekleyenler"}
+          </div>
+          {pending.sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(a => (
+            <Card key={a.id} style={{ marginBottom:10, borderColor:T.orange+"66", background:T.orange+"0D" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10 }}>
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontWeight:700, fontSize:15 }}>{a.clientName} <span style={{ fontWeight:500, color:T.text3, fontSize:13 }}>· {a.type}</span></div>
+                  <div style={{ fontSize:12.5, color:T.text2, marginTop:4 }}>
+                    📅 {fmtDate(a.date)}{a.time ? ` · ${a.time}` : ""}{a.location ? ` · 📍 ${a.location}` : ""}
+                  </div>
+                  {a.staffName && <div style={{ fontSize:12, color:T.text3, marginTop:3 }}>👤 Görevli: {a.staffName}</div>}
+                  {isAdmin && <div style={{ fontSize:12, color:T.text3, marginTop:3 }}>✍️ Ekleyen: <b style={{ color:T.text2 }}>{a.requestInfo?.requested_by_name || "Personel"}</b></div>}
+                </div>
+                <Pill label="Onay bekliyor" color={T.orangeL}/>
+              </div>
+              {isAdmin ? (
+                <div style={{ display:"flex", gap:8, marginTop:12 }}>
+                  <button onClick={()=>openApprove(a)}
+                    style={{ flex:1, background:T.green+"22", border:`1px solid ${T.green}66`, color:T.greenL, borderRadius:10, padding:"9px", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                    ✓ Onayla
+                  </button>
+                  <button onClick={()=>reject(a)}
+                    style={{ flex:1, background:"transparent", border:`1px solid ${T.red}55`, color:T.redL, borderRadius:10, padding:"9px", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                    ✕ Reddet
+                  </button>
+                </div>
+              ) : (
+                <div style={{ marginTop:10, fontSize:12, color:T.text3, lineHeight:1.5 }}>
+                  Yönetici onayladığında sisteme eklenecek ve size bildirim gelecek.
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Plan Kullanım Rozeti - Basic ise */}
-      {!aptLimitCheck.isPro && (
+      {isAdmin && !aptLimitCheck.isPro && (
         <div style={{ padding:"0 20px 14px" }}>
           <UsageBadge check={aptLimitCheck} label="Düğün / Çekim Randevusu" />
         </div>
@@ -458,7 +562,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
             </div>
           </div>
 
-          <div style={{ marginBottom:16 }}>
+          {isAdmin && <div style={{ marginBottom:16 }}>
             <div style={{ fontSize:12, color:T.text3, marginBottom:10 }}>Durum Değiştir</div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               {(isAdmin ? ["onaylı","tamamlandı","bekliyor","iptal"] : ["onaylı","tamamlandı","bekliyor"]).map(s=>(
@@ -470,7 +574,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
                 </button>
               ))}
             </div>
-          </div>
+          </div>}
           {/* Hava durumu — butonların altında, tıklamayı engellemez */}
           {detail.date && (
             <div style={{ marginBottom:16, pointerEvents:"none" }}>
@@ -537,7 +641,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
             <span style={{ fontSize:15, fontWeight:700, color:T.goldL }}>Çekim Günü Modu</span>
           </button>
           <div style={{ display:"flex", gap:10 }}>
-            <GoldButton label="Randevuyu Kopyala" icon="copy" onClick={()=>copyAppointment(detail)} full variant="outline"/>
+            {isAdmin && <GoldButton label="Randevuyu Kopyala" icon="copy" onClick={()=>copyAppointment(detail)} full variant="outline"/>}
             {isAdmin && <GoldButton label="Sil" icon="trash" onClick={()=>del(detail.id)} full variant="danger"/>}
           </div>
         </BottomSheet>
@@ -648,8 +752,13 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
 
       {/* Add */}
       {showAdd && (
-        <BottomSheet title="Yeni Randevu" onClose={()=>setShowAdd(false)}>
+        <BottomSheet title={isAdmin ? "Yeni Randevu" : "Randevu Talebi"} onClose={()=>setShowAdd(false)}>
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+            {!isAdmin && (
+              <div style={{ background:T.orange+"14", border:`1px solid ${T.orange}44`, borderRadius:12, padding:"10px 14px", fontSize:12.5, color:T.orangeL, lineHeight:1.5 }}>
+                ⏳ Eklediğiniz randevu yönetici onayından sonra sisteme eklenir.
+              </div>
+            )}
             <Field label="Müşteri Adı" value={form.clientName} onChange={f("clientName")} placeholder="Ad Soyad" required/>
             {form.clientName.length>1 && (
               data.clients.some(c=>c.name.toLowerCase()===form.clientName.toLowerCase())
@@ -659,7 +768,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
                 </div>
               : <div style={{ background:T.blue+"1A", border:`1px solid ${T.blue}33`, borderRadius:10,
                   padding:"9px 14px", fontSize:12, color:T.blueL, display:"flex", gap:8, alignItems:"center" }}>
-                  <Ic n="info" s={13} c={T.blueL}/> Müşteriler listesine otomatik eklenecek
+                  <Ic n="info" s={13} c={T.blueL}/> {isAdmin ? "Müşteriler listesine otomatik eklenecek" : "Onaylanınca müşteriler listesine eklenecek"}
                 </div>
             )}
             {form.clientName.length>1 && !data.clients.some(c=>c.name.toLowerCase()===form.clientName.toLowerCase() && c.phone) && (
@@ -714,7 +823,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
                   placeholder="Düğün salonu, stüdyo..."
                   style={{ flex:1, background:T.card2, border:`1px solid ${T.border}`, borderRadius:12,
                     padding:"12px 14px", color:T.text, fontSize:14, outline:"none" }}/>
-                {form.location.trim() && !data.locations.some(l=>l.name.toLowerCase()===form.location.toLowerCase()) && (
+                {isAdmin && form.location.trim() && !data.locations.some(l=>l.name.toLowerCase()===form.location.toLowerCase()) && (
                   <button onClick={()=>{
                     const newLoc={id:uid(),name:form.location.trim(),address:"",note:""};
                     setData(p=>({...p,locations:[...p.locations,newLoc]}));
@@ -738,8 +847,8 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
             <StaffPicker team={data.team||[]} value={staffIdsOf(form, data.team||[])}
               onChange={ids => setForm(p => ({ ...p, staffIds: ids, staffName: staffNameOf(ids, data.team||[]) }))}/>
 
-            {/* Ödeme Bilgileri */}
-            <div style={{ background:T.card2, borderRadius:14, padding:14 }}>
+            {/* Ödeme Bilgileri — yalnızca yönetici */}
+            {isAdmin && <div style={{ background:T.card2, borderRadius:14, padding:14 }}>
               <div style={{ fontSize:12, color:T.text3, fontWeight:600, textTransform:"uppercase",
                 letterSpacing:"0.5px", marginBottom:12 }}>💰 Ödeme Bilgileri</div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
@@ -758,7 +867,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
               <div style={{ fontSize:11, color:T.text3, marginTop:8 }}>
                 💡 Müşteriler bölümüne otomatik aktarılır
               </div>
-            </div>
+            </div>}
 
             <div>
               <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:10 }}>🔔 Kaç gün önce hatırlat?</div>
@@ -774,7 +883,7 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
                 ))}
               </div>
             </div>
-            <GoldButton label="Randevuyu Kaydet" icon="check" onClick={save} full/>
+            <GoldButton label={isAdmin ? "Randevuyu Kaydet" : (busy ? "Gönderiliyor..." : "Onaya Gönder")} icon="check" onClick={save} full/>
           </div>
         </BottomSheet>
       )}
@@ -820,6 +929,43 @@ export const Ajanda = ({ data, setData, role, plan, setActive }) => {
               );
             })}
             <GoldButton label="Tamam" full onClick={()=>setNotifyInfo(null)}/>
+          </div>
+        </BottomSheet>
+      )}
+
+      {requestSent && (
+        <BottomSheet title="Yönetici Onayı Bekleniyor" onClose={()=>setRequestSent(null)}>
+          <div style={{ display:"flex", flexDirection:"column", gap:14, alignItems:"center", textAlign:"center" }}>
+            <div style={{ fontSize:44 }}>⏳</div>
+            <div style={{ fontSize:16, fontWeight:700, color:T.text }}>{requestSent.clientName} — {requestSent.type}</div>
+            <div style={{ fontSize:13.5, color:T.text2, lineHeight:1.6 }}>
+              Randevu talebiniz yöneticiye gönderildi.<br/>
+              <b style={{ color:T.orangeL }}>Yönetici onayı bekleniyor</b>, onaylandıktan sonra sisteme eklenecek ve size bildirim gelecek.
+            </div>
+            <GoldButton label="Tamam" full onClick={()=>setRequestSent(null)}/>
+          </div>
+        </BottomSheet>
+      )}
+
+      {approveApt && (
+        <BottomSheet title="Randevuyu Onayla" onClose={()=>setApproveApt(null)}>
+          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+            <div style={{ background:T.card2, borderRadius:12, padding:"12px 14px", fontSize:13, color:T.text2, lineHeight:1.7 }}>
+              <div style={{ fontSize:15, fontWeight:700, color:T.text }}>{approveApt.clientName} — {approveApt.type}</div>
+              📅 {fmtDate(approveApt.date)}{approveApt.time ? ` · ${approveApt.time}` : ""}<br/>
+              {approveApt.location && <>📍 {approveApt.location}<br/></>}
+              {approveApt.requestInfo?.client_phone && <>📞 {approveApt.requestInfo.client_phone}<br/></>}
+              {approveApt.staffName && <>👤 Görevli: {approveApt.staffName}<br/></>}
+              ✍️ Ekleyen: {approveApt.requestInfo?.requested_by_name || "Personel"}
+              {approveApt.notes && <div style={{ marginTop:6 }}>💬 {approveApt.notes}</div>}
+            </div>
+            <div style={{ fontSize:12, color:T.text3 }}>İsterseniz ücret bilgisini şimdi girin (personel göremez):</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+              <Field label="Toplam Tutar" type="number" value={approveForm.totalAmount} onChange={v=>setApproveForm(p=>({...p,totalAmount:v}))} placeholder="0"/>
+              <Field label="Alınan Kapora" type="number" value={approveForm.kapora} onChange={v=>setApproveForm(p=>({...p,kapora:v}))} placeholder="0"/>
+            </div>
+            <GoldButton label="Onayla ve Sisteme Ekle" icon="check" full onClick={approve}/>
+            <GoldButton label="Reddet" variant="danger" full onClick={()=>reject(approveApt)}/>
           </div>
         </BottomSheet>
       )}

@@ -2,7 +2,20 @@
 // HESAP & STÜDYO (Supabase Auth)
 // Aynı e-posta/şifreyle telefondan ve bilgisayardan giriş yapılır, aynı veri görülür.
 // ════════════════════════════════════════════════
-import { supabase, sb } from "./supabase";
+import { createClient } from "@supabase/supabase-js";
+import { supabase, sb, SUPABASE_URL, SUPABASE_KEY } from "./supabase";
+
+// ── Personel girişi: telefon numarası → sistem içi e-posta ──
+// Personel e-posta yerine telefon numarasıyla girer; hesabın sistemdeki adresi p<telefon>@personel.studyom.app
+export const normalizePhone = (v) => {
+  let d = String(v || "").replace(/\D/g, "");
+  if (d.startsWith("90") && d.length === 12) d = d.slice(2);
+  if (d.startsWith("0")) d = d.slice(1);
+  return d;
+};
+export const staffEmail = (phone) => `p${normalizePhone(phone)}@personel.studyom.app`;
+// Girişte yazılan değer e-posta değilse telefon kabul edilir
+const loginEmail = (v) => String(v || "").includes("@") ? String(v).trim() : staffEmail(v);
 
 // Supabase hata mesajlarını Türkçeleştir
 export const authErrorText = (error) => {
@@ -33,9 +46,11 @@ export const onAuthChange = (cb) => {
   return () => data?.subscription?.unsubscribe();
 };
 
-export const signIn = async (email, password) => {
-  const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-  if (error) throw new Error(authErrorText(error));
+export const signIn = async (emailOrPhone, password) => {
+  const isPhone = !String(emailOrPhone || "").includes("@");
+  if (isPhone && normalizePhone(emailOrPhone).length !== 10) throw new Error("Geçerli bir e-posta adresi veya telefon numarası girin.");
+  const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail(emailOrPhone), password });
+  if (error) throw new Error(isPhone && /Invalid login/i.test(error.message) ? "Telefon numarası veya şifre hatalı." : authErrorText(error));
   return data.session;
 };
 
@@ -105,3 +120,48 @@ export const saveStudioProfileRemote = (profile) => rpcOrThrow("update_studio_pr
 // ── Müşteri (giriş yapmadan) ──
 export const findClientId = (name, phone4) => rpcOrThrow("find_client", { p_name: name, p_phone4: phone4 });
 export const fetchProofData = (clientId) => rpcOrThrow("proof_data", { p_client_id: clientId });
+
+// ── Personel hesapları (yönetici yönetir) ──
+// Yeni personel hesabı: ayrı (oturumu saklamayan) bir bağlantıyla açılır, böylece yöneticinin oturumu bozulmaz
+export const createStaffAccount = async (teamId, phone, password) => {
+  const p = normalizePhone(phone);
+  if (p.length !== 10) throw new Error("Geçerli bir telefon numarası girin (05xx xxx xx xx).");
+  if (String(password || "").length < 6) throw new Error("Şifre en az 6 karakter olmalı.");
+  const tmp = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, storageKey: "studyom-staff-tmp" } });
+  const { data, error } = await tmp.auth.signUp({ email: staffEmail(p), password });
+  if (error) {
+    if (/already registered|already been registered/i.test(error.message)) throw new Error("Bu telefon numarasıyla zaten bir personel hesabı var.");
+    throw new Error(authErrorText(error));
+  }
+  const uid = data?.user?.id;
+  if (!uid || (Array.isArray(data.user.identities) && data.user.identities.length === 0)) throw new Error("Bu telefon numarasıyla zaten bir personel hesabı var.");
+  try {
+    await rpcOrThrow("add_staff", { p_user_id: uid, p_team_id: String(teamId) });
+  } catch (e) {
+    // Stüdyoya bağlanamadıysa yarım kalan hesabı sil (telefon numarası boşuna kilitlenmesin)
+    await tmp.rpc("delete_my_account").catch(() => {});
+    throw e;
+  } finally {
+    await tmp.auth.signOut().catch(() => {});
+  }
+};
+export const fetchStaffAccounts = () => rpcOrThrow("staff_accounts");
+export const setStaffPassword = (teamId, password) => rpcOrThrow("set_staff_password", { p_team_id: String(teamId), p_password: password });
+export const removeStaffAccount = (teamId) => rpcOrThrow("remove_staff", { p_team_id: String(teamId) });
+
+// ── Personel verisi ve randevu talebi ──
+// Personel tutar/ödeme/maaş/fiyat alanları olmadan veri alır
+export const fetchStaffData = () => rpcOrThrow("staff_data");
+// Personelin eklediği randevu yönetici onayına düşer
+export const submitAppointment = (apt) => rpcOrThrow("submit_appointment", { p: {
+  id: String(apt.id), client_name: apt.clientName || "", client_phone: apt.clientPhone || "", date: apt.date || "",
+  time: apt.time || "", location: apt.location || "", type: apt.type || "Düğün", package: apt.package || "",
+  notes: apt.notes || "", reminder_days: apt.reminderDays || 3, staff_name: apt.staffName || "",
+  staff_ids: apt.staffIds || [], extra_dates: (apt.extraDates || []).filter(Boolean),
+} });
+
+// Hesabımı sil (mağaza zorunluluğu). Yönetici silerse stüdyo ve tüm verileri silinir.
+export const deleteMyAccount = async () => {
+  await rpcOrThrow("delete_my_account");
+  await signOut();
+};

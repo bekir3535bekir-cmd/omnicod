@@ -152,8 +152,8 @@ export const setCurrentStudio = (s) => {
     if (!profile.studio) profile.studio = s.name || "";
     localStorage.setItem(PREFIX + "studio_profile", JSON.stringify(profile));
     if (s.trial_start) localStorage.setItem(PREFIX + "trial_start", s.trial_start);
-    if (s.plan === "pro") {
-      localStorage.setItem(PREFIX + "plan", "pro");
+    if (s.plan === "pro" || s.plan === "standart") {
+      localStorage.setItem(PREFIX + "plan", s.plan);
       if (s.plan_expiry) localStorage.setItem(PREFIX + "plan_expiry", s.plan_expiry);
     } else if (s.plan === "basic") {
       localStorage.setItem(PREFIX + "plan", "basic");

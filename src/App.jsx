@@ -4,12 +4,14 @@ import { Ic } from "./constants/icons";
 import { fmt, fmtDate, todayStr, uid } from "./utils/helpers";
 import { INIT } from "./constants/initialData";
 import { sb, fromDB, toDB, IS_DEV, IS_CLOUD } from "./services/supabase";
-import { getAuthSession, onAuthChange, fetchMyStudio, signOut, fetchProofData } from "./services/auth";
+import { getAuthSession, onAuthChange, fetchMyStudio, signOut, fetchProofData, fetchStaffData } from "./services/auth";
+import { initNotifications, showSystemNotification } from "./services/notify";
+import { getModules, DESKTOP_GROUPS, STAFF_SCREENS } from "./constants/modules";
 import { CloudAuth } from "./components/modules/CloudAuth";
 import { getSession, getClientId, getStaffId, saveSession, clearSession, getLocalData, saveLocalData, getStudioInfo, getCurrentStudio, setCurrentStudio, clearCloudSession } from "./services/storage";
-import { getPlan, isProFeature } from "./services/plan";
+import { getPlan, planHasFeature, requiredPlanFor } from "./services/plan";
 import { Logo, BottomSheet } from "./components/common";
-import { ProGate } from "./components/common/ProGate";
+import { ProGate, LockBadge } from "./components/common/ProGate";
 
 // Modules
 import { Dashboard } from "./components/modules/Dashboard";
@@ -142,9 +144,11 @@ export default function App() {
     document.documentElement.classList.toggle("desktop", isDesktop);
   }, [isDesktop]);
   // Giriş yapan personelin bildirimleri
-  const myNotifications = (role === "personel" && staffId)
-    ? (data.notifications || []).filter(n => n.teamId === staffId).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+  const notifTarget = role === "admin" ? "admin" : (role === "personel" && staffId ? String(staffId) : null);
+  const myNotifications = notifTarget
+    ? (data.notifications || []).filter(n => String(n.teamId) === notifTarget).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
     : [];
+  const hasInbox = !!notifTarget;
   const myUnread = myNotifications.filter(n => !n.read);
   const markRead = (ids) => {
     const changed = (data.notifications || []).filter(n => ids.includes(n.id) && !n.read).map(n => ({ ...n, read: true }));
@@ -153,19 +157,21 @@ export default function App() {
     changed.forEach(n => sb.upsert("notifications", toDB.notifications(n)).catch(() => {}));
   };
 
-  // Yeni görev bildirimi: uygulama açıkken sistem bildirimi göster (masaüstü / tarayıcı)
+  // Sistem bildirimi (telefon / Windows): tıklanınca uygulama öne gelir ve Ajanda açılır
   useEffect(() => {
-    if (role !== "personel" || !staffId || typeof Notification === "undefined") return;
-    if (Notification.permission === "default") { Notification.requestPermission().catch(() => {}); return; }
-    if (Notification.permission !== "granted") return;
+    if (!notifTarget) return;
+    initNotifications(screen => { setShowBildirim(false); setActive(screen || "ajanda"); });
+  }, [notifTarget]);
+  useEffect(() => {
+    if (!notifTarget || !dbReady) return;
     let shown = [];
     try { shown = JSON.parse(localStorage.getItem("studyom_os_notified") || "[]"); } catch (e) {}
     const fresh = myUnread.filter(n => !shown.includes(n.id));
-    fresh.forEach(n => { try { new Notification("STÜDYOM — " + n.title, { body: n.body, icon: "favicon.png" }); } catch (e) {} });
+    fresh.forEach(n => showSystemNotification({ id: n.id, title: "STÜDYOM — " + n.title, body: n.body, screen: "ajanda" }));
     if (fresh.length) {
       try { localStorage.setItem("studyom_os_notified", JSON.stringify([...shown, ...fresh.map(n => n.id)].slice(-300))); } catch (e) {}
     }
-  }, [role, staffId, myUnread.length]);
+  }, [notifTarget, dbReady, myUnread.length]);
   // Giriş yapan hesabın stüdyosunu uygula (rol, personel kaydı, plan, firma bilgileri, önbellek)
   const applyStudio = (s) => {
     setCurrentStudio(s);
@@ -235,6 +241,30 @@ export default function App() {
         return;
       }
 
+      if (IS_CLOUD && role !== "admin") {
+        try {
+          const [sd, messages, notifications] = await Promise.all([fetchStaffData(), sb.get("messages"), sb.get("notifications")]);
+          setData({
+            ...EMPTY_CLOUD,
+            incomes: [], expenses: [], reminders: [], contracts: [], gallery: [], quotes: [], notes: [],
+            clients:       (sd?.clients || []).map(fromDB.clients),
+            appointments:  (sd?.appointments || []).map(fromDB.appointments),
+            packages:      (sd?.packages || []).map(fromDB.packages),
+            team:          (sd?.team || []).map(fromDB.team),
+            shifts:        (sd?.shifts || []).map(fromDB.shifts),
+            locations:     (sd?.locations || []).map(fromDB.locations),
+            messages:      (messages || []).map(fromDB.messages),
+            notifications: (notifications || []).map(fromDB.notifications),
+          });
+        } catch (e) {
+          // İnternet yoksa önbellekteki veriyle devam edilir
+          console.warn("Personel verisi alınamadı:", e?.message || e);
+        }
+        setDbReady(true);
+        setLoading(false);
+        return;
+      }
+
       try {
         const [clients, appointments, packages, incomes, expenses, reminders,
                contracts, team, shifts, gallery, quotes, messages, locations, notes, notifications] = await Promise.all([
@@ -292,18 +322,18 @@ export default function App() {
     };
     load();
 
-    // Diğer cihazlardaki değişiklikleri al (30 sn'de bir)
+    // Diğer cihazlardaki değişiklikleri al (20 sn'de bir)
     if (!IS_DEV) {
       const pollInterval = setInterval(() => {
         if(!window._gesesSaving) load();
-      }, 30000);
+      }, 20000);
       return () => clearInterval(pollInterval);
     }
   }, [cloudPhase]);
 
   // Geçmiş tarihli randevuları otomatik tamamlandı yap
   useEffect(() => {
-    if(!dbReady) return;
+    if(!dbReady || (IS_CLOUD && role !== "admin")) return;
     const today = todayStr();
     const toComplete = data.appointments.filter(a =>
       a.date && a.date < today && a.status === "onaylı"
@@ -331,9 +361,9 @@ export default function App() {
       isSyncingRef.current = true;
       window._gesesSaving  = true;
 
-      const FINANCE = ["incomes","expenses","contracts","quotes"];
-      const tables  = ["clients","appointments","packages","incomes","expenses","reminders","contracts","team","shifts","gallery","quotes","messages","locations","notes","notifications"]
-        .filter(tb => role === "admin" || !FINANCE.includes(tb));
+      const tables  = role === "admin"
+        ? ["clients","appointments","packages","incomes","expenses","reminders","contracts","team","shifts","gallery","quotes","messages","locations","notes","notifications"]
+        : ["messages","notifications"];
 
       for(const table of tables) {
         const rows   = data[table] || [];
@@ -394,9 +424,12 @@ export default function App() {
   if (IS_CLOUD && role !== "musteri") {
     if (cloudPhase === "checking") return <Splash text="Oturum kontrol ediliyor..."/>;
     if (cloudPhase === "signedOut" || cloudPhase === "noStudio") return (
+      <>
+      <style>{makeCSS(T)}</style>
       <CloudAuth key={cloudPhase} stage={cloudPhase} onReady={s => s ? applyStudio(s) : null}
         onCustomer={id => { setMusteriClientId(id); setRole("musteri"); setCloudPhase("customer"); }}
         onLogout={goSignedOut}/>
+      </>
     );
     if (cloudPhase === "ready" && role === "personel" && !staffId && !skipStaffPick && dbReady && (data.team||[]).length > 0) return (
       <CloudAuth stage="pickStaff" team={data.team} onReady={s => s ? applyStudio(s) : setSkipStaffPick(true)} onLogout={goSignedOut}/>
@@ -475,42 +508,73 @@ export default function App() {
     </>
   );
 
-  const NAV = [
+  const isAdminRole = role === "admin";
+  // Personel: yalnızca Ana Sayfa, Ajanda, Müşteriler, Mesajlar ve Ayarlar
+  const NAV = isAdminRole ? [
     {id:"dashboard", icon:"home",     label:"Ana Sayfa"},
     {id:"ajanda",    icon:"calendar", label:"Ajanda"},
     {id:"muhasebe",  icon:"money",    label:"Muhasebe"},
     {id:"more",      icon:"more",     label:"Devamı"},
+  ] : [
+    {id:"dashboard",  icon:"home",     label:"Ana Sayfa"},
+    {id:"ajanda",     icon:"calendar", label:"Ajanda"},
+    {id:"musteriler", icon:"users",    label:"Müşteriler"},
+    {id:"mesajlar",   icon:"msg",      label:"Mesajlar"},
+    {id:"more",       icon:"settings", label:"Ayarlar"},
   ];
   const subScreens = ["musteriler","notdefteri","paketler","sozlesmeler","mesajlar","hatirlatici","ekip","galeri","raporlar","sablonlar","takvim","teklif","portal","isasistani","planyonetimi","altinsaat","pozrehberi","kartvizit","sesliasistan"];
-  const isSubScreen = subScreens.includes(active);
+  const isSubScreen = subScreens.includes(active) && !NAV.some(n => n.id === active);
 
-  const isFullAccess = plan === "pro" || plan === "trial";
+  // Onay bekleyen randevular takvim, hatırlatma, rapor vb. ekranlarda sayılmaz (yalnızca Ajanda'da listelenir)
+  const pendingApts = (data.appointments || []).filter(a => a.approval === "bekliyor");
+  const viewData = pendingApts.length ? { ...data, appointments: data.appointments.filter(a => a.approval !== "bekliyor") } : data;
+  const pendingBanner = isAdminRole && pendingApts.length > 0 && (
+    <div style={{ padding:"0 20px", marginTop:12 }}>
+      <button onClick={()=>setActive("ajanda")}
+        style={{ width:"100%", display:"flex", alignItems:"center", gap:12, textAlign:"left", cursor:"pointer",
+          background:T.orange+"1A", border:`1px solid ${T.orange}55`, borderRadius:14, padding:"12px 14px" }}>
+        <span style={{ fontSize:20 }}>⏳</span>
+        <span style={{ flex:1 }}>
+          <span style={{ display:"block", fontSize:14, fontWeight:700, color:T.text }}>{pendingApts.length} randevu onayınızı bekliyor</span>
+          <span style={{ display:"block", fontSize:12, color:T.text3, marginTop:2 }}>Personelin eklediği randevular siz onaylayınca sisteme eklenir</span>
+        </span>
+        <span style={{ fontSize:12, fontWeight:700, color:T.orangeL }}>İncele →</span>
+      </button>
+    </div>
+  );
+  const home = <>{pendingBanner}<Dashboard data={viewData} setData={setData} setActive={setActive} role={role} plan={plan} staffId={staffId}/></>;
+  const adminOnly = (el) => role === "admin" ? el : home;
+  // Planda olmayan özellik: kilit kartı (ne olduğu ve hangi planda açıldığı gösterilir)
+  const gated = (id, el) => planHasFeature(plan, id) ? el : <ProGate feature={id} onUpgrade={()=>setActive("planyonetimi")}/>;
 
-  const SCREENS = {
-    dashboard:   <Dashboard     data={data} setData={setData} setActive={setActive} role={role} plan={plan}/>,
-    ajanda:      <Ajanda        data={data} setData={setData} role={role} plan={plan} setActive={setActive}/>,
-    musteriler:  <Musteriler    data={data} setData={setData} role={role} plan={plan} setActive={setActive} initialClientId={pendingClientId} onConsumeInitialClientId={()=>setPendingClientId(null)}/>,
-    muhasebe:    role==="admin" ? <Muhasebe data={data} setData={setData} role={role}/> : <Dashboard data={data} setData={setData} setActive={setActive} role={role} plan={plan}/>,
-    more:        <MoreMenu      setActive={setActive} themeKey={themeKey} setThemeKey={setThemeKey} darkMode={currentTheme.isDark} role={role} plan={plan} onLogout={handleLogout}/>,
-    takvim:      <Takvim        data={data} setActive={setActive} setDetailClientId={setPendingClientId}/>,
-    paketler:    role==="admin" ? <Paketler data={data} setData={setData} role={role}/> : <Dashboard data={data} setData={setData} setActive={setActive} role={role} plan={plan}/>,
-    sablonlar:   <Sablonlar     data={data}/>,
-    sozlesmeler: !isFullAccess ? <ProGate proOnly featureLabel="Sözleşmeler" onUpgrade={()=>setActive("planyonetimi")}/> : (role==="admin" ? <Sozlesmeler data={data} setData={setData} role={role}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>),
-    mesajlar:    <Mesajlar      data={data} setData={setData} role={role}/>,
-    hatirlatici: <Hatirlaticilar data={data} setData={setData} role={role}/>,
-    ekip:        <Ekip          data={data} setData={setData} role={role} plan={plan} setActive={setActive}/>,
-    galeri:      !isFullAccess ? <ProGate proOnly featureLabel="Portföy Galerisi" onUpgrade={()=>setActive("planyonetimi")}/> : <Galeri data={data} setData={setData} role={role}/>,
-    raporlar:    !isFullAccess ? <ProGate proOnly featureLabel="Raporlar & Analitik" onUpgrade={()=>setActive("planyonetimi")}/> : (role==="admin" ? <Raporlar data={data}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>),
-    teklif:      !isFullAccess ? <ProGate proOnly featureLabel="Fiyat Teklifi" onUpgrade={()=>setActive("planyonetimi")}/> : (role==="admin" ? <Teklif data={data} setData={setData} role={role}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>),
-    portal:      !isFullAccess ? <ProGate proOnly featureLabel="Müşteri Portali" onUpgrade={()=>setActive("planyonetimi")}/> : (role==="admin" ? <Portal data={data} setData={setData}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>),
-    isasistani:  !isFullAccess ? <ProGate proOnly featureLabel="İş Asistanı" onUpgrade={()=>setActive("planyonetimi")}/> : (role==="admin" ? <IsAsistani data={data} setData={setData} role={role}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>),
-    notdefteri:  role==="admin" ? <NotDefteri data={data} setData={setData} role={role}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>,
-    planyonetimi: role==="admin" ? <PlanYonetimi data={data} plan={plan} setPlanState={setPlanState} setActive={setActive}/> : <Dashboard data={data} setActive={setActive} role={role} plan={plan}/>,
-    altinsaat:   <AltinSaat appointments={data.appointments}/>,
-    pozrehberi:  <PozRehberi/>,
-    kartvizit:   <DijitalKartvizit role={role}/>,
-    sesliasistan: <SesliAsistan data={data} setData={setData} setActive={setActive}/>,
+  const ALL_SCREENS = {
+    dashboard:    home,
+    ajanda:       gated("ajanda",      <Ajanda data={data} setData={setData} role={role} plan={plan} setActive={setActive} staffId={staffId}/>),
+    musteriler:   gated("musteriler",  <Musteriler data={viewData} setData={setData} role={role} plan={plan} setActive={setActive} initialClientId={pendingClientId} onConsumeInitialClientId={()=>setPendingClientId(null)}/>),
+    muhasebe:     adminOnly(gated("muhasebe",    <Muhasebe data={viewData} setData={setData} role={role}/>)),
+    more:         <MoreMenu setActive={setActive} themeKey={themeKey} setThemeKey={setThemeKey} darkMode={currentTheme.isDark} role={role} plan={plan} onLogout={handleLogout}/>,
+    takvim:       gated("takvim",      <Takvim data={viewData} setActive={setActive} setDetailClientId={setPendingClientId}/>),
+    paketler:     adminOnly(gated("paketler",    <Paketler data={viewData} setData={setData} role={role}/>)),
+    sablonlar:    gated("sablonlar",   <Sablonlar data={viewData}/>),
+    sozlesmeler:  adminOnly(gated("sozlesmeler", <Sozlesmeler data={viewData} setData={setData} role={role}/>)),
+    mesajlar:     gated("mesajlar",    <Mesajlar data={viewData} setData={setData} role={role}/>),
+    hatirlatici:  gated("hatirlatici", <Hatirlaticilar data={viewData} setData={setData} role={role}/>),
+    ekip:         gated("ekip",        <Ekip data={viewData} setData={setData} role={role} plan={plan} setActive={setActive}/>),
+    galeri:       gated("galeri",      <Galeri data={viewData} setData={setData} role={role}/>),
+    raporlar:     adminOnly(gated("raporlar",    <Raporlar data={viewData}/>)),
+    teklif:       adminOnly(gated("teklif",      <Teklif data={viewData} setData={setData} role={role}/>)),
+    portal:       adminOnly(gated("portal",      <Portal data={viewData} setData={setData}/>)),
+    isasistani:   adminOnly(gated("isasistani",  <IsAsistani data={viewData} setData={setData} role={role}/>)),
+    notdefteri:   adminOnly(gated("notdefteri",  <NotDefteri data={viewData} setData={setData} role={role}/>)),
+    planyonetimi: adminOnly(<PlanYonetimi data={viewData} plan={plan} setPlanState={setPlanState} setActive={setActive}/>),
+    altinsaat:    gated("altinsaat",   <AltinSaat appointments={viewData.appointments}/>),
+    pozrehberi:   gated("pozrehberi",  <PozRehberi/>),
+    kartvizit:    gated("kartvizit",   <DijitalKartvizit role={role}/>),
+    sesliasistan: gated("sesliasistan",<SesliAsistan data={viewData} setData={setData} setActive={setActive}/>),
   };
+  // Personel yalnızca kendisine açık ekranları görür; diğerleri Ana Sayfa'ya döner
+  const SCREENS = isAdminRole ? ALL_SCREENS
+    : Object.fromEntries(Object.entries(ALL_SCREENS).map(([k, v]) => [k, STAFF_SCREENS.includes(k) ? v : home]));
 
   const CSS = makeCSS(T);
 
@@ -521,7 +585,15 @@ export default function App() {
         {!["more","login","notdefteri"].includes(active) && (
           <>
             {showBildirim && (
-              <BottomSheet title="Bildirimlerim" onClose={()=>{ setShowBildirim(false); markRead(myUnread.map(n=>n.id)); }}>
+              <BottomSheet title="Bildirimler" onClose={()=>{ setShowBildirim(false); markRead(myUnread.map(n=>n.id)); }}>
+                {isAdminRole && (
+                  <button onClick={()=>{ setShowBildirim(false); markRead(myUnread.map(n=>n.id)); setActive("hatirlatici"); }}
+                    style={{ width:"100%", marginBottom:12, background:T.card2, border:`1px solid ${T.border}`, borderRadius:12, padding:"10px 14px",
+                      display:"flex", alignItems:"center", gap:10, cursor:"pointer", color:T.text2, fontSize:13, fontWeight:600 }}>
+                    <Ic n="bell" s={15} c={T.orangeL}/> Hatırlatıcılar
+                    <span style={{ marginLeft:"auto", color:T.text3 }}>{data.reminders.filter(r=>!r.done).length} açık →</span>
+                  </button>
+                )}
                 {myNotifications.length === 0 ? (
                   <div style={{ textAlign:"center", color:T.text3, fontSize:13, padding:"20px 0" }}>Henüz bildirim yok</div>
                 ) : (
@@ -542,63 +614,40 @@ export default function App() {
                 )}
               </BottomSheet>
             )}
-            <HizliNot data={data} setData={setData}/>
-            <HizliArama data={data} setActive={setActive}/>
+            {isAdminRole && <HizliNot data={data} setData={setData}/>}
+            <HizliArama data={viewData} setActive={setActive}/>
           </>
         )}
 
         {/* Gece Modu Özeti */}
-        {showGece && role && (
-          <GeceModu data={data} onClose={()=>setShowGece(false)}/>
+        {showGece && isAdminRole && (
+          <GeceModu data={viewData} onClose={()=>setShowGece(false)}/>
         )}
     </>
   );
 
   if (isDesktop) {
     const isAdmin = role === "admin";
-    const DESKTOP_MENU = [
-      { group: "Genel", items: [
-        { id:"dashboard", icon:"home", label:"Ana Sayfa" },
-        { id:"ajanda", icon:"calendar", label:"Ajanda" },
-        { id:"takvim", icon:"calendar", label:"Takvim" },
-        { id:"musteriler", icon:"users", label:"Müşteriler" },
-        { id:"hatirlatici", icon:"bell", label:"Hatırlatıcılar" },
-      ]},
-      { group: "Finans", items: [
-        { id:"muhasebe", icon:"money", label:"Muhasebe", admin:true },
-        { id:"teklif", icon:"doc", label:"Fiyat Teklifi", admin:true },
-        { id:"sozlesmeler", icon:"doc", label:"Sözleşmeler", admin:true },
-        { id:"paketler", icon:"box", label:"Paketler & Fiyatlar", admin:true },
-        { id:"raporlar", icon:"chart", label:"Raporlar", admin:true },
-      ]},
-      { group: "Müşteri İletişimi", items: [
-        { id:"mesajlar", icon:"msg", label:"Mesajlar" },
-        { id:"sablonlar", icon:"copy", label:"Hazır Şablonlar" },
-        { id:"portal", icon:"eye", label:"Müşteri Portalı", admin:true },
-        { id:"galeri", icon:"camera", label:"Portföy Galerisi" },
-      ]},
-      { group: "Ekip & Araçlar", items: [
-        { id:"ekip", icon:"team", label:"Ekip & Shift" },
-        { id:"isasistani", icon:"warn", label:"İş Asistanı", admin:true },
-        { id:"notdefteri", icon:"notebook", label:"Not Defteri", admin:true },
-        { id:"altinsaat", icon:"clock", label:"Altın Saat & Işık" },
-        { id:"pozrehberi", icon:"camera", label:"Poz Rehberi" },
-        { id:"kartvizit", icon:"copy", label:"Dijital Kartvizit" },
-        { id:"sesliasistan", icon:"msg", label:"Sesli Asistan" },
-      ]},
-    ];
-    const staffMember = role === "personel" ? (data.team||[]).find(m => m.id === staffId) : null;
+    const MODULES = getModules();
+    const DESKTOP_MENU = isAdmin
+      ? DESKTOP_GROUPS.map(g => ({ group: g.group, items: g.items.map(id => ({ id, ...MODULES[id] })) }))
+      : [{ group: "Menü", items: STAFF_SCREENS.filter(id => id !== "more").map(id => ({ id, ...MODULES[id] })) }];
+    const staffMember = role === "personel" ? (data.team||[]).find(m => String(m.id) === String(staffId)) : null;
     const who = isAdmin ? (getStudioInfo().ad || "Yönetici") : (staffMember?.name || "Personel");
     const sideBg = currentTheme.isDark ? "rgba(255,255,255,0.025)" : "#FFFFFF";
     const NavBtn = ({ item }) => {
       const on = active === item.id;
+      const locked = isAdmin && item.id !== "more" && !planHasFeature(plan, item.id);
+      const col = item.color || T.text2;
       return (
         <button onClick={()=>setActive(item.id)}
           style={{ display:"flex", alignItems:"center", gap:11, width:"100%", padding:"7px 12px", borderRadius:10,
             background: on ? T.gold+"1F" : "transparent", border:`1px solid ${on ? T.gold+"55" : "transparent"}`,
             color: on ? T.goldL : T.text2, fontSize:13.5, fontWeight: on ? 700 : 500, cursor:"pointer", textAlign:"left" }}>
-          <Ic n={item.icon} s={17} c={on ? T.goldL : T.text3}/>
-          <span>{item.label}</span>
+          <span style={{ display:"flex", flexShrink:0, width:28, height:28, borderRadius:8, alignItems:"center", justifyContent:"center",
+            background: col + (on ? "33" : "1A") }}><Ic n={item.icon} s={15} c={col}/></span>
+          <span style={{ flex:1, minWidth:0, opacity: locked ? 0.6 : 1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{item.label}</span>
+          {locked && <LockBadge plan={requiredPlanFor(item.id)}/>}
         </button>
       );
     };
@@ -607,12 +656,12 @@ export default function App() {
         <style>{CSS}</style>
         <div style={{ display:"flex", minHeight:"100vh", background:T.bg }}>
           {/* Sol menü */}
-          <aside style={{ width:252, flexShrink:0, position:"sticky", top:0, height:"100vh", overflow:"hidden",
+          <aside style={{ width:272, flexShrink:0, position:"sticky", top:0, height:"100vh", overflow:"hidden",
             background:sideBg, borderRight:`1px solid ${T.border}`, display:"flex", flexDirection:"column", padding:"18px 14px" }}>
             <div style={{ padding:"2px 6px 18px" }}><Logo compact/></div>
             <nav className="side-nav" style={{ flex:1, minHeight:0, overflowY:"auto", display:"flex", flexDirection:"column", gap:14, paddingRight:2 }}>
               {DESKTOP_MENU.map(g => {
-                const items = g.items.filter(i => !i.admin || isAdmin);
+                const items = g.items;
                 if (!items.length) return null;
                 return (
                   <div key={g.group}>
@@ -625,7 +674,7 @@ export default function App() {
               })}
             </nav>
             <div style={{ borderTop:`1px solid ${T.border}`, paddingTop:12, marginTop:12, display:"flex", flexDirection:"column", gap:4 }}>
-              <NavBtn item={{ id:"more", icon:"settings", label:"Ayarlar & Diğer" }}/>
+              <NavBtn item={{ id:"more", icon:"settings", label: isAdmin ? "Ayarlar & Diğer" : "Ayarlar", color:T.text2 }}/>
               <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px" }}>
                 <div style={{ width:32, height:32, borderRadius:99, background:T.gold+"22", color:T.goldL, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:13 }}>
                   {who.charAt(0)}
@@ -649,11 +698,11 @@ export default function App() {
               borderBottom:`1px solid ${T.border}` }}>
               <div style={{ fontSize:13, color:T.text3, fontWeight:500 }}>{new Date().toLocaleDateString("tr-TR",{ weekday:"long", day:"numeric", month:"long", year:"numeric" })}</div>
               <div style={{ marginLeft:"auto", display:"flex", gap:8 }}>
-                <button onClick={()=> role==="personel" && staffId ? setShowBildirim(true) : setActive("hatirlatici")} title="Bildirimler"
+                <button onClick={()=> hasInbox ? setShowBildirim(true) : setActive("hatirlatici")} title="Bildirimler"
                   style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:99, width:38, height:38,
                     display:"flex", alignItems:"center", justifyContent:"center", position:"relative", cursor:"pointer" }}>
                   <Ic n="bell" s={17} c={T.gold}/>
-                  {role==="personel" && staffId ? (myUnread.length>0 && (
+                  {hasInbox && myUnread.length>0 ? ((
                     <div style={{ position:"absolute", top:-4, right:-4, minWidth:18, height:18, borderRadius:99, padding:"0 5px",
                       background:T.red, color:"#fff", fontSize:10.5, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center" }}>{myUnread.length}</div>
                   )) : data.reminders.filter(r=>!r.done).length>0 && (
@@ -694,11 +743,11 @@ export default function App() {
             )}
             <Logo compact/>
             <div style={{ marginLeft:"auto", display:"flex", gap:8, alignItems:"center" }}>
-              <button onClick={()=> role==="personel" && staffId ? setShowBildirim(true) : setActive("hatirlatici")}
+              <button onClick={()=> hasInbox ? setShowBildirim(true) : setActive("hatirlatici")}
                 style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${T.border}`, borderRadius:99, width:34, height:34,
                   display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
                 <Ic n="bell" s={16} c={T.gold}/>
-                {role==="personel" && staffId ? (myUnread.length>0 && (
+                {hasInbox && myUnread.length>0 ? ((
                   <div style={{ position:"absolute", top:-4, right:-4, minWidth:18, height:18, borderRadius:99, padding:"0 5px",
                     background:T.red, color:"#fff", fontSize:10.5, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center",
                     border:`2px solid ${T.surface}` }}>{myUnread.length}</div>

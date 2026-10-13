@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
+import { getModules } from "../../constants/modules";
 import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
 import { MSG_TEMPLATES, PROCESS_STEPS, SIRKET, isComplete } from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
@@ -351,7 +352,7 @@ const PreparationCard = ({ apt, isTmr, storageKey, onGoAltinSaat, onGoPoz, onMar
       </button>
 
       {/* Hızlı butonlar */}
-      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+      {(onGoAltinSaat || onGoPoz) && <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
         <button
           onClick={onGoAltinSaat}
           style={{
@@ -384,18 +385,18 @@ const PreparationCard = ({ apt, isTmr, storageKey, onGoAltinSaat, onGoPoz, onMar
         >
           📸 Poz Rehberi
         </button>
-      </div>
+      </div>}
     </div>
   );
 };
 
-export const Dashboard = ({ data, setData, setActive, role, plan }) => {
+export const Dashboard = ({ data, setData, setActive, role, plan, staffId }) => {
   const isAdmin = role === "admin";
   const now     = new Date();
 
   // Karşılama ve kullanıcı bilgisi
   const authUser = getAuthUser();
-  const staffMember = !isAdmin ? (data.team||[]).find(m => m.id === getStaffId()) : null;
+  const staffMember = !isAdmin ? (data.team||[]).find(m => String(m.id) === String(staffId || getStaffId())) : null;
   const userName = isAdmin ? (getStudioInfo().ad || authUser?.name || "Stüdyo Yöneticisi") : (staffMember?.name || "Personel");
   const greeting = getGreetingInfo(now.getHours());
 
@@ -426,7 +427,16 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
       const fullMap = PREP_ITEMS.reduce((acc, it) => ({ ...acc, [it.id]: true }), {});
       localStorage.setItem(storageKey, JSON.stringify(fullMap));
     } catch(e) {}
-    sb.upsert("appointments", toDB.appointments(updatedApt)).catch(()=>{});
+    if (isAdmin) {
+      sb.upsert("appointments", toDB.appointments(updatedApt)).catch(()=>{});
+    } else {
+      const n = { id: uid(), teamId: "admin", memberName: readyBy, appointmentId: apt.id,
+        title: `Ekipman hazır: ${apt.clientName} — ${apt.type || "Çekim"}`,
+        body: `${readyBy} ekipmanları hazırladı • ${readyAt}`,
+        createdAt: new Date().toISOString(), date: todayStr(), read: false };
+      setData && setData(p => ({ ...p, notifications: [...(p.notifications || []), n] }));
+      sb.upsert("notifications", toDB.notifications(n)).catch(()=>{});
+    }
   };
 
   // Müşteri ödemelerinden eksik incomes'ları birleştir
@@ -497,8 +507,8 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
                 apt={upcomingShooting} 
                 isTmr={isTmr} 
                 storageKey={storageKey}
-                onGoAltinSaat={() => setActive("altinsaat")}
-                onGoPoz={() => setActive("pozrehberi")}
+                onGoAltinSaat={null}
+                onGoPoz={null}
                 onMarkReady={handleMarkEquipmentReady}
               />
             ) : (
@@ -659,18 +669,18 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
         )}
 
         {/* ─── HIZLI STÜDYO ARAÇLARI (Sade ve Doğal) ─── */}
-        <div style={{
+        {isAdmin && <div style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr 1fr 1fr",
           gap: 8,
           marginBottom: 20
         }}>
           {[
-            { id: "altinsaat", icon: "🌅", label: "Altın Saat" },
-            { id: "pozrehberi", icon: "📸", label: "Poz Rehberi" },
-            { id: "kartvizit", icon: "📇", label: "QR Kart" },
-            { id: "sesliasistan", icon: "🎙️", label: "Sesli Not" },
-          ].map(tool => (
+            { id: "altinsaat", label: "Altın Saat" },
+            { id: "pozrehberi", label: "Poz Rehberi" },
+            { id: "kartvizit", label: "QR Kart" },
+            { id: "sesliasistan", label: "Sesli Not" },
+          ].map(tool => ({ ...tool, ...getModules()[tool.id], label: tool.label })).map(tool => (
             <div
               key={tool.id}
               onClick={() => setActive(tool.id)}
@@ -684,11 +694,14 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
                 transition: "all 0.15s ease"
               }}
             >
-              <div style={{ fontSize: 20, marginBottom: 4 }}>{tool.icon}</div>
+              <div style={{ width: 34, height: 34, margin: "0 auto 6px", borderRadius: 10, background: tool.color + "1A",
+                display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Ic n={tool.icon} s={18} c={tool.color}/>
+              </div>
               <div style={{ fontSize: 11, fontWeight: 600, color: T.text }}>{tool.label}</div>
             </div>
           ))}
-        </div>
+        </div>}
 
         {/* ─── YAKLAŞAN ÇEKİMLER AKIŞI ─── */}
         <div style={{ marginBottom: 22 }}>
@@ -798,14 +811,18 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 12 }}>Hızlı İşlemler</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-            {[
-              { l: "Yeni Randevu", i: "calendar", s: "ajanda",   c: T.gold,    adminOnly: false },
-              { l: "Takvim",      i: "calendar", s: "takvim",   c: T.blue,    adminOnly: false },
-              { l: "Gelir / Gider", i: "money",  s: "muhasebe", c: T.green,   adminOnly: true },
-              { l: "Sözleşmeler",  i: "doc",     s: "sozlesmeler", c: T.orange, adminOnly: false },
-              { l: "Hatırlatıcı",  i: "bell",    s: "hatirlatici", c: T.redL,   adminOnly: false },
-              { l: "Raporlar",     i: "chart",   s: "raporlar",  c: T.text2,  adminOnly: true },
-            ].filter(q => !q.adminOnly || isAdmin).map(q => (
+            {(isAdmin ? [
+              { l: "Yeni Randevu", i: "calendar", s: "ajanda",   c: T.gold },
+              { l: "Takvim",      i: "calendar", s: "takvim",   c: T.blue },
+              { l: "Gelir / Gider", i: "money",  s: "muhasebe", c: T.green },
+              { l: "Sözleşmeler",  i: "pen",     s: "sozlesmeler", c: T.orange },
+              { l: "Hatırlatıcı",  i: "bell",    s: "hatirlatici", c: T.redL },
+              { l: "Raporlar",     i: "chart",   s: "raporlar",  c: T.text2 },
+            ] : [
+              { l: "Randevu Talebi", i: "calendar", s: "ajanda",     c: T.gold },
+              { l: "Müşteriler",     i: "users",    s: "musteriler", c: T.goldL },
+              { l: "Mesajlar",       i: "msg",      s: "mesajlar",   c: T.blueL },
+            ]).map(q => (
               <Card key={q.l} onClick={() => setActive(q.s)} style={{ padding: "14px 10px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: "pointer" }}>
                 <div style={{ background: q.c + "1A", borderRadius: 12, padding: 10 }}>
                   <Ic n={q.i} s={18} c={q.c}/>

@@ -4,11 +4,12 @@ import { Ic } from "../../constants/icons";
 import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
 import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
-import { PlanBadge, ProBadge } from "../common/ProGate";
-import { PLANS, getTrialInfo } from "../../services/plan";
+import { PlanBadge, LockBadge } from "../common/ProGate";
+import { PLANS, getTrialInfo, planHasFeature, requiredPlanFor } from "../../services/plan";
 import { sb, fromDB, toDB, IS_CLOUD } from "../../services/supabase";
-import { changePassword } from "../../services/auth";
-import { getPass, setPass, getSession, saveSession, clearSession, getStudioProfile, saveStudioProfile, getCurrentStudio } from "../../services/storage";
+import { changePassword, deleteMyAccount } from "../../services/auth";
+import { getModules, MORE_ORDER } from "../../constants/modules";
+import { getPass, setPass, getSession, saveSession, clearSession, getStudioProfile, saveStudioProfile } from "../../services/storage";
 
 export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogout, themeKey = "sapphire", setThemeKey }) => {
   const [showSifre,   setShowSifre]   = useState(false);
@@ -24,8 +25,14 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
     setShowFirma(false);
     alert("✅ Firma bilgileri kaydedildi. Sözleşme, fatura ve kartvizitte bu bilgiler kullanılacak.");
   };
-  const [codeCopied, setCodeCopied] = useState(false);
-  const joinCode = IS_CLOUD && role === "admin" ? getCurrentStudio()?.join_code : null;
+  const [showSil, setShowSil] = useState(false);
+  const [silOnay, setSilOnay] = useState("");
+  const [silBusy, setSilBusy] = useState(false);
+  const doDeleteAccount = async () => {
+    setSilBusy(true);
+    try { await deleteMyAccount(); onLogout && onLogout(); }
+    catch (e) { alert("Hesap silinemedi: " + e.message); setSilBusy(false); }
+  };
   const saveSifre = async () => {
     // Bulutta: giriş yapan kişinin kendi hesap şifresi değişir (tüm cihazlarda geçerli)
     if (IS_CLOUD) {
@@ -45,7 +52,10 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
 
   const isPro = plan === "pro";
   const isTrial = plan === "trial";
+  const isStd = plan === "standart";
   const trial = getTrialInfo();
+  const isAdmin = role === "admin";
+  const MODULES = getModules();
 
   const THEMES = [
     { key: "sapphire", name: "Safir & Titanyum", sub: "Modern stüdyo koyu palet", icon: "💎", primary: "#3B82F6", bg: "#090D16" },
@@ -55,54 +65,35 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
 
   return (
   <div className="fade-in">
-    <PageHeader title="Diğer Modüller" sub="Tüm stüdyo araçları"/>
+    <PageHeader title={isAdmin ? "Diğer Modüller" : "Ayarlar"} sub={isAdmin ? "Tüm stüdyo araçları" : "Tema, şifre ve hesap"}/>
     <div style={{ padding:"0 20px" }}>
 
       {/* Plan Yönetim Kartı */}
-      <Card onClick={()=>setActive("planyonetimi")} style={{ marginBottom:14, padding:16, display:"flex", alignItems:"center", gap:14, borderColor:isPro?T.gold:isTrial?T.blue:T.border, background:isPro?T.gold+"12":isTrial?T.blue+"12":T.card, cursor:"pointer" }}>
-        <div style={{ fontSize:28 }}>{isPro?"👑":isTrial?"⏳":"🆓"}</div>
+      {isAdmin && <Card onClick={()=>setActive("planyonetimi")} style={{ marginBottom:14, padding:16, display:"flex", alignItems:"center", gap:14, borderColor:isPro?T.gold:isTrial?T.blue:T.border, background:isPro?T.gold+"12":isTrial?T.blue+"12":T.card, cursor:"pointer" }}>
+        <div style={{ fontSize:28 }}>{isPro?"👑":isTrial?"⏳":isStd?"⭐":"🆓"}</div>
         <div style={{ flex:1 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <span style={{ fontWeight:700, fontSize:15 }}>{isPro?"Pro Plan":isTrial?"Pro Deneme":"Basic Plan"}</span>
+            <span style={{ fontWeight:700, fontSize:15 }}>{isPro?"Pro Plan":isTrial?"Pro Deneme":isStd?"Standart Plan":"Basic Plan"}</span>
             <PlanBadge plan={plan}/>
           </div>
           <div style={{ fontSize:12, color:T.text3, marginTop:3 }}>
-            {isPro ? "Sınırsız çekim ve tüm özellikler aktif" : isTrial ? `Tüm özellikler açık • Kalan: ${trial.daysLeft} gün` : "20 çekim limiti • Pro'ya Yükselt (749/ay)"}
+            {isPro ? "Tüm özellikler aktif" : isTrial ? `Tüm özellikler açık • Kalan: ${trial.daysLeft} gün` : isStd ? "Özelliklerin çoğu açık • Pro ile hepsi" : "Temel özellikler • Kilitli özellikleri görmek için dokunun"}
           </div>
         </div>
-        <span style={{ fontSize:12, color:isPro?T.goldL:isTrial?T.blueL:T.goldL, fontWeight:600 }}>{isPro?"Yönet →":isTrial?"İncele →":"Yükselt →"}</span>
-      </Card>
+        <span style={{ fontSize:12, color:isPro?T.goldL:isTrial?T.blueL:T.goldL, fontWeight:600 }}>{isPro?"Yönet →":isTrial?"İncele →":"Planlar →"}</span>
+      </Card>}
 
-      {[
-        {i:"users",   l:"Müşteriler",          d:"Müşteri CRM, paket ve bakiye takibi", s:"musteriler", c:T.goldL,    adminOnly:false},
-        {i:"calendar",l:"🌅 Altın Saat & Işık", d:"Dış çekim gün batımı ve ters ışık hesaplayıcı", s:"altinsaat", c:T.goldL, adminOnly:false},
-        {i:"camera",  l:"📸 Poz Rehberi",      d:"Görsel pozlar ve çifte komut rehberi", s:"pozrehberi", c:T.gold, adminOnly:false},
-        {i:"copy",    l:"📇 Dijital QR Kartvizit", d:"Düğün salonları için anında vCard paylaşımı", s:"kartvizit", c:T.blueL, adminOnly:false},
-        {i:"sparkle", l:"🎙️ Sesli Randevu",     d:"Konuşarak hızlı randevu ve not ekleme", s:"sesliasistan", c:"#C94C9F", adminOnly:false},
-        {i:"notebook",l:"Notlarım",            d:"Hızlı ve etiketli notlar",            s:"notdefteri", c:T.gold,     adminOnly:true},
-        {i:"calendar",l:"Takvim",              d:"Yıllık randevu takvimi",             s:"takvim",     c:T.blueL,    adminOnly:false},
-        {i:"doc",     l:"Sözleşmeler",         d:"Müşteri sözleşmeleri & PDF",         s:"sozlesmeler", c:T.orange,   adminOnly:true, pro:true},
-        {i:"doc",     l:"Fiyat Teklifi",       d:"Müşterilere özel teklif oluştur",    s:"teklif",     c:T.greenL,   adminOnly:true, pro:true},
-        {i:"team",    l:"Ekip & Shiftler",     d:"Personel ve görev planı",            s:"ekip",       c:"#C94C9F",  adminOnly:false},
-        {i:"box",     l:"Paketler & Fiyatlar", d:"Hizmet paketlerini yönet",          s:"paketler",   c:T.gold,     adminOnly:true},
-        {i:"msg",     l:"Mesajlar",            d:"Müşteri iletişimi",                  s:"mesajlar",   c:T.blueL,    adminOnly:false},
-        {i:"copy",    l:"Hazır Şablonlar",     d:"Müşterilere hazır mesajlar",         s:"sablonlar",  c:T.blue,     adminOnly:false},
-        {i:"bell",    l:"Hatırlatıcılar",      d:"Tarih & ödeme hatırlatmaları",       s:"hatirlatici", c:T.orangeL,  adminOnly:false},
-        {i:"camera",  l:"Portföy Galerisi",    d:"Fotoğraf arşivi ve kategoriler",     s:"galeri",     c:T.green,    adminOnly:false, pro:true},
-        {i:"chart",   l:"Raporlar",            d:"Aylık & yıllık analizler",           s:"raporlar",   c:T.blueL,    adminOnly:true, pro:true},
-        {i:"eye",     l:"Müşteri Portali",     d:"Fotoğraf seçim sistemi",             s:"portal",     c:"#C94C9F",  adminOnly:true, pro:true},
-        {i:"warn",    l:"🛠 İş Asistanı",       d:"Otomasyonlar, alarmlar, arşiv",     s:"isasistani", c:T.goldL,    adminOnly:true, pro:true},
-      ].filter(it => !it.adminOnly || role==="admin").map(it=>(
-        <Card key={it.l} onClick={()=>setActive(it.s)} style={{ marginBottom:10, display:"flex", gap:14, alignItems:"center", padding:16 }}>
-          <div style={{ background:it.c+"1A", borderRadius:14, padding:12, flexShrink:0 }}>
-            <Ic n={it.i} s={22} c={it.c}/>
+      {isAdmin && MORE_ORDER.map(id => ({ id, ...MODULES[id] })).map(it=>(
+        <Card key={it.id} onClick={()=>setActive(it.id)} style={{ marginBottom:10, display:"flex", gap:14, alignItems:"center", padding:16 }}>
+          <div style={{ background:it.color+"1A", borderRadius:14, padding:12, flexShrink:0 }}>
+            <Ic n={it.icon} s={22} c={it.color}/>
           </div>
           <div style={{ flex:1 }}>
             <div style={{ fontWeight:600, fontSize:15, display:"flex", alignItems:"center" }}>
-              {it.l}
-              {it.pro && plan === "basic" && <ProBadge/>}
+              {it.label}
+              {!planHasFeature(plan, it.id) && <LockBadge plan={requiredPlanFor(it.id)}/>}
             </div>
-            <div style={{ fontSize:12, color:T.text3, marginTop:3 }}>{it.d}</div>
+            <div style={{ fontSize:12, color:T.text3, marginTop:3 }}>{it.desc}</div>
           </div>
           <Ic n="back" s={16} c={T.text3} style={{ transform:"rotate(180deg)" }}/>
         </Card>
@@ -195,24 +186,6 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
             </Card>
           )}
 
-          {/* Personel katılım kodu (bulut, admin) */}
-          {joinCode && (
-            <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:16 }}>
-              <div style={{ fontWeight:600, fontSize:15, color:T.text }}>Personel Katılım Kodu</div>
-              <div style={{ fontSize:12, color:T.text3, marginTop:2, lineHeight:1.5 }}>
-                Personeliniz uygulamada "Personel olarak katıl" seçeneğiyle bu kodu girerek stüdyonuza bağlanır.
-              </div>
-              <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:12 }}>
-                <div style={{ flex:1, fontFamily:"monospace", fontSize:24, fontWeight:800, letterSpacing:6, color:T.goldL,
-                  background:T.card2, border:`1px dashed ${T.gold}66`, borderRadius:12, padding:"8px 0", textAlign:"center" }}>{joinCode}</div>
-                <button onClick={()=>{ navigator.clipboard?.writeText(joinCode).catch(()=>{}); setCodeCopied(true); setTimeout(()=>setCodeCopied(false),2000); }}
-                  style={{ background:T.gold+"22", border:`1px solid ${T.gold}55`, color:T.goldL, borderRadius:10, padding:"10px 12px", fontSize:12.5, fontWeight:700, cursor:"pointer" }}>
-                  {codeCopied ? "✓ Kopyalandı" : "Kopyala"}
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Şifre Değiştir - yerelde sadece admin, bulutta herkes kendi şifresini */}
           {(role==="admin" || IS_CLOUD) && (
             <Card onClick={()=>{ setShowAyarlar(false); setTimeout(()=>setShowSifre(true),200); }}
@@ -225,6 +198,20 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
                 <div style={{ fontSize:12, color:T.text3, marginTop:2 }}>{IS_CLOUD ? "Hesabınızın giriş şifresini güncelleyin" : "Admin ve personel şifrelerini güncelle"}</div>
               </div>
               <Ic n="back" s={16} c={T.text3} style={{ transform:"rotate(180deg)" }}/>
+            </Card>
+          )}
+
+          {/* Hesabımı Sil (bulut) — App Store / Google Play zorunluluğu */}
+          {IS_CLOUD && (
+            <Card onClick={()=>{ setShowAyarlar(false); setSilOnay(""); setTimeout(()=>setShowSil(true),200); }}
+              style={{ display:"flex", alignItems:"center", gap:14, padding:16, cursor:"pointer", borderColor:T.red+"44" }}>
+              <div style={{ background:T.red+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
+                <Ic n="trash" s={20} c={T.redL}/>
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontWeight:600, fontSize:15, color:T.redL }}>Hesabımı Sil</div>
+                <div style={{ fontSize:12, color:T.text3, marginTop:2 }}>{role==="admin" ? "Hesap, stüdyo ve tüm veriler kalıcı olarak silinir" : "Personel hesabınız kalıcı olarak silinir"}</div>
+              </div>
             </Card>
           )}
 
@@ -276,6 +263,26 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
           <GoldButton label="Şifreleri Kaydet" icon="check" onClick={saveSifre} full/>
         </div>
         )}
+      </BottomSheet>
+    )}
+
+    {showSil && (
+      <BottomSheet title="Hesabımı Sil" onClose={()=>!silBusy && setShowSil(false)}>
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <div style={{ background:T.red+"14", border:`1px solid ${T.red}44`, borderRadius:12, padding:"12px 14px", fontSize:13, color:T.text2, lineHeight:1.6 }}>
+            {role==="admin"
+              ? <>⚠️ Bu işlem <b>geri alınamaz</b>. Hesabınızla birlikte <b>stüdyonuz, tüm müşteri, randevu, muhasebe kayıtları</b> ve <b>personel hesapları</b> kalıcı olarak silinir.</>
+              : <>⚠️ Bu işlem <b>geri alınamaz</b>. Personel hesabınız silinir; stüdyonun verileri etkilenmez.</>}
+          </div>
+          <div style={{ fontSize:12.5, color:T.text3 }}>Onaylamak için aşağıya <b>SİL</b> yazın.</div>
+          <input value={silOnay} onChange={e=>setSilOnay(e.target.value)} placeholder="SİL"
+            style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:12, padding:"12px 14px", color:T.text, fontSize:14, width:"100%", outline:"none" }}/>
+          <button disabled={silOnay.trim().toLocaleUpperCase("tr-TR") !== "SİL" || silBusy} onClick={doDeleteAccount}
+            style={{ background:T.red, color:"#fff", border:"none", borderRadius:12, padding:"13px", fontSize:14, fontWeight:700,
+              opacity: silOnay.trim().toLocaleUpperCase("tr-TR") === "SİL" && !silBusy ? 1 : 0.45, cursor:"pointer" }}>
+            {silBusy ? "Siliniyor..." : "Hesabımı Kalıcı Olarak Sil"}
+          </button>
+        </div>
       </BottomSheet>
     )}
 

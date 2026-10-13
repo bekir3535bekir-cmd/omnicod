@@ -117,6 +117,7 @@ export const makeCSS = (theme) => `
 ${FONT}
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html, body { height:100%; background:${theme.bg}; }
+html { color-scheme: ${theme.isDark ? "dark" : "light"}; }
 body { font-family:'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Inter", sans-serif; color:${theme.text}; overflow-x:hidden; max-width:430px; margin:0 auto; -webkit-font-smoothing:antialiased; }
 input,textarea,select,button { font-family:'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Inter", sans-serif; }
 input,textarea,select { outline:none; background:transparent; color:${theme.text}; border:none; width:100%; color-scheme: ${theme.isDark ? "dark" : "light"}; }

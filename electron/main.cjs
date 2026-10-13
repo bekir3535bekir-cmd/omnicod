@@ -2,7 +2,7 @@
 // STÜDYOM — Masaüstü (Windows) uygulaması
 // Web uygulamasının derlenmiş hali (dist/) Electron penceresinde açılır.
 // ════════════════════════════════════════════════
-const { app, BrowserWindow, shell, Menu } = require("electron");
+const { app, BrowserWindow, shell, Menu, ipcMain } = require("electron");
 const path = require("path");
 
 // Windows bildirimlerinin uygulama adıyla görünmesi için
@@ -63,6 +63,14 @@ const createWindow = () => {
     }
   });
 };
+
+// Bildirime tıklanınca pencereyi öne getir (simge durumundaysa geri aç)
+ipcMain.on("studyom:focus", () => {
+  if (!win) return;
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+});
 
 app.on("second-instance", () => {
   if (win) {
