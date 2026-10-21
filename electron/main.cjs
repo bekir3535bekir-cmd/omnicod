@@ -6,7 +6,7 @@ const { app, BrowserWindow, shell, Menu, ipcMain } = require("electron");
 const path = require("path");
 
 // Windows bildirimlerinin uygulama adıyla görünmesi için
-app.setAppUserModelId("com.studyom.app");
+app.setAppUserModelId("com.gesblabs.studyom");
 
 // Tarayıcı kimliğinde (User-Agent) Türkçe karakter olmasın: Electron uygulama adını ("STÜDYOM") ekliyor,
 // "Ü" harfi sunucuya bozuk gidiyor ve Supabase oturum açarken "Database error granting user" hatası veriyor.

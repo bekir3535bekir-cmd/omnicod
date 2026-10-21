@@ -8,7 +8,7 @@ import { UsageBadge, ProGate } from "../common/ProGate";
 import { MusteriPortali } from "./AppModals";
 import { canAddClient } from "../../services/plan";
 import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession, getStudioInfo } from "../../services/storage";
+import { getPass, setPass, getSession, saveSession, clearSession, getStudioInfo, getCurrentStudio } from "../../services/storage";
 
 // Canvas tabanlı hafifleştirilmiş resim sıkıştırma (localStorage taşmasını önler)
 const compressImage = (file) => {
@@ -1193,7 +1193,7 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
                       onClick={() => {
                         if (!proofUrl) return alert("Müşteri linki oluşturulamadı: web sürümünün adresi ayarlanmamış (.env → VITE_PUBLIC_URL).");
                         const ph = detail.phone ? detail.phone.replace(/\D/g,"").replace(/^0/,"") : "";
-                        const msg = `Merhaba ${detail.name.split(" ")[0]} Hanım/Bey 🌸\n\n${detail.date ? fmtDate(detail.date) + " tarihli " : ""}${detail.type} çekiminizin fotoğrafları hazırlandı! 📸✨\n\nAşağıdaki bağlantıdan fotoğraflarınızı inceleyebilir, beğendiklerinizi albümünüz için kolayca seçebilirsiniz:\n\n👉 ${proofUrl}\n\nKeyifli seçimler dileriz! 🙏\n${getStudioInfo().unvan || "Stüdyomuz"}`;
+                        const msg = `Merhaba ${detail.name.split(" ")[0]} Hanım/Bey 🌸\n\n${detail.date ? fmtDate(detail.date) + " tarihli " : ""}${detail.type} çekiminizin fotoğrafları hazırlandı! 📸✨\n\nAşağıdaki bağlantıdan fotoğraflarınızı inceleyebilir, beğendiklerinizi albümünüz için kolayca seçebilirsiniz:\n\n👉 ${proofUrl}${getCurrentStudio()?.portal_code ? `\n\nLink açılmazsa: STÜDYOM → Müşteri Portalı → Stüdyo kodu: ${getCurrentStudio().portal_code}` : ""}\n\nKeyifli seçimler dileriz! 🙏\n${getStudioInfo().unvan || "Stüdyomuz"}`;
                         if (ph) {
                           window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`,"_blank");
                         } else {

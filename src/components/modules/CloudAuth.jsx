@@ -157,9 +157,10 @@ export const CloudAuth = ({ stage = "signedOut", team = [], onReady, onCustomer,
 
   const doCustomer = () => run(async () => {
     const tel4 = f.phone4.replace(/\D/g, "");
-    if (!f.name.trim() || tel4.length !== 4) throw new Error("Ad soyad ve telefonunuzun son 4 hanesini girin.");
-    const id = await findClientId(f.name, tel4);
-    if (!id) throw new Error("Bilgiler eşleşmedi. Stüdyonuzdan giriş linki isteyebilirsiniz.");
+    const code = f.code.trim().toUpperCase();
+    if (code.length !== 6 || !f.name.trim() || tel4.length !== 4) throw new Error("Stüdyo kodunu, ad soyadınızı ve telefonunuzun son 4 hanesini girin.");
+    const id = await findClientId(code, f.name, tel4);
+    if (!id) throw new Error("Bilgiler eşleşmedi. Stüdyonuzdan size gönderilen linki kullanabilir veya kodu tekrar isteyebilirsiniz.");
     onCustomer(id);
   });
 
@@ -254,8 +255,10 @@ export const CloudAuth = ({ stage = "signedOut", team = [], onReady, onCustomer,
 
   if (mode === "musteri") return (
     <Shell>
-      <Head icon="📸" title="Müşteri Portalı" sub="Fotoğraf seçimi ve çekim takibi için bilgilerinizi girin." onBack={() => go("login")}/>
+      <Head icon="📸" title="Müşteri Portalı" sub="Stüdyonuzun gönderdiği linke tıklayarak da doğrudan girebilirsiniz." onBack={() => go("login")}/>
       <Msg>{err}</Msg>
+      <Input icon="🏢" label="Stüdyo kodu" value={f.code} placeholder="Örn: A1B2C3" autoCapitalize="characters"
+        onChange={e => setF(p => ({ ...p, code: e.target.value.replace(/[^0-9a-zA-Z]/g, "").slice(0, 6).toUpperCase() }))}/>
       <Input icon="👤" label="Ad Soyad" value={f.name} onChange={set("name")} placeholder="Ad Soyad"/>
       <Input icon="📱" label="Telefonunuzun son 4 hanesi" placeholder="••••" value={f.phone4} onChange={e => setF(p => ({ ...p, phone4: e.target.value.replace(/\D/g, "").slice(0, 4) }))} inputMode="numeric"/>
       <Btn busy={busy} onClick={doCustomer}><span>📸</span> Portala Giriş Yap</Btn>

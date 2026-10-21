@@ -34,11 +34,16 @@
   },
   "productName": "STÜDYOM",
   "description": "STÜDYOM — Fotoğrafçılık & Stüdyo Yönetim Sistemi",
-  "author": "STÜDYOM",
+  "author": {
+    "name": "GesbLabs",
+    "url": "https://gesblabs.com"
+  },
+  "homepage": "https://studyom.gesblabs.com",
   "main": "electron/main.cjs",
   "build": {
-    "appId": "com.studyom.app",
+    "appId": "com.gesblabs.studyom",
     "productName": "STÜDYOM",
+    "copyright": "© 2026 GesbLabs",
     "executableName": "Studyom",
     "directories": {
       "output": "release",

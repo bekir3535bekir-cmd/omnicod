@@ -6,14 +6,14 @@ import { createClient } from "@supabase/supabase-js";
 import { supabase, sb, SUPABASE_URL, SUPABASE_KEY } from "./supabase";
 
 // ── Personel girişi: telefon numarası → sistem içi e-posta ──
-// Personel e-posta yerine telefon numarasıyla girer; hesabın sistemdeki adresi p<telefon>@personel.studyom.app
+// Personel e-posta yerine telefon numarasıyla girer; hesabın sistemdeki adresi p<telefon>@personel.studyom.gesblabs.com
 export const normalizePhone = (v) => {
   let d = String(v || "").replace(/\D/g, "");
   if (d.startsWith("90") && d.length === 12) d = d.slice(2);
   if (d.startsWith("0")) d = d.slice(1);
   return d;
 };
-export const staffEmail = (phone) => `p${normalizePhone(phone)}@personel.studyom.app`;
+export const staffEmail = (phone) => `p${normalizePhone(phone)}@personel.studyom.gesblabs.com`;
 // Girişte yazılan değer e-posta değilse telefon kabul edilir
 const loginEmail = (v) => String(v || "").includes("@") ? String(v).trim() : staffEmail(v);
 
@@ -27,7 +27,6 @@ export const authErrorText = (error) => {
   if (/valid email|invalid email|Unable to validate email/i.test(m)) return "Geçerli bir e-posta adresi girin.";
   if (/rate limit|too many/i.test(m)) return "Çok fazla deneme yapıldı. Biraz bekleyip tekrar deneyin.";
   if (/Token has expired|invalid.*otp|otp.*invalid/i.test(m)) return "Kod hatalı veya süresi dolmuş.";
-  if (/Katılım kodu geçersiz/i.test(m)) return "Katılım kodu geçersiz. Stüdyo yöneticinizden kodu tekrar isteyin.";
   if (/zaten bir stüdyoya bağlı/i.test(m)) return "Bu hesap zaten bir stüdyoya bağlı.";
   if (/Failed to fetch|NetworkError|network/i.test(m)) return "İnternet bağlantısı yok veya sunucuya ulaşılamıyor.";
   if (/granting user|Database error/i.test(m)) return "Sunucu şu an yanıt veremedi. Birkaç saniye sonra tekrar deneyin.";
@@ -113,12 +112,12 @@ const rpcOrThrow = async (fn, args) => {
 };
 export const fetchMyStudio   = () => rpcOrThrow("my_studio");
 export const createStudio    = (name) => rpcOrThrow("create_studio", { p_name: name });
-export const joinStudio      = (code) => rpcOrThrow("join_studio", { p_code: code });
 export const setMyTeamId     = (teamId) => rpcOrThrow("set_my_team_id", { p_team_id: teamId });
 export const saveStudioProfileRemote = (profile) => rpcOrThrow("update_studio_profile", { p_profile: profile });
 
 // ── Müşteri (giriş yapmadan) ──
-export const findClientId = (name, phone4) => rpcOrThrow("find_client", { p_name: name, p_phone4: phone4 });
+// Müşteri girişi yalnızca stüdyonun portal koduyla birlikte yapılır (başka stüdyonun müşterisiyle karışmaz)
+export const findClientId = (code, name, phone4) => rpcOrThrow("find_client", { p_code: code, p_name: name, p_phone4: phone4 });
 export const fetchProofData = (clientId) => rpcOrThrow("proof_data", { p_client_id: clientId });
 
 // ── Personel hesapları (yönetici yönetir) ──

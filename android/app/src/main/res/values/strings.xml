@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">STÜDYOM</string>
     <string name="title_activity_main">STÜDYOM</string>
-    <string name="package_name">com.studyom.app</string>
-    <string name="custom_url_scheme">com.studyom.app</string>
+    <string name="package_name">com.gesblabs.studyom</string>
+    <string name="custom_url_scheme">com.gesblabs.studyom</string>
 </resources>

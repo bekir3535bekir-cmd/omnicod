@@ -4,7 +4,7 @@ import { Ic } from "../../constants/icons";
 import { fmtDate, uid, publicAppUrl } from "../../utils/helpers";
 import { Card, Pill, GoldButton, Field, PageHeader } from "../common";
 import { sb, toDB } from "../../services/supabase";
-import { getStudioInfo } from "../../services/storage";
+import { getStudioInfo, getCurrentStudio } from "../../services/storage";
 
 // Örnek gerçek düğün & dış çekim fotoğrafları (Hızlı test ve demo için)
 const DEMO_WEDDING_PHOTOS = [
@@ -157,7 +157,7 @@ export const Portal = ({ data, setData }) => {
     if (!clientPortalUrl) return alert("Müşteri linki oluşturulamadı: web sürümünün adresi ayarlanmamış (.env → VITE_PUBLIC_URL).");
     if (!client?.phone) return;
     const cleanPh = client.phone.replace(/\D/g, "").replace(/^0/, "");
-    const msg = `Merhaba ${client.name}! Çekim fotoğraflarınız hazır! 🎉\n\nAşağıdaki linke tıklayarak evinizden telefonunuzla fotoğraflarınızı inceleyebilir ve albümünüz için beğendiklerinizi ❤️ seçebilirsiniz:\n\n🔗 ${clientPortalUrl}\n\nKeyifli seçimler dileriz! — ${getStudioInfo().unvan || "Stüdyomuz"}`;
+    const msg = `Merhaba ${client.name}! Çekim fotoğraflarınız hazır! 🎉\n\nAşağıdaki linke tıklayarak evinizden telefonunuzla fotoğraflarınızı inceleyebilir ve albümünüz için beğendiklerinizi ❤️ seçebilirsiniz:\n\n🔗 ${clientPortalUrl}${getCurrentStudio()?.portal_code ? `\n\nLink açılmazsa: STÜDYOM → Müşteri Portalı → Stüdyo kodu: ${getCurrentStudio().portal_code}` : ""}\n\nKeyifli seçimler dileriz! — ${getStudioInfo().unvan || "Stüdyomuz"}`;
     window.open(`https://wa.me/90${cleanPh}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 

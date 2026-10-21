@@ -9,7 +9,7 @@ import { PLANS, getTrialInfo, planHasFeature, requiredPlanFor } from "../../serv
 import { sb, fromDB, toDB, IS_CLOUD } from "../../services/supabase";
 import { changePassword, deleteMyAccount } from "../../services/auth";
 import { getModules, MORE_ORDER } from "../../constants/modules";
-import { getPass, setPass, getSession, saveSession, clearSession, getStudioProfile, saveStudioProfile } from "../../services/storage";
+import { getPass, setPass, getSession, saveSession, clearSession, getStudioProfile, saveStudioProfile, getCurrentStudio } from "../../services/storage";
 
 export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogout, themeKey = "sapphire", setThemeKey }) => {
   const [showSifre,   setShowSifre]   = useState(false);
@@ -170,6 +170,20 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
               })}
             </div>
           </div>
+
+          {/* Müşteri portalı kodu — müşteri elle girişte bu kodu yazar */}
+          {role==="admin" && IS_CLOUD && getCurrentStudio()?.portal_code && (
+            <Card onClick={()=>{ try { navigator.clipboard.writeText(getCurrentStudio().portal_code); alert("✅ Stüdyo kodu kopyalandı."); } catch(e) {} }}
+              style={{ display:"flex", alignItems:"center", gap:14, padding:16, cursor:"pointer" }}>
+              <div style={{ background:T.green+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
+                <Ic n="eye" s={20} c={T.greenL}/>
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontWeight:600, fontSize:15 }}>Müşteri Portalı Kodu: <span style={{ letterSpacing:2, color:T.greenL }}>{getCurrentStudio().portal_code}</span></div>
+                <div style={{ fontSize:12, color:T.text3, marginTop:2 }}>Müşteri linki açamazsa "Müşteri Portalı" ekranında bu kodu yazar. Kopyalamak için dokunun.</div>
+              </div>
+            </Card>
+          )}
 
           {/* Firma & Kişi Bilgileri - sadece admin */}
           {role==="admin" && (

@@ -189,23 +189,25 @@ begin
   end if;
   insert into studios(name, owner_id) values (coalesce(nullif(trim(p_name), ''), 'Stüdyom'), auth.uid()) returning * into s;
   insert into studio_members(studio_id, user_id, role) values (s.id, auth.uid(), 'admin');
-  return json_build_object('studio_id', s.id, 'name', s.name, 'join_code', s.join_code, 'role', 'admin');
+  return json_build_object('studio_id', s.id, 'name', s.name, 'portal_code', s.portal_code, 'role', 'admin');
 end $$;
 
--- Personel: stüdyonun katılım koduyla stüdyoya bağlan
-create or replace function public.join_studio(p_code text) returns json
-language plpgsql security definer set search_path = public as $$
-declare s studios;
-begin
-  if auth.uid() is null then raise exception 'Giriş yapılmamış'; end if;
-  if exists (select 1 from studio_members where user_id = auth.uid()) then
-    raise exception 'Bu hesap zaten bir stüdyoya bağlı';
-  end if;
-  select * into s from studios where join_code = upper(trim(p_code));
-  if s.id is null then raise exception 'Katılım kodu geçersiz'; end if;
-  insert into studio_members(studio_id, user_id, role) values (s.id, auth.uid(), 'personel');
-  return json_build_object('studio_id', s.id, 'name', s.name, 'role', 'personel');
-end $$;
+-- Eski "katılım koduyla personel olarak katıl" kaldırıldı: personel hesabını yalnızca yönetici açar
+drop function if exists public.join_studio(text);
+
+-- Müşteri portalı kodu: müşteri elle girişte stüdyosunu bu kodla belirtir (personel yetkisi VERMEZ)
+alter table public.studios add column if not exists portal_code text;
+update public.studios set portal_code = upper(substr(md5(random()::text || id::text), 1, 6)) where portal_code is null;
+alter table public.studios alter column portal_code set default upper(substr(md5(random()::text), 1, 6));
+create unique index if not exists studios_portal_code_idx on public.studios(portal_code);
+
+-- Müşteri girişi deneme kaydı (tahmin yoluyla girişi engellemek için)
+create table if not exists public.portal_attempts (
+  portal_code text not null,
+  created_at  timestamptz not null default now()
+);
+create index if not exists portal_attempts_idx on public.portal_attempts(portal_code, created_at);
+alter table public.portal_attempts enable row level security;   -- kural yok: yalnızca fonksiyonlar erişir
 
 -- Personelin kendini Ekip listesindeki kaydıyla eşleştirmesi (bildirimler için)
 create or replace function public.set_my_team_id(p_team_id text) returns void
@@ -223,20 +225,33 @@ begin
   where id = public.current_studio_id();
 end $$;
 
--- Müşteri girişi: ad soyad + telefonun son 4 hanesi → müşteri numarası
-create or replace function public.find_client(p_name text, p_phone4 text) returns text
-language sql stable security definer set search_path = public as $$
-  select id from clients
-  where lower(trim(name)) = lower(trim(p_name))
-    and length(regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g')) >= 4
-    and right(regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g'), 4) = p_phone4
-  limit 1
-$$;
+-- Müşteri girişi: portal kodu + ad soyad + telefonun son 4 hanesi → müşteri numarası
+-- Arama yalnızca o stüdyonun müşterilerinde yapılır; bir kod için saatte en fazla 10 hatalı deneme.
+drop function if exists public.find_client(text, text);
+create or replace function public.find_client(p_code text, p_name text, p_phone4 text) returns text
+language plpgsql volatile security definer set search_path = public as $$
+declare v_code text := upper(trim(coalesce(p_code, ''))); v_studio uuid; v_id text;
+begin
+  delete from portal_attempts where created_at < now() - interval '1 day';
+  if (select count(*) from portal_attempts where portal_code = v_code and created_at > now() - interval '1 hour') >= 10 then
+    raise exception 'Çok fazla hatalı deneme. Lütfen bir saat sonra tekrar deneyin.';
+  end if;
+  select id into v_studio from studios where portal_code = v_code;
+  if v_studio is not null and coalesce(p_phone4, '') ~ '^[0-9]{4}$' then
+    select id into v_id from clients
+    where studio_id = v_studio
+      and lower(trim(name)) = lower(trim(p_name))
+      and right(regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g'), 4) = p_phone4
+    limit 1;
+  end if;
+  if v_id is null then insert into portal_attempts(portal_code) values (left(v_code, 12)); end if;
+  return v_id;
+end $$;
 
 -- Giriş yapan kullanıcının stüdyo bilgisi (uygulama açılışta çağırır)
 create or replace function public.my_studio() returns json
 language sql stable security definer set search_path = public as $$
-  select json_build_object('studio_id', s.id, 'name', s.name, 'join_code', case when m.role = 'admin' then s.join_code end,
+  select json_build_object('studio_id', s.id, 'name', s.name, 'portal_code', s.portal_code,
     'role', m.role, 'team_id', m.team_id, 'plan', s.plan, 'trial_start', s.trial_start, 'plan_expiry', s.plan_expiry,
     'profile', s.profile)
   from studio_members m join studios s on s.id = m.studio_id
@@ -262,7 +277,7 @@ $$;
 
 -- ── Personel hesapları (yönetici oluşturur, şifreyi yönetici belirler) ──
 -- Personel telefon numarası + şifre ile giriş yapar. Sistem içinde hesabın e-postası
--- p<telefon>@personel.studyom.app biçimindedir (bu adrese e-posta gönderilmez).
+-- p<telefon>@personel.studyom.gesblabs.com biçimindedir (bu adrese e-posta gönderilmez).
 
 -- Yeni açılan personel hesabını yöneticinin stüdyosuna bağla
 create or replace function public.add_staff(p_user_id uuid, p_team_id text) returns void
@@ -272,7 +287,7 @@ begin
   if public.current_role_in_studio() is distinct from 'admin' then raise exception 'Yetki yok'; end if;
   -- Yalnızca az önce açılmış personel hesapları bağlanabilir (başkasının hesabı ele geçirilemez)
   select email into v_email from auth.users where id = p_user_id and created_at > now() - interval '15 minutes';
-  if v_email is null or v_email not like '%@personel.studyom.app' then raise exception 'Geçersiz personel hesabı'; end if;
+  if v_email is null or v_email not like '%@personel.studyom.gesblabs.com' then raise exception 'Geçersiz personel hesabı'; end if;
   if exists (select 1 from studio_members where user_id = p_user_id) then raise exception 'Bu hesap zaten bir stüdyoya bağlı'; end if;
   if exists (select 1 from studio_members where studio_id = v_studio and team_id = p_team_id) then
     raise exception 'Bu personelin zaten bir giriş hesabı var';
@@ -396,14 +411,14 @@ begin
 end $$;
 
 -- Fonksiyon yetkileri
-revoke all on function public.create_studio(text), public.join_studio(text), public.set_my_team_id(text),
+revoke all on function public.create_studio(text), public.set_my_team_id(text),
   public.my_studio(), public.proof_data(text), public.current_studio_id(), public.current_role_in_studio(),
-  public.update_studio_profile(jsonb), public.find_client(text, text),
+  public.update_studio_profile(jsonb), public.find_client(text, text, text),
   public.add_staff(uuid, text), public.staff_accounts(), public.set_staff_password(text, text),
   public.remove_staff(text), public.delete_my_account(), public.staff_data(), public.submit_appointment(jsonb) from public;
-grant execute on function public.create_studio(text), public.join_studio(text), public.set_my_team_id(text),
+grant execute on function public.create_studio(text), public.set_my_team_id(text),
   public.my_studio(), public.current_studio_id(), public.current_role_in_studio(),
   public.update_studio_profile(jsonb),
   public.add_staff(uuid, text), public.staff_accounts(), public.set_staff_password(text, text),
   public.remove_staff(text), public.delete_my_account(), public.staff_data(), public.submit_appointment(jsonb) to authenticated;
-grant execute on function public.proof_data(text), public.find_client(text, text) to anon, authenticated;
+grant execute on function public.proof_data(text), public.find_client(text, text, text) to anon, authenticated;
