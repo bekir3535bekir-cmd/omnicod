@@ -2,12 +2,12 @@
 // BULUT GİRİŞİ — e-posta/şifre ile hesap, stüdyo oluşturma, personel katılımı
 // Aynı hesapla telefondan ve bilgisayardan giriş yapılır, aynı veri görülür.
 // ════════════════════════════════════════════════
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { T } from "../../constants/theme";
 import { LoginShell } from "../common/LoginShell";
 import {
   signIn, signUp, signOut, verifySignupCode, resendSignupCode, resetPassword,
-  fetchMyStudio, createStudio, setMyTeamId, saveStudioProfileRemote, findClientId, currentUser,
+  fetchMyStudio, createStudio, setMyTeamId, saveStudioProfileRemote, findClientId, currentUser, changePassword,
 } from "../../services/auth";
 
 // Görünüm: eski giriş ekranıyla aynı (kamera vizörü, odaklanan diyafram, cam kart)
@@ -101,14 +101,16 @@ const Shell = ({ children }) => <LoginShell>{children}</LoginShell>;
  * onReady(studio)  — giriş + stüdyo hazır
  * onCustomer(id)   — müşteri portalı
  */
-export const CloudAuth = ({ stage = "signedOut", team = [], onReady, onCustomer, onLogout }) => {
-  const [mode, setMode] = useState(stage === "noStudio" ? "setup" : stage === "pickStaff" ? "pickStaff" : "login");
-  const [f, setF] = useState({ email: "", password: "", studio: "", name: "", code: "", otp: "", phone4: "" });
-  const [err, setErr] = useState("");
+export const CloudAuth = ({ stage = "signedOut", team = [], notice = "", onReady, onCustomer, onLogout }) => {
+  const [mode, setMode] = useState(stage === "noStudio" ? "setup" : stage === "pickStaff" ? "pickStaff" : stage === "recovery" ? "newpass" : notice ? "reset" : "login");
+  const [f, setF] = useState({ email: "", password: "", password2: "", studio: "", name: "", code: "", otp: "", phone4: "" });
+  const [err, setErr] = useState(notice || "");
   const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
   const [pendingAfterVerify, setPendingAfterVerify] = useState(null);
   const set = k => e => setF(p => ({ ...p, [k]: e.target.value }));
+  // Süresi dolmuş link gibi uyarılar ekran açıldıktan sonra gelebilir: "Şifremi unuttum" ekranında gösterilir
+  useEffect(() => { if (notice) { setMode("reset"); setErr(notice); setInfo(""); } }, [notice]);
   const go = m => { setMode(m); setErr(""); setInfo(""); };
 
   const run = async (fn) => {
@@ -148,6 +150,14 @@ export const CloudAuth = ({ stage = "signedOut", team = [], onReady, onCustomer,
   const doSetupCreate = () => run(async () => {
     if (!f.studio.trim()) throw new Error("Stüdyo adını girin.");
     await finishRegister();
+  });
+  const doNewPassword = () => run(async () => {
+    if (f.password.length < 6) throw new Error("Şifre en az 6 karakter olmalı.");
+    if (f.password !== f.password2) throw new Error("İki şifre aynı değil.");
+    await changePassword(f.password);
+    const s = await fetchMyStudio();
+    if (!s) { go("setup"); return; }
+    onReady(s);
   });
   const doReset = () => run(async () => {
     if (!f.email) throw new Error("E-posta adresinizi girin.");
@@ -241,6 +251,18 @@ export const CloudAuth = ({ stage = "signedOut", team = [], onReady, onCustomer,
       <div style={{ textAlign: "center", marginTop: 12 }}>
         <Link onClick={() => run(async () => { await resendSignupCode(f.email); setInfo("Kod tekrar gönderildi."); })}>Kodu tekrar gönder</Link>
       </div>
+    </Shell>
+  );
+
+  // E-postadaki şifre sıfırlama linkinden gelindi: yeni şifre belirlenir, ardından doğrudan stüdyoya girilir
+  if (mode === "newpass") return (
+    <Shell>
+      <Head icon="🔑" title="Yeni şifrenizi belirleyin" sub="Bundan sonra bu şifreyle telefondan ve bilgisayardan giriş yapacaksınız."/>
+      <Msg>{err}</Msg>
+      <Input icon="🔒" label="Yeni şifre (en az 6 karakter)" type="password" value={f.password} onChange={set("password")} placeholder="••••••••" autoComplete="new-password"/>
+      <Input icon="🔒" label="Yeni şifre (tekrar)" type="password" value={f.password2} onChange={set("password2")} placeholder="••••••••" autoComplete="new-password"
+        onKeyDown={e => e.key === "Enter" && doNewPassword()}/>
+      <Btn busy={busy} onClick={doNewPassword}>Şifremi Kaydet ve Giriş Yap</Btn>
     </Shell>
   );
 

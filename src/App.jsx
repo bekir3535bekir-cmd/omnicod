@@ -4,7 +4,7 @@ import { Ic } from "./constants/icons";
 import { fmt, fmtDate, todayStr, uid } from "./utils/helpers";
 import { INIT } from "./constants/initialData";
 import { sb, fromDB, toDB, IS_DEV, IS_CLOUD } from "./services/supabase";
-import { getAuthSession, onAuthChange, fetchMyStudio, signOut, fetchProofData, fetchStaffData } from "./services/auth";
+import { getAuthSession, onAuthChange, fetchMyStudio, signOut, fetchProofData, fetchStaffData, consumeAuthLink } from "./services/auth";
 import { initNotifications, showSystemNotification } from "./services/notify";
 import { getModules, DESKTOP_GROUPS, STAFF_SCREENS } from "./constants/modules";
 import { CloudAuth } from "./components/modules/CloudAuth";
@@ -86,6 +86,7 @@ export default function App() {
     try { const q = new URLSearchParams(window.location.search); if (q.get("proof") || q.get("portal")) return "customer"; } catch(e) {}
     return "checking";
   });
+  const [authNotice, setAuthNotice] = useState("");   // ör. süresi dolmuş şifre sıfırlama linki
   const [skipStaffPick, setSkipStaffPick] = useState(false);
   const [showGece, setShowGece] = useState(false);
 
@@ -195,6 +196,11 @@ export default function App() {
     if (!IS_CLOUD || cloudPhase === "customer") return;
     let alive = true;
     (async () => {
+      // E-postadaki şifre sıfırlama linkiyle gelindiyse önce yeni şifre belirletilir
+      const link = await consumeAuthLink().catch(() => null);
+      if (!alive) return;
+      if (link?.type === "recovery") { setCloudPhase("recovery"); return; }
+      if (link?.error) setAuthNotice(link.error);
       const session = await getAuthSession();
       if (!alive) return;
       if (!session) { goSignedOut(); return; }
@@ -423,10 +429,10 @@ export default function App() {
   // ── Bulut: giriş / stüdyo kurulumu ──
   if (IS_CLOUD && role !== "musteri") {
     if (cloudPhase === "checking") return <Splash text="Oturum kontrol ediliyor..."/>;
-    if (cloudPhase === "signedOut" || cloudPhase === "noStudio") return (
+    if (cloudPhase === "signedOut" || cloudPhase === "noStudio" || cloudPhase === "recovery") return (
       <>
       <style>{makeCSS(T)}</style>
-      <CloudAuth key={cloudPhase} stage={cloudPhase} onReady={s => s ? applyStudio(s) : null}
+      <CloudAuth key={cloudPhase} stage={cloudPhase} notice={authNotice} onReady={s => s ? applyStudio(s) : null}
         onCustomer={id => { setMusteriClientId(id); setRole("musteri"); setCloudPhase("customer"); }}
         onLogout={goSignedOut}/>
       </>

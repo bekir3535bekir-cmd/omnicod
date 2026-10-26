@@ -87,6 +87,28 @@ export const resetPassword = async (email) => {
   if (error) throw new Error(authErrorText(error));
 };
 
+// E-postadaki linkle gelindiyse (şifre sıfırlama vb.) adresteki oturum bilgisini al ve adresten temizle.
+// Dönüş: null (link yok) | { type: "recovery" | ... } | { error: "..." }
+// Link yalnızca bir kez okunur; sonuç tekrar çağrılarda da aynı döner (açılış kodu iki kez çalışsa bile)
+let authLinkResult = null;
+export const consumeAuthLink = () => (authLinkResult ||= readAuthLink());
+const readAuthLink = async () => {
+  if (!supabase || typeof location === "undefined" || !location.hash || location.hash.length < 2) return null;
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (!h.get("access_token") && !h.get("error") && !h.get("error_code")) return null;
+  const clean = () => { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} };
+  if (h.get("error") || h.get("error_code")) {
+    clean();
+    return { error: h.get("error_code") === "otp_expired"
+      ? "Bu linkin süresi dolmuş veya daha önce kullanılmış. Aşağıdan yeni bir şifre sıfırlama linki isteyin."
+      : "Link geçersiz. Aşağıdan yeni bir şifre sıfırlama linki isteyin." };
+  }
+  const { error } = await supabase.auth.setSession({ access_token: h.get("access_token"), refresh_token: h.get("refresh_token") || "" });
+  clean();
+  if (error) return { error: authErrorText(error) };
+  return { type: h.get("type") || "" };
+};
+
 export const changePassword = async (newPassword) => {
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) throw new Error(authErrorText(error));
