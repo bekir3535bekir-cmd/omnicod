@@ -7,7 +7,7 @@ import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, Pag
 import { UsageBadge, ProGate } from "../common/ProGate";
 import { MusteriPortali } from "./AppModals";
 import { canAddClient } from "../../services/plan";
-import { sb, fromDB, toDB } from "../../services/supabase";
+import { sb, IS_DEV, fromDB, toDB } from "../../services/supabase";
 import { getPass, setPass, getSession, saveSession, clearSession, getStudioInfo, getCurrentStudio } from "../../services/storage";
 
 // Canvas tabanlı hafifleştirilmiş resim sıkıştırma (localStorage taşmasını önler)
@@ -1106,7 +1106,7 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
                     <div style={{ fontSize: 26, marginBottom: 6 }}>🖼️</div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: T.text2 }}>Henüz Fotoğraf Yüklenmedi</div>
                     <div style={{ fontSize: 11, color: T.text3, marginTop: 4, lineHeight: 1.5 }}>
-                      Cihazınızdan çekim fotoğraflarını seçip yükleyin veya test etmek için tek tıkla 8 örnek fotoğraf ekleyin.
+                      Müşterinin seçim yapabilmesi için çekim fotoğraflarını cihazınızdan yükleyin.
                     </div>
                   </div>
                 )}
@@ -1122,7 +1122,7 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
                 />
 
                 {/* Yükleme Butonları */}
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom: 10 }}>
+                <div style={{ display:"grid", gridTemplateColumns: IS_DEV ? "1fr 1fr" : "1fr", gap:8, marginBottom: 10 }}>
                   <button
                     onClick={() => photoInputRef.current?.click()}
                     disabled={uploadingPhotos}
@@ -1144,25 +1144,28 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
                     {uploadingPhotos ? "⏳ Yükleniyor..." : "📁 Fotoğraf Yükle"}
                   </button>
 
-                  <button
-                    onClick={handleAddSamplePhotos}
-                    style={{
-                      background: T.card2,
-                      border: `1px solid ${T.border}`,
-                      borderRadius: 12,
-                      padding: "11px 8px",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: T.text2,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 6
-                    }}
-                  >
-                    ✨ 8 Örnek Foto
-                  </button>
+                  {/* Örnek fotoğraflar yalnızca yerel deneme sürümünde */}
+                  {IS_DEV && (
+                    <button
+                      onClick={handleAddSamplePhotos}
+                      style={{
+                        background: T.card2,
+                        border: `1px solid ${T.border}`,
+                        borderRadius: 12,
+                        padding: "11px 8px",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: T.text2,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6
+                      }}
+                    >
+                      ✨ 8 Örnek Foto
+                    </button>
+                  )}
                 </div>
 
                 {/* Müşteri Seçim & Paylaşım Aksiyonları */}

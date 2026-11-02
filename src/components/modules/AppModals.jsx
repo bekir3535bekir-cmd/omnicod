@@ -1026,19 +1026,6 @@ export const NotDefteri = ({ data, setData, role }) => {
 // MÜŞTERİ PORTALİ
 // ════════════════════════════════════════════════
 
-const DEMO_WEDDING_PHOTOS = [
-  { id: "p1", title: "Gelin_ve_Damat_Portre_01.jpg", url: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80" },
-  { id: "p2", title: "Dugun_Mekan_Genis_Aci_02.jpg", url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80" },
-  { id: "p3", title: "Gelinlik_Detay_03.jpg", url: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=800&q=80" },
-  { id: "p4", title: "Gelin_Cicegi_Detay_04.jpg", url: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=800&q=80" },
-  { id: "p5", title: "Damat_Yaka_Cicegi_05.jpg", url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80" },
-  { id: "p6", title: "Goz_Goze_Gulumseme_06.jpg", url: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=800&q=80" },
-  { id: "p7", title: "Gelin_Tulu_Ucusu_07.jpg", url: "https://images.unsplash.com/photo-1606800052052-a08af7148866?auto=format&fit=crop&w=800&q=80" },
-  { id: "p8", title: "Alyans_ve_Davetiye_08.jpg", url: "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?auto=format&fit=crop&w=800&q=80" },
-  { id: "p9", title: "Dugun_Dansi_09.jpg", url: "https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&w=800&q=80" },
-  { id: "p10", title: "Gun_Batimi_Siluet_10.jpg", url: "https://images.unsplash.com/photo-1544077960-604201fe74bc?auto=format&fit=crop&w=800&q=80" },
-];
-
 export const MusteriPortali = ({ data, clientId, onLogout }) => {
   const client = (data?.clients || []).find(c => String(c.id) === String(clientId)) || (data?.clients || [])[0] || { id: "demo_client", name: "Melis & Can", type: "Düğün Çekimi", date: "2026-10-15" };
 
@@ -1052,7 +1039,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
 
   // Fotoğraf Seçim & Proofing Sistemi
   const rawPhotos = (data?.gallery || []).filter(g => String(g.clientId) === String(client?.id));
-  const clientPhotos = rawPhotos.length > 0 ? rawPhotos : DEMO_WEDDING_PHOTOS;
+  const clientPhotos = rawPhotos;
   const clientSelectionsKey = `studyo_selections_${client.id}`;
   const [selections, setSelections] = useState(() => {
     try {

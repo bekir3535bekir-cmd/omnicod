@@ -558,7 +558,7 @@ export default function App() {
     ajanda:       gated("ajanda",      <Ajanda data={data} setData={setData} role={role} plan={plan} setActive={setActive} staffId={staffId}/>),
     musteriler:   gated("musteriler",  <Musteriler data={viewData} setData={setData} role={role} plan={plan} setActive={setActive} initialClientId={pendingClientId} onConsumeInitialClientId={()=>setPendingClientId(null)}/>),
     muhasebe:     adminOnly(gated("muhasebe",    <Muhasebe data={viewData} setData={setData} role={role}/>)),
-    more:         <MoreMenu setActive={setActive} themeKey={themeKey} setThemeKey={setThemeKey} darkMode={currentTheme.isDark} role={role} plan={plan} onLogout={handleLogout}/>,
+    more:         <MoreMenu data={data} setActive={setActive} themeKey={themeKey} setThemeKey={setThemeKey} darkMode={currentTheme.isDark} role={role} plan={plan} onLogout={handleLogout}/>,
     takvim:       gated("takvim",      <Takvim data={viewData} setActive={setActive} setDetailClientId={setPendingClientId}/>),
     paketler:     adminOnly(gated("paketler",    <Paketler data={viewData} setData={setData} role={role}/>)),
     sablonlar:    gated("sablonlar",   <Sablonlar data={viewData}/>),

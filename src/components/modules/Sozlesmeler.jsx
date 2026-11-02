@@ -40,10 +40,9 @@ export const Sozlesmeler = ({ data, setData, role }) => {
   <meta charset="utf-8"/>
   <title>Sözleşme — ${c.clientName}</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap');
-    body { font-family: 'Inter', sans-serif; color: #1a1a1a; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; }
+    body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; color: #1a1a1a; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; }
     .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #B8953F; padding-bottom: 20px; margin-bottom: 30px; }
-    .title { font-family: 'Playfair Display', serif; font-size: 24px; color: #B8953F; margin: 0; }
+    .title { font-family: 'Playfair Display', Georgia, serif; font-size: 24px; color: #B8953F; margin: 0; }
     .badge { background: #fdf6e7; border: 1px solid #B8953F; color: #8A6E2E; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; }
     table { width: 100%; border-collapse: collapse; margin: 20px 0; }
     th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }

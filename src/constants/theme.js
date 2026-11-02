@@ -111,7 +111,8 @@ export const setGlobalTheme = (theme) => {
   T = theme;
 };
 
-export const FONT = `@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700;800&display=swap');`;
+// Yazı tipleri src/fonts.css içinden yüklenir (Google'a istek gitmez)
+export const FONT = ``;
 
 export const makeCSS = (theme) => `
 ${FONT}

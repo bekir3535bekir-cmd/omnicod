@@ -66,5 +66,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Sesli asistanla randevu ve not eklerken sesinizi dinlemek için mikrofon kullanılır. Ses kaydı saklanmaz.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Söylediklerinizi yazıya çevirmek için konuşma tanıma kullanılır. Ses, tanıma için Apple'a gönderilebilir; STÜDYOM ses kaydı saklamaz.</string>
 </dict>
 </plist>

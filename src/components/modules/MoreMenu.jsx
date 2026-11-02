@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Capacitor } from "@capacitor/core";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
@@ -8,10 +9,12 @@ import { PlanBadge, LockBadge } from "../common/ProGate";
 import { PLANS, getTrialInfo, planHasFeature, requiredPlanFor } from "../../services/plan";
 import { sb, fromDB, toDB, IS_CLOUD } from "../../services/supabase";
 import { changePassword, deleteMyAccount } from "../../services/auth";
+import { exportStudioData } from "../../services/exportData";
+import { LEGAL } from "../../constants/legal";
 import { getModules, MORE_ORDER } from "../../constants/modules";
 import { getPass, setPass, getSession, saveSession, clearSession, getStudioProfile, saveStudioProfile, getCurrentStudio } from "../../services/storage";
 
-export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogout, themeKey = "sapphire", setThemeKey }) => {
+export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, onLogout, themeKey = "sapphire", setThemeKey }) => {
   const [showSifre,   setShowSifre]   = useState(false);
   const [showAyarlar, setShowAyarlar] = useState(false);
   const [sForm, setSForm] = useState({ adminPass:"", personelPass:"" });
@@ -32,6 +35,15 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
     setSilBusy(true);
     try { await deleteMyAccount(); onLogout && onLogout(); }
     catch (e) { alert("Hesap silinemedi: " + e.message); setSilBusy(false); }
+  };
+  const [exporting, setExporting] = useState(false);
+  const doExport = async () => {
+    setExporting(true);
+    try {
+      const name = await exportStudioData(data, getStudioProfile()?.studio || getCurrentStudio()?.name);
+      if (!Capacitor.isNativePlatform()) alert(`✅ ${name} indirildi.`);
+    } catch (e) { alert("Veriler indirilemedi: " + (e.message || e)); }
+    finally { setExporting(false); }
   };
   const saveSifre = async () => {
     // Bulutta: giriş yapan kişinin kendi hesap şifresi değişir (tüm cihazlarda geçerli)
@@ -215,6 +227,20 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
             </Card>
           )}
 
+          {/* Verilerimi İndir — yalnızca yönetici; hesap silmeden önce kayıtları saklamak için */}
+          {role==="admin" && (
+            <Card onClick={exporting ? undefined : doExport}
+              style={{ display:"flex", alignItems:"center", gap:14, padding:16, cursor: exporting ? "wait" : "pointer" }}>
+              <div style={{ background:T.green+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
+                <Ic n="doc" s={20} c={T.greenL}/>
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontWeight:600, fontSize:15 }}>{exporting ? "Hazırlanıyor..." : "Verilerimi İndir (Excel)"}</div>
+                <div style={{ fontSize:12, color:T.text3, marginTop:2 }}>Müşteri, randevu, muhasebe ve tüm kayıtlar tek dosyada</div>
+              </div>
+            </Card>
+          )}
+
           {/* Hesabımı Sil (bulut) — App Store / Google Play zorunluluğu */}
           {IS_CLOUD && (
             <Card onClick={()=>{ setShowAyarlar(false); setSilOnay(""); setTimeout(()=>setShowSil(true),200); }}
@@ -228,6 +254,13 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
               </div>
             </Card>
           )}
+
+          {/* Yasal metinler — mağazalar ve KVKK için uygulama içinden erişilebilir olmalı */}
+          <div style={{ display:"flex", flexWrap:"wrap", justifyContent:"center", gap:"6px 14px", fontSize:12.5 }}>
+            {[[LEGAL.gizlilik, "Gizlilik ve KVKK"], [LEGAL.sartlar, "Kullanım Şartları"], [LEGAL.destek, "Destek: destek@gesblabs.com"]].map(([href, label]) => (
+              <a key={href} href={href} target="_blank" rel="noopener noreferrer" style={{ color:T.goldL, fontWeight:600, textDecoration:"none" }}>{label}</a>
+            ))}
+          </div>
 
           {/* Uygulama bilgisi */}
           <div style={{ textAlign:"center", padding:"14px 0 6px 0", borderTop:`1px solid ${T.border}` }}>
@@ -285,7 +318,7 @@ export const MoreMenu = ({ setActive, darkMode, setDarkMode, role, plan, onLogou
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           <div style={{ background:T.red+"14", border:`1px solid ${T.red}44`, borderRadius:12, padding:"12px 14px", fontSize:13, color:T.text2, lineHeight:1.6 }}>
             {role==="admin"
-              ? <>⚠️ Bu işlem <b>geri alınamaz</b>. Hesabınızla birlikte <b>stüdyonuz, tüm müşteri, randevu, muhasebe kayıtları</b> ve <b>personel hesapları</b> kalıcı olarak silinir.</>
+              ? <>⚠️ Bu işlem <b>geri alınamaz</b>. Hesabınızla birlikte <b>stüdyonuz, tüm müşteri, randevu, muhasebe kayıtları</b> ve <b>personel hesapları</b> kalıcı olarak silinir. Muhasebe kayıtlarını yasal süre boyunca saklamanız gerekebilir; silmeden önce <b>Ayarlar → Verilerimi İndir</b> ile Excel olarak indirin.</>
               : <>⚠️ Bu işlem <b>geri alınamaz</b>. Personel hesabınız silinir; stüdyonun verileri etkilenmez.</>}
           </div>
           <div style={{ fontSize:12.5, color:T.text3 }}>Onaylamak için aşağıya <b>SİL</b> yazın.</div>

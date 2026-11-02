@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from "react";
 import { T } from "../../constants/theme";
 import { LoginShell } from "../common/LoginShell";
+import { LEGAL } from "../../constants/legal";
 import {
   signIn, signUp, signOut, verifySignupCode, resendSignupCode, resetPassword,
   fetchMyStudio, createStudio, setMyTeamId, saveStudioProfileRemote, findClientId, currentUser, changePassword,
@@ -96,6 +97,20 @@ const Head = ({ icon, title, sub, onBack }) => (
 
 const Shell = ({ children }) => <LoginShell>{children}</LoginShell>;
 
+// Yasal metinler tarayıcıda açılır (uygulama içinde kalmaz)
+const A = ({ href, children }) => (
+  <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: T.goldL, fontWeight: 600, textDecoration: "underline" }}>{children}</a>
+);
+const LegalFooter = () => (
+  <div style={{ textAlign: "center", fontSize: 11, color: T.text3, marginTop: 14 }}>
+    <A href={LEGAL.gizlilik}>Gizlilik ve KVKK</A> · <A href={LEGAL.sartlar}>Kullanım Şartları</A>
+  </div>
+);
+// Kısa bilgilendirme notu (personel ve müşteri ekranları)
+const Note = ({ children }) => (
+  <div style={{ fontSize: 11, color: T.text3, marginTop: 12, lineHeight: 1.6, textAlign: "center" }}>{children}</div>
+);
+
 /**
  * stage: "signedOut" | "noStudio" | "pickStaff"
  * onReady(studio)  — giriş + stüdyo hazır
@@ -108,6 +123,7 @@ export const CloudAuth = ({ stage = "signedOut", team = [], notice = "", onReady
   const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
   const [pendingAfterVerify, setPendingAfterVerify] = useState(null);
+  const [accepted, setAccepted] = useState(false);
   const set = k => e => setF(p => ({ ...p, [k]: e.target.value }));
   // Süresi dolmuş link gibi uyarılar ekran açıldıktan sonra gelebilir: "Şifremi unuttum" ekranında gösterilir
   useEffect(() => { if (notice) { setMode("reset"); setErr(notice); setInfo(""); } }, [notice]);
@@ -136,6 +152,7 @@ export const CloudAuth = ({ stage = "signedOut", team = [], notice = "", onReady
   const doRegister = () => run(async () => {
     if (!f.studio.trim() || !f.name.trim() || !f.email || !f.password) throw new Error("Lütfen tüm alanları doldurun.");
     if (f.password.length < 6) throw new Error("Şifre en az 6 karakter olmalı.");
+    if (!accepted) throw new Error("Devam etmek için Kullanım Şartları'nı ve Gizlilik Politikası'nı okuyup kabul edin.");
     const r = await signUp(f.email, f.password, { name: f.name.trim() });
     if (r.needsVerification) { setPendingAfterVerify("register"); go("verify"); setInfo("E-postanıza doğrulama kodu gönderildi."); return; }
     await finishRegister();
@@ -223,6 +240,14 @@ export const CloudAuth = ({ stage = "signedOut", team = [], notice = "", onReady
       <Input icon="👤" label="Adınız Soyadınız" value={f.name} onChange={set("name")} placeholder="Yetkili kişi"/>
       <Input icon="✉️" label="E-posta" type="email" value={f.email} onChange={set("email")} placeholder="ornek@mail.com" autoComplete="email"/>
       <Input icon="🔒" label="Şifre (en az 6 karakter)" type="password" value={f.password} onChange={set("password")} placeholder="••••••••" autoComplete="new-password"/>
+      <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, color: T.text2, lineHeight: 1.55, marginBottom: 14, cursor: "pointer" }}>
+        <input type="checkbox" checked={accepted} onChange={e => setAccepted(e.target.checked)}
+          style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0, accentColor: T.gold, cursor: "pointer" }}/>
+        <span>
+          <A href={LEGAL.sartlar}>Kullanım Şartları</A>'nı okudum, kabul ediyorum. Kişisel verilerimin{" "}
+          <A href={LEGAL.gizlilik}>Gizlilik Politikası ve KVKK Aydınlatma Metni</A>'nde anlatıldığı şekilde işleneceği konusunda bilgilendirildim.
+        </span>
+      </label>
       <Btn busy={busy} onClick={doRegister}><span>👑</span> Stüdyomu Oluştur</Btn>
       <RoleLinks go={go}/>
     </Shell>
@@ -239,6 +264,7 @@ export const CloudAuth = ({ stage = "signedOut", team = [], notice = "", onReady
       <div style={{ fontSize: 12, color: T.text3, marginTop: 12, lineHeight: 1.6, textAlign: "center" }}>
         Şifrenizi unuttuysanız stüdyo yöneticiniz uygulamadaki Ekip bölümünden yeni şifre belirleyebilir.
       </div>
+      <Note>Adınız ve telefon numaranız, çalıştığınız stüdyo tarafından iş takibi için işlenir. Ayrıntılar: <A href={LEGAL.gizlilik}>Gizlilik ve KVKK</A></Note>
     </Shell>
   );
 
@@ -284,6 +310,7 @@ export const CloudAuth = ({ stage = "signedOut", team = [], notice = "", onReady
       <Input icon="👤" label="Ad Soyad" value={f.name} onChange={set("name")} placeholder="Ad Soyad"/>
       <Input icon="📱" label="Telefonunuzun son 4 hanesi" placeholder="••••" value={f.phone4} onChange={e => setF(p => ({ ...p, phone4: e.target.value.replace(/\D/g, "").slice(0, 4) }))} inputMode="numeric"/>
       <Btn busy={busy} onClick={doCustomer}><span>📸</span> Portala Giriş Yap</Btn>
+      <Note>Bilgileriniz ve fotoğraflarınız çekimi yapan stüdyo tarafından işlenir; STÜDYOM yalnızca stüdyo adına saklar. Ayrıntılar: <A href={LEGAL.gizlilik}>Gizlilik ve KVKK</A></Note>
     </Shell>
   );
 
@@ -297,6 +324,7 @@ export const CloudAuth = ({ stage = "signedOut", team = [], notice = "", onReady
       <Btn busy={busy} onClick={doLogin}><span>📸</span> Stüdyoya Giriş Yap</Btn>
       <div style={{ textAlign: "right", marginTop: 6 }}><Link onClick={() => go("reset")}>Şifremi unuttum</Link></div>
       <RoleLinks go={go}/>
+      <LegalFooter/>
     </Shell>
   );
 };

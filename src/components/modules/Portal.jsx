@@ -3,7 +3,7 @@ import { T } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmtDate, uid, publicAppUrl } from "../../utils/helpers";
 import { Card, Pill, GoldButton, Field, PageHeader } from "../common";
-import { sb, toDB } from "../../services/supabase";
+import { sb, IS_DEV, toDB } from "../../services/supabase";
 import { getStudioInfo, getCurrentStudio } from "../../services/storage";
 
 // Örnek gerçek düğün & dış çekim fotoğrafları (Hızlı test ve demo için)
@@ -226,7 +226,7 @@ export const Portal = ({ data, setData }) => {
                 style={{ display: "none" }}
               />
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: IS_DEV ? "1fr 1fr" : "1fr", gap: 10, marginBottom: 12 }}>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
@@ -248,25 +248,28 @@ export const Portal = ({ data, setData }) => {
                   <span>📁</span> {uploading ? "Yükleniyor..." : "Cihazdan Fotoğraf Seç"}
                 </button>
 
-                <button
-                  onClick={handleAddDemoPhotos}
-                  style={{
-                    background: "rgba(255,255,255,0.06)",
-                    border: `1px solid ${T.border}`,
-                    color: T.text,
-                    borderRadius: 14,
-                    padding: "12px",
-                    fontWeight: 600,
-                    fontSize: 12.5,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6
-                  }}
-                >
-                  <span>🎲</span> Örnek 10 Kare Ekle
-                </button>
+                {/* Örnek fotoğraflar yalnızca yerel deneme sürümünde */}
+                {IS_DEV && (
+                  <button
+                    onClick={handleAddDemoPhotos}
+                    style={{
+                      background: "rgba(255,255,255,0.06)",
+                      border: `1px solid ${T.border}`,
+                      color: T.text,
+                      borderRadius: 14,
+                      padding: "12px",
+                      fontWeight: 600,
+                      fontSize: 12.5,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6
+                    }}
+                  >
+                    <span>🎲</span> Örnek 10 Kare Ekle
+                  </button>
+                )}
               </div>
 
               {clientPhotos.length > 0 && (
