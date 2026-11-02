@@ -76,8 +76,8 @@ export const PlanYonetimi = ({ data, plan, setPlanState }) => {
             return (
               <div key={p} style={{ background: isCurrent ? c + "14" : T.card, border: `1.5px solid ${isCurrent ? c : T.border}`, borderRadius: 18, padding: 18, display: "flex", flexDirection: "column" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: l }}>{p === "pro" ? "👑 " : p === "standart" ? "⭐ " : ""}{PLANS[p].label}</div>
-                  {isCurrent && <span style={{ fontSize: 10.5, fontWeight: 800, color: c, background: c + "22", borderRadius: 6, padding: "3px 7px" }}>MEVCUT</span>}
+                  <div style={{ fontSize: 18, fontWeight: 800, color: l }}>{p === "pro" ? "" : p === "standart" ? "" : ""}{PLANS[p].label}</div>
+                  {isCurrent && <span style={{ fontSize: 10.5, fontWeight: 800, color: c, background: T.flat ? T.card2 : c + "22", borderRadius: 6, padding: "3px 7px" }}>MEVCUT</span>}
                 </div>
                 {!native && (
                   <div style={{ marginTop: 8 }}>
@@ -87,9 +87,9 @@ export const PlanYonetimi = ({ data, plan, setPlanState }) => {
                 )}
                 <div style={{ fontSize: 12.5, color: T.text3, marginTop: 6, lineHeight: 1.5, minHeight: 36 }}>{PLANS[p].desc}</div>
                 <div style={{ fontSize: 12, color: T.text2, marginTop: 10, lineHeight: 1.7 }}>
-                  ✓ {countOf(p)} / {featureIds.length} özellik<br/>
-                  ✓ {limitText(p, "clients", "müşteri")}, {limitText(p, "appointments", "randevu").toLowerCase()}<br/>
-                  ✓ {limitText(p, "team", "personel")}
+                  {countOf(p)} / {featureIds.length} özellik<br/>
+                  {limitText(p, "clients", "müşteri")}, {limitText(p, "appointments", "randevu").toLowerCase()}<br/>
+                  {limitText(p, "team", "personel")}
                 </div>
                 <div style={{ flex: 1 }}/>
                 {!native && p !== "basic" && higher && !isCurrent && (
@@ -120,7 +120,7 @@ export const PlanYonetimi = ({ data, plan, setPlanState }) => {
               <div key={f} style={{ display: "grid", gridTemplateColumns: "1fr repeat(3, 72px)", alignItems: "center", padding: "10px 14px",
                 borderBottom: i < featureIds.length - 1 ? `1px solid ${T.border}` : "none", background: mine ? "transparent" : T.card2 }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: mine ? T.text : T.text2 }}>{!mine && "🔒 "}{FEATURES[f].label}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: mine ? T.text : T.text2 }}>{!mine && ""}{FEATURES[f].label}</div>
                   <div style={{ fontSize: 11, color: T.text3, marginTop: 2 }}>{FEATURES[f].desc}</div>
                 </div>
                 {PLAN_ORDER.map(p => (
@@ -143,7 +143,7 @@ export const PlanYonetimi = ({ data, plan, setPlanState }) => {
         {/* Test araçları — yalnızca geliştirme sunucusunda */}
         {import.meta.env.DEV && (
           <Card style={{ padding: 14, background: T.card2, border: `1px dashed ${T.border}` }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: T.text, marginBottom: 8 }}>🧪 Test araçları (yalnızca geliştirme)</div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: T.text, marginBottom: 8 }}>Test araçları (yalnızca geliştirme)</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button onClick={() => { resetTrial(); setPlanState(getPlan()); }} style={{ fontSize: 12, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.card, color: T.text2 }}>Denemeyi başlat</button>
               <button onClick={() => { expireTrial(); setPlanState(getPlan()); }} style={{ fontSize: 12, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.card, color: T.text2 }}>Basic yap</button>

@@ -187,7 +187,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
     setShowEditClient(false);
     setEditClientForm(null);
     setEditError(null);
-    setToast({ message: `✅ ${editClientForm.name} bilgileri güncellendi!`, type: "success" });
+    setToast({ message: `${editClientForm.name} bilgileri güncellendi!`, type: "success" });
   };
 
   // Müşteriye Fotoğraf Yükleme
@@ -219,7 +219,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
           ...prev,
           gallery: [...(prev.gallery || []), ...newItems]
         }));
-        setToast({ message: `📸 ${newItems.length} fotoğraf başarıyla yüklendi!`, type: "success" });
+        setToast({ message: `${newItems.length} fotoğraf başarıyla yüklendi!`, type: "success" });
       }
     } catch(err) {
       console.error("Fotoğraf yükleme hatası:", err);
@@ -252,7 +252,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
       ...prev,
       gallery: [...(prev.gallery || []), ...newItems]
     }));
-    setToast({ message: `✨ ${newItems.length} örnek fotoğraf yüklendi!`, type: "success" });
+    setToast({ message: `${newItems.length} örnek fotoğraf yüklendi!`, type: "success" });
   };
 
   // Fotoğrafı Silme
@@ -262,7 +262,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
       gallery: (prev.gallery || []).filter(g => g.id !== photoId)
     }));
     sb.delete("gallery", photoId).catch(()=>{});
-    setToast({ message: "🗑️ Fotoğraf silindi.", type: "success" });
+    setToast({ message: "Fotoğraf silindi.", type: "success" });
   };
 
   const save = () => {
@@ -302,7 +302,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
       const remD = new Date(trigDate + "T12:00:00");
       remD.setDate(remD.getDate() - 7);
       anniversaryReminders.push({
-        id: uid(), title: `💍 ${form.name} — Yıldönümü (${annDD}/${annMM})`,
+        id: uid(), title: `${form.name} — Yıldönümü (${annDD}/${annMM})`,
         linkedType: "manual", linkedId: newClientId,
         triggerDate: remD.toISOString().split("T")[0],
         triggerTime: "09:00", daysBefore: 7, done: false, recurring: true
@@ -369,7 +369,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
     setShowAdd(false);
     setForm(F);
     setAddError(null);
-    setToast({ message: `🎉 ${clientName} başarıyla kaydedildi!`, type: "success" });
+    setToast({ message: `${clientName} başarıyla kaydedildi!`, type: "success" });
   };
 
   const savePayment = () => {
@@ -383,7 +383,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
 
     let newReminder = null;
     if(pForm.type==="Ödeme Sözü" && pForm.promiseDate) {
-      newReminder = { id:uid(), title:`💰 ${detail.name} — Ödeme Günü`,
+      newReminder = { id:uid(), title:`${detail.name} — Ödeme Günü`,
         linkedType:"payment", triggerDate:pForm.promiseDate,
         triggerTime:"09:00", daysBefore:0, done:false };
     }
@@ -407,7 +407,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
     if(newIncome) sb.upsert("incomes", toDB.incomes(newIncome)).catch(()=>{});
     setShowPayment(false);
     setPForm(FP);
-    setToast({ message: `💰 ${fmt(amt)} ödeme başarıyla kaydedildi!`, type: "success" });
+    setToast({ message: `${fmt(amt)} ödeme başarıyla kaydedildi!`, type: "success" });
   };
 
   const saveEditPayment = () => {
@@ -501,9 +501,9 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
 
   const SMART_FILTERS = [
     { id:"Tümü",            label:"Tümü" },
-    ...(isAdmin ? [{ id:"bekleyen_odeme",  label:"💰 Bekleyen Ödeme" }] : []),
-    { id:"bekleyen_teslim", label:"📦 Bekleyen Teslim" },
-    { id:"tamamlandi",      label:"✅ Tamamlandı" },
+    ...(isAdmin ? [{ id:"bekleyen_odeme",  label:"Bekleyen Ödeme" }] : []),
+    { id:"bekleyen_teslim", label:"Bekleyen Teslim" },
+    { id:"tamamlandi",      label:"Tamamlandı" },
     ...data.packages.map(p=>({ id:p.name, label:p.name })),
   ];
 
@@ -606,10 +606,10 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
           <span style={{ fontSize:11, color:T.text3, fontWeight:600, flexShrink:0 }}>Sırala:</span>
           {[
             {id:"isim",      label:"A-Z"},
-            {id:"tarih",     label:"📅 Tarih"},
-            ...(isAdmin ? [{id:"fiyat_cok", label:"💰 ↓"}, {id:"fiyat_az",  label:"💰 ↑"}, {id:"kalan",     label:"⏳ Borç"}] : []),
-            {id:"tur",       label:"🎯 Tür"},
-            {id:"paket",     label:"📦 Paket"},
+            {id:"tarih",     label:"Tarih"},
+            ...(isAdmin ? [{id:"fiyat_cok", label:"💰 ↓"}, {id:"fiyat_az",  label:"💰 ↑"}, {id:"kalan",     label:"Borç"}] : []),
+            {id:"tur",       label:"Tür"},
+            {id:"paket",     label:"Paket"},
           ].map(s=>(
             <button key={s.id} onClick={()=>setSortBy(s.id)}
               style={{ background:sortBy===s.id?T.gold+"33":"transparent",
@@ -638,7 +638,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
             <Card key={c.id} onClick={()=>setDetailId(c.id)} style={{ marginBottom:12 }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
                 <div style={{ display:"flex", gap:12, alignItems:"center" }}>
-                  <div style={{ background:pkgColor+"22", borderRadius:99, width:48, height:48, flexShrink:0,
+                  <div style={{ background: T.flat ? T.card2 : pkgColor+"22", borderRadius:99, width:48, height:48, flexShrink:0,
                     display:"flex", alignItems:"center", justifyContent:"center",
                     ...NUM_FONT, fontSize:20, fontWeight:700, color:pkgColor }}>
                     {c.name.charAt(0).toUpperCase()}
@@ -698,7 +698,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
                       gap: 6
                     }}
                   >
-                    <span>💬</span> WhatsApp
+                    WhatsApp
                   </button>
                 </div>
               )}
@@ -738,7 +738,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
                     </div>
                   );
                 })}
-                {isComplete(c) && <Pill label="Tamamlandı ✓" color={T.greenL}/>}
+                {isComplete(c) && <Pill label="Tamamlandı" color={T.greenL}/>}
               </div>
               <div style={{ marginTop:12, display:"flex", justifyContent:"flex-end" }}>
                 <button onClick={(e)=>{ e.stopPropagation(); setDetailId(c.id); }}
@@ -773,7 +773,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
           </div>
 
           {/* İletişim bilgileri */}
-          {[["📧 E-Posta",detail.email||"—"],["🎯 Tür",detail.type],["📅 Etkinlik",fmtDate(detail.date)]].map(([l,v])=>(
+          {[["E-Posta",detail.email||"—"],["Tür",detail.type],["Etkinlik",fmtDate(detail.date)]].map(([l,v])=>(
             <div key={l} style={{ display:"flex", justifyContent:"space-between",
               borderBottom:`1px solid ${T.border}`, paddingBottom:12, marginBottom:12 }}>
               <span style={{ fontSize:13, color:T.text3 }}>{l}</span>
@@ -783,7 +783,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
           {/* Ek Günler */}
           {(detail.extraDates||[]).filter(Boolean).length > 0 && (
             <div style={{ borderBottom:`1px solid ${T.border}`, paddingBottom:12, marginBottom:12 }}>
-              <div style={{ fontSize:13, color:T.text3, marginBottom:8 }}>📅 Ek Günler</div>
+              <div style={{ fontSize:13, color:T.text3, marginBottom:8 }}>Ek Günler</div>
               <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
                 {detail.extraDates.filter(Boolean).map((d,i)=>(
                   <div key={i} style={{ background:T.card2, borderRadius:10, padding:"8px 12px",
@@ -797,19 +797,19 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
           {/* Telefon - WhatsApp ile */}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
             borderBottom:`1px solid ${T.border}`, paddingBottom:12, marginBottom:12 }}>
-            <span style={{ fontSize:13, color:T.text3 }}>📱 Telefon</span>
+            <span style={{ fontSize:13, color:T.text3 }}>Telefon</span>
             <div style={{ display:"flex", gap:8, alignItems:"center" }}>
               <span style={{ fontSize:14, fontWeight:500 }}>{detail.phone||"—"}</span>
               {detail.phone && (
                 <button onClick={()=>{
                   const ph = detail.phone.replace(/\D/g,"").replace(/^0/,"");
-                  const msg = `Merhaba ${detail.name.split(" ")[0]} hanım/bey 👋
+                  const msg = `Merhaba ${detail.name.split(" ")[0]} hanım/bey
 
 ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olabiliriz?`;
                   window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`,"_blank");
                 }} style={{ background:"#25D36622", border:"1px solid #25D36644", borderRadius:8,
                   padding:"4px 10px", fontSize:12, color:"#25D366", fontWeight:600 }}>
-                  WA 💬
+                  WA
                 </button>
               )}
             </div>
@@ -817,14 +817,14 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
           {detail.anniversaryDate && (
             <div style={{ display:"flex", justifyContent:"space-between",
               borderBottom:`1px solid ${T.border}`, paddingBottom:12, marginBottom:12 }}>
-              <span style={{ fontSize:13, color:T.text3 }}>💍 Yıldönümü</span>
+              <span style={{ fontSize:13, color:T.text3 }}>Yıldönümü</span>
               <span style={{ fontSize:14, fontWeight:500 }}>{fmtDate(detail.anniversaryDate)}</span>
             </div>
           )}
           {detail.referralSource && (
             <div style={{ display:"flex", justifyContent:"space-between",
               borderBottom:`1px solid ${T.border}`, paddingBottom:12, marginBottom:12 }}>
-              <span style={{ fontSize:13, color:T.text3 }}>📣 Kaynak</span>
+              <span style={{ fontSize:13, color:T.text3 }}>Kaynak</span>
               <span style={{ fontSize:14, fontWeight:500, color:T.gold }}>
                 {detail.referralSource}{detail.referralName ? ` — ${detail.referralName}` : ""}
               </span>
@@ -890,8 +890,8 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
                       <span style={{ fontSize:14, fontWeight:700,
                         color:p.type==="Ödeme Alındı"?T.greenL:T.orangeL }}>{fmt(p.amount)}</span>
                     </div>
-                    {p.promiseDate && <div style={{ fontSize:11, color:T.orangeL }}>🗓 Söz: {fmtDate(p.promiseDate)}</div>}
-                    {p.note && <div style={{ fontSize:11, color:T.text3, marginTop:2 }}>📝 {p.note}</div>}
+                    {p.promiseDate && <div style={{ fontSize:11, color:T.orangeL }}>Söz: {fmtDate(p.promiseDate)}</div>}
+                    {p.note && <div style={{ fontSize:11, color:T.text3, marginTop:2 }}>{p.note}</div>}
                     <div style={{ fontSize:10, color:T.text3, marginTop:2 }}>Kayıt: {fmtDate(p.date)}</div>
                   </div>
                   {isAdmin && <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
@@ -916,7 +916,7 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
             <button onClick={isAdmin ? ()=>setEditTotal(String(detail.totalAmount||"")) : undefined}
               style={{ background:"transparent", border:`1px dashed ${T.border}`, borderRadius:10,
                 padding:"10px 14px", width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <span style={{ fontSize:12, color:T.text3 }}>✏️ Toplam tutarı düzelt</span>
+              <span style={{ fontSize:12, color:T.text3 }}>Toplam tutarı düzelt</span>
               <span style={{ ...NUM_FONT, fontSize:13, fontWeight:600, color:T.text2 }}>{fmt(detail.totalAmount)}</span>
             </button>
           </div>
@@ -950,7 +950,7 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
             {isComplete(detail) && (
               <div className="fade-in" style={{ background:T.green+"1A", border:`1px solid ${T.green}33`,
                 borderRadius:12, padding:"12px 16px", textAlign:"center", marginTop:8 }}>
-                <div style={{ fontSize:14, fontWeight:700, color:T.greenL }}>🎉 Tüm Süreç Tamamlandı!</div>
+                <div style={{ fontSize:14, fontWeight:700, color:T.greenL }}>Tüm Süreç Tamamlandı!</div>
                 <div style={{ fontSize:12, color:T.text3, marginTop:4 }}>Bu müşteri aktif listelerden çıkar.</div>
               </div>
             )}
@@ -1020,11 +1020,11 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
                       <span style={{ fontSize: 16 }}>💖</span>
                       <div style={{ fontSize: 12, fontWeight: 600, color: "#ff80ab" }}>
                         Müşteri {selectedCount} fotoğraf seçti!
-                        {coverPhoto && <span style={{ color: T.goldL, marginLeft: 6 }}>⭐ Kapak: {coverPhoto.title}</span>}
+                        {coverPhoto && <span style={{ color: T.goldL, marginLeft: 6 }}>Kapak: {coverPhoto.title}</span>}
                       </div>
                     </div>
                     <span style={{ fontSize: 11, background: "rgba(233,30,99,0.3)", padding: "2px 8px", borderRadius: 99, color: "#fff", fontWeight: 700 }}>
-                      ✓ Onaylandı
+                      Onaylandı
                     </span>
                   </div>
                 )}
@@ -1082,12 +1082,12 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
                           </button>
                           {isCover && (
                             <div style={{ position: "absolute", bottom: 4, left: 4, background: T.gold, color: "#000", padding: "2px 5px", borderRadius: 4, fontSize: 8, fontWeight: 800 }}>
-                              ⭐ KAPAK
+                              KAPAK
                             </div>
                           )}
                           {!isCover && isSelected && (
                             <div style={{ position: "absolute", bottom: 4, left: 4, background: "#e91e63", color: "#fff", padding: "2px 5px", borderRadius: 4, fontSize: 8, fontWeight: 800 }}>
-                              ❤️ SEÇİLDİ
+                              SEÇİLDİ
                             </div>
                           )}
                         </div>
@@ -1103,7 +1103,6 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
                     textAlign: "center",
                     marginBottom: 14
                   }}>
-                    <div style={{ fontSize: 26, marginBottom: 6 }}>🖼️</div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: T.text2 }}>Henüz Fotoğraf Yüklenmedi</div>
                     <div style={{ fontSize: 11, color: T.text3, marginTop: 4, lineHeight: 1.5 }}>
                       Müşterinin seçim yapabilmesi için çekim fotoğraflarını cihazınızdan yükleyin.
@@ -1141,7 +1140,7 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
                       gap: 6
                     }}
                   >
-                    {uploadingPhotos ? "⏳ Yükleniyor..." : "📁 Fotoğraf Yükle"}
+                    {uploadingPhotos ? "Yükleniyor..." : "Fotoğraf Yükle"}
                   </button>
 
                   {/* Örnek fotoğraflar yalnızca yerel deneme sürümünde */}
@@ -1163,7 +1162,7 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
                         gap: 6
                       }}
                     >
-                      ✨ 8 Örnek Foto
+                      8 Örnek Foto
                     </button>
                   )}
                 </div>
@@ -1188,7 +1187,7 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
                       boxShadow: "0 4px 16px rgba(233,30,99,0.35)"
                     }}
                   >
-                    ✨ Fotoğraf Seçimini Başlat (Müşteri Önizleme)
+                    Fotoğraf Seçimini Başlat (Müşteri Önizleme)
                   </button>
 
                   <div style={{ display:"flex", gap:8 }}>
@@ -1201,7 +1200,7 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
                           window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`,"_blank");
                         } else {
                           navigator.clipboard.writeText(proofUrl);
-                          setToast({ message: "🔗 Seçim linki panoya kopyalandı!", type: "success" });
+                          setToast({ message: "Seçim linki panoya kopyalandı!", type: "success" });
                         }
                       }}
                       style={{
@@ -1220,14 +1219,14 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
                         gap: 6
                       }}
                     >
-                      💬 WhatsApp ile Gönder
+                      WhatsApp ile Gönder
                     </button>
 
                     <button
                       onClick={() => {
                         if (!proofUrl) return alert("Müşteri linki oluşturulamadı: web sürümünün adresi ayarlanmamış (.env → VITE_PUBLIC_URL).");
                         navigator.clipboard.writeText(proofUrl);
-                        setToast({ message: "📋 Seçim linki panoya kopyalandı!", type: "success" });
+                        setToast({ message: "Seçim linki panoya kopyalandı!", type: "success" });
                       }}
                       style={{
                         background: T.card2,
@@ -1245,7 +1244,7 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
                       }}
                       title="Linki Kopyala"
                     >
-                      📋 Kopyala
+                      Kopyala
                     </button>
                   </div>
                 </div>
@@ -1256,7 +1255,7 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
           {isAdmin && <GoldButton label="Ödeme / Söz Ekle" icon="money" onClick={()=>setShowPayment(true)} full/>}
           {detail.notes && (
             <div style={{ marginTop:14, background:T.card2, borderRadius:12, padding:"12px 14px",
-              fontSize:13, color:T.text2, lineHeight:1.6 }}>📝 {detail.notes}</div>
+              fontSize:13, color:T.text2, lineHeight:1.6 }}>{detail.notes}</div>
           )}
           {/* WhatsApp Hızlı Eylemler */}
           {detail.phone && (() => {
@@ -1265,23 +1264,21 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
             return (
               <div style={{ display:"flex", gap:10, marginTop:14 }}>
                 <button onClick={()=>{
-                  const msg = `Merhaba ${detail.name.split(" ")[0]} hanım/bey 👋
+                  const msg = `Merhaba ${detail.name.split(" ")[0]} hanım/bey Size ${fmtDate(detail.date)} tarihli ${detail.type} çekiminizle ilgili bilgi vermek istedik.
 
-Size ${fmtDate(detail.date)} tarihli ${detail.type} çekiminizle ilgili bilgi vermek istedik.
-
-${getStudioInfo().unvan || ""} 📸`;
+${getStudioInfo().unvan || ""}`;
                   window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`,"_blank");
                 }} style={{ flex:1, background:"#25D36622", border:"1px solid #25D36644", borderRadius:12,
                   padding:"12px 8px", fontSize:12, fontWeight:700, color:"#25D366" }}>
-                  💬 Hızlı Mesaj
+                  Hızlı Mesaj
                 </button>
                 {kalan > 0 && isAdmin && (
                   <button onClick={()=>{
-                    const msg = `Merhaba ${detail.name.split(" ")[0]} hanım/bey 👋\n\n${fmtDate(detail.date)} tarihli çekiminize ait ${fmtTL(kalan)} tutarındaki ödemenizin hatırlatmasını yapmak istedik.\n\nKolaylıklar dileriz 🙏\n${getStudioInfo().unvan || "Stüdyomuz"} 📸`;
+                    const msg = `Merhaba ${detail.name.split(" ")[0]} hanım/bey 👋\n\n${fmtDate(detail.date)} tarihli çekiminize ait ${fmtTL(kalan)} tutarındaki ödemenizin hatırlatmasını yapmak istedik.\n\nKolaylıklar dileriz 🙏\n${getStudioInfo().unvan || "Stüdyomuz"}`;
                     window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`,"_blank");
                   }} style={{ flex:1, background:T.orange+"22", border:`1px solid ${T.orange}44`, borderRadius:12,
                     padding:"12px 8px", fontSize:12, fontWeight:700, color:T.orangeL }}>
-                    💰 Ödeme Hatırlatma
+                    Ödeme Hatırlatma
                   </button>
                 )}
               </div>
@@ -1329,7 +1326,7 @@ ${getStudioInfo().unvan || ""} 📸`;
             {/* Ek Günler */}
             <div>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                <span style={{ fontSize:12, color:T.text2, fontWeight:500 }}>📅 Ek Günler</span>
+                <span style={{ fontSize:12, color:T.text2, fontWeight:500 }}>Ek Günler</span>
                 <button onClick={()=>setEditClientForm(p=>({...p, extraDates:[...(p.extraDates||[]),""]}))}
                   style={{ background:T.gold+"22", border:`1px solid ${T.gold}44`, borderRadius:8,
                     padding:"5px 12px", fontSize:12, color:T.goldL, fontWeight:600 }}>
@@ -1357,7 +1354,7 @@ ${getStudioInfo().unvan || ""} 📸`;
                 placeholder="Müşteri adı..." options={["", ...data.clients.map(c=>c.name)]}/>
             )}
             {(editClientForm.type==="Düğün"||editClientForm.type==="Nişan") && (
-              <DatePicker label="💍 Evlilik / Etkinlik Yıldönümü" value={editClientForm.anniversaryDate||""} onChange={ecf("anniversaryDate")}/>
+              <DatePicker label="Evlilik / Etkinlik Yıldönümü" value={editClientForm.anniversaryDate||""} onChange={ecf("anniversaryDate")}/>
             )}
           </div>
         </BottomSheet>
@@ -1367,7 +1364,6 @@ ${getStudioInfo().unvan || ""} 📸`;
       {confirmDelete && detail && (
         <BottomSheet title="Müşteriyi Sil" onClose={()=>setConfirmDelete(false)}>
             <div style={{ textAlign:"center", padding:"8px 0 16px" }}>
-              <div style={{ fontSize:40, marginBottom:12 }}>⚠️</div>
               <div style={{ fontWeight:600, fontSize:16, marginBottom:8 }}>{detail.name}</div>
               <div style={{ fontSize:13, color:T.text3, lineHeight:1.6, marginBottom:24 }}>
                 Bu müşteri kalıcı olarak silinecek.<br/>Tüm ödeme geçmişi de silinir.<br/>Bu işlem geri alınamaz!
@@ -1405,7 +1401,7 @@ ${getStudioInfo().unvan || ""} 📸`;
                   }));
                   setConfirmDelete(false);
                   setDetailId(null);
-                  setToast({ message: `🗑️ ${detail.name} silindi.`, type: "success" });
+                  setToast({ message: `${detail.name} silindi.`, type: "success" });
                 }}
                   style={{ flex:1, background:T.red, border:"none", borderRadius:14,
                     padding:"14px", fontSize:15, fontWeight:700, color:"#fff" }}>
@@ -1422,7 +1418,7 @@ ${getStudioInfo().unvan || ""} 📸`;
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
             <div style={{ background:T.orange+"1A", border:`1px solid ${T.orange}33`, borderRadius:12,
               padding:"12px 14px", fontSize:13, color:T.orangeL }}>
-              ⚠️ Tutarı veya notu düzeltebilirsin.
+              Tutarı veya notu düzeltebilirsin.
             </div>
             <div>
               <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:10 }}>İşlem Türü</div>
@@ -1433,7 +1429,7 @@ ${getStudioInfo().unvan || ""} 📸`;
                       color:editPayment.type===t?(t==="Ödeme Alındı"?T.greenL:T.orangeL):T.text2,
                       border:`1px solid ${editPayment.type===t?(t==="Ödeme Alındı"?T.green:T.orange)+"66":T.border}`,
                       borderRadius:12, padding:"12px 8px", fontSize:13, fontWeight:600 }}>
-                    {t==="Ödeme Alındı"?"✅ Ödeme Alındı":"🗓 Ödeme Sözü"}
+                    {t==="Ödeme Alındı"?"Ödeme Alındı":"Ödeme Sözü"}
                   </button>
                 ))}
               </div>
@@ -1491,7 +1487,7 @@ ${getStudioInfo().unvan || ""} 📸`;
                       color:pForm.type===t?(t==="Ödeme Alındı"?T.greenL:T.orangeL):T.text2,
                       border:`1px solid ${pForm.type===t?(t==="Ödeme Alındı"?T.green:T.orange)+"66":T.border}`,
                       borderRadius:12, padding:"12px 8px", fontSize:13, fontWeight:600, textAlign:"center" }}>
-                    {t==="Ödeme Alındı"?"✅ Ödeme Alındı":"🗓 Ödeme Sözü"}
+                    {t==="Ödeme Alındı"?"Ödeme Alındı":"Ödeme Sözü"}
                   </button>
                 ))}
               </div>
@@ -1503,7 +1499,7 @@ ${getStudioInfo().unvan || ""} 📸`;
             )}
             {pForm.type==="Ödeme Sözü" && (
               <DatePicker label="Söz Verilen Tarih" value={pForm.promiseDate} onChange={pf("promiseDate")}
-                note="Hatırlatıcı otomatik eklenecek 🔔"/>
+                note="Hatırlatıcı otomatik eklenecek"/>
             )}
             <Field label="Not" value={pForm.note} onChange={pf("note")} textarea rows={2} placeholder="Nasıl ödeyecek, ne konuştunuz..."/>
             <div style={{ background:T.card2, borderRadius:12, padding:14 }}>
@@ -1615,7 +1611,7 @@ ${getStudioInfo().unvan || ""} 📸`;
             {/* Ek Günler */}
             <div>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                <span style={{ fontSize:12, color:T.text2, fontWeight:500 }}>📅 Ek Günler</span>
+                <span style={{ fontSize:12, color:T.text2, fontWeight:500 }}>Ek Günler</span>
                 <button onClick={()=>setForm(p=>({...p, extraDates:[...(p.extraDates||[]),""]}))}
                   style={{ background:T.gold+"22", border:`1px solid ${T.gold}44`, borderRadius:8,
                     padding:"5px 12px", fontSize:12, color:T.goldL, fontWeight:600 }}>
@@ -1647,7 +1643,7 @@ ${getStudioInfo().unvan || ""} 📸`;
                 placeholder="Müşteri adı..." options={["", ...data.clients.map(c=>c.name)]}/>
             )}
             {(form.type==="Düğün"||form.type==="Nişan") && (
-              <DatePicker label="💍 Evlilik / Etkinlik Yıldönümü" value={form.anniversaryDate} onChange={f("anniversaryDate")}
+              <DatePicker label="Evlilik / Etkinlik Yıldönümü" value={form.anniversaryDate} onChange={f("anniversaryDate")}
                 note="Her yıl otomatik hatırlatıcı oluşturulur"/>
             )}
           </div>
@@ -1704,7 +1700,7 @@ ${getStudioInfo().unvan || ""} 📸`;
                 cursor: "pointer"
               }}
             >
-              ✕ Kapat
+              Kapat
             </button>
           </div>
           <div style={{ flex: 1 }}>

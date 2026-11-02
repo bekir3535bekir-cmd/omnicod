@@ -4,75 +4,70 @@
 // ════════════════════════════════════════════════
 import React, { useState, useEffect } from "react";
 import { T } from "../../constants/theme";
-import { LoginShell } from "../common/LoginShell";
+import { LoginShell, C } from "../common/LoginShell";
 import { LEGAL } from "../../constants/legal";
+import { Ic } from "../../constants/icons";
 import {
   signIn, signUp, signOut, verifySignupCode, resendSignupCode, resetPassword,
   fetchMyStudio, createStudio, setMyTeamId, saveStudioProfileRemote, findClientId, currentUser, changePassword,
 } from "../../services/auth";
 
-// Görünüm: eski giriş ekranıyla aynı (kamera vizörü, odaklanan diyafram, cam kart)
-const inputStyle = { background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 14, padding: "13px 14px",
-  color: T.text, fontSize: 14, outline: "none", width: "100%", boxSizing: "border-box", transition: "border 0.2s" };
+// Görünüm: Grafit — koyu nötr form, ince çizgili alanlar, beyaz ana buton
+const ACCENT = C.accent;
+const inputStyle = { background: C.field, border: `1px solid ${C.line}`, borderRadius: 10, padding: "12px 14px",
+  color: C.text, fontSize: 14.5, outline: "none", width: "100%", boxSizing: "border-box", transition: "border-color 0.15s" };
 
 const Input = ({ label, icon, ...p }) => (
   <label style={{ display: "block", marginBottom: 14 }}>
-    <div style={{ fontSize: 12, color: T.text3, marginBottom: 6, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
-      {icon && <span>{icon}</span>} {label}
-    </div>
-    <input {...p} style={inputStyle}/>
+    <div style={{ fontSize: 13, fontWeight: 500, color: C.text2, marginBottom: 6 }}>{label}</div>
+    <input {...p} style={inputStyle}
+      onFocus={e => (e.target.style.borderColor = C.lineHover)} onBlur={e => (e.target.style.borderColor = C.line)}/>
   </label>
 );
 const Btn = ({ children, busy, variant = "primary", ...p }) => (
   <button {...p} disabled={busy || p.disabled}
     style={variant === "primary" ? {
-      width: "100%", border: "none", borderRadius: 14, padding: "14px", fontSize: 14.5, fontWeight: 800, color: "#FFFFFF",
-      background: `linear-gradient(135deg, ${T.goldL} 0%, ${T.gold} 50%, ${T.goldD} 100%)`, boxShadow: `0 8px 24px ${T.gold}45`,
-      letterSpacing: "0.5px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 4,
+      width: "100%", border: "none", borderRadius: 12, padding: "13px", fontSize: 14.5, fontWeight: 600, color: C.onAccent,
+      background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 6,
       cursor: busy ? "wait" : "pointer", opacity: busy ? 0.7 : 1,
     } : {
-      width: "100%", borderRadius: 14, padding: "13px", fontSize: 13.5, fontWeight: 700, marginTop: 4,
-      background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, color: T.text2, cursor: "pointer",
+      width: "100%", borderRadius: 12, padding: "12px", fontSize: 14, fontWeight: 500, marginTop: 6,
+      background: "transparent", border: `1px solid ${C.line}`, color: C.text, cursor: "pointer",
     }}>
     {busy ? "Lütfen bekleyin..." : children}
   </button>
 );
 const Link = ({ children, onClick }) => (
-  <button type="button" onClick={onClick} style={{ background: "none", border: "none", color: T.goldL, fontSize: 12.5, fontWeight: 600, cursor: "pointer", padding: 4 }}>{children}</button>
+  <button type="button" onClick={onClick} style={{ background: "none", border: "none", color: C.accentL, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "4px 0" }}>{children}</button>
 );
 const Msg = ({ kind = "err", children }) => children ? (
-  <div style={{ fontSize: 12, lineHeight: 1.5, borderRadius: 10, padding: "9px 12px", marginBottom: 12, textAlign: "center",
-    color: kind === "err" ? T.redL : T.greenL, background: (kind === "err" ? T.red : T.green) + "18",
-    border: `1px solid ${(kind === "err" ? T.red : T.green)}33` }}>{kind === "err" ? "⚠️ " : ""}{children}</div>
+  <div style={{ fontSize: 13, lineHeight: 1.5, padding: "9px 12px", marginBottom: 14, borderRadius: 8,
+    color: kind === "err" ? "#FDA4AF" : "#6EE7B7", background: kind === "err" ? "rgba(244,63,94,0.10)" : "rgba(16,185,129,0.10)",
+    border: `1px solid ${kind === "err" ? "rgba(244,63,94,0.28)" : "rgba(16,185,129,0.28)"}` }}>{children}</div>
 ) : null;
 
-// Giriş Yap / 7 Gün Ücretsiz sekmeleri
+// Giriş Yap / 1 Ay Ücretsiz: başlık + alt satırda diğerine geçiş
 const Tabs = ({ mode, go }) => (
-  <div style={{ display: "flex", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 4, marginBottom: 20 }}>
-    {[["login", "Giriş Yap", 1], ["register", "👑 7 Gün Ücretsiz", 1.2]].map(([m, label, flex]) => {
-      const on = mode === m;
-      return (
-        <button key={m} type="button" onClick={() => go(m)}
-          style={{ flex, padding: "10px 0", borderRadius: 12, fontSize: on ? 13 : 12, fontWeight: on ? 700 : 600, cursor: "pointer",
-            color: on ? "#FFFFFF" : T.goldL,
-            background: on ? "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 100%)" : "transparent",
-            border: on ? "1px solid rgba(255,255,255,0.25)" : "1px solid transparent",
-            boxShadow: on ? "0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3)" : "none" }}>
-          {label}
-        </button>
-      );
-    })}
+  <div style={{ marginBottom: 26 }}>
+    <div style={{ fontSize: 28, fontWeight: 700, color: C.text, letterSpacing: "-0.03em" }}>
+      {mode === "login" ? "Tekrar hoş geldiniz" : "Stüdyonuzu oluşturun"}
+    </div>
+    <div style={{ fontSize: 13.5, color: C.text2, marginTop: 6 }}>
+      {mode === "login"
+        ? <>Hesabınız yok mu? <Link onClick={() => go("register")}>1 ay ücretsiz deneyin</Link></>
+        : <>Zaten hesabınız var mı? <Link onClick={() => go("login")}>Giriş yapın</Link></>}
+    </div>
   </div>
 );
 
 // Personel / Müşteri geçiş bağlantıları
 const RoleLinks = ({ go }) => (
-  <div style={{ display: "flex", gap: 8, marginTop: 18, paddingTop: 16, borderTop: `1px solid ${T.border}` }}>
-    {[["personel", "👤", "Personel Girişi"], ["musteri", "📸", "Müşteri Portalı"]].map(([m, ic, label]) => (
+  <div style={{ display: "flex", gap: 8, marginTop: 22, paddingTop: 18, borderTop: `1px solid ${C.line}` }}>
+    {[["personel", "users", "Personel girişi"], ["musteri", "image", "Müşteri portalı"]].map(([m, ic, label]) => (
       <button key={m} type="button" onClick={() => go(m)}
-        style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid ${T.border}`, borderRadius: 12, padding: "10px 6px",
-          color: T.text2, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-        <span>{ic}</span> {label}
+        style={{ flex: 1, background: "transparent", border: `1px solid ${C.line}`, borderRadius: 12, padding: "11px 6px",
+          color: C.text, fontSize: 13, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+        <Ic n={ic} s={15} c={C.text}/> {label}
       </button>
     ))}
   </div>
@@ -80,18 +75,16 @@ const RoleLinks = ({ go }) => (
 
 // Alt ekran başlığı (geri düğmeli)
 const Head = ({ icon, title, sub, onBack }) => (
-  <div style={{ marginBottom: 18 }}>
+  <div style={{ marginBottom: 22 }}>
     {onBack && (
       <button type="button" onClick={onBack}
-        style={{ background: "none", border: "none", color: T.text3, fontSize: 12.5, fontWeight: 600, cursor: "pointer", padding: 0, marginBottom: 14 }}>
-        ← Geri
+        style={{ background: "none", border: "none", color: C.text2, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0, marginBottom: 18,
+          display: "flex", alignItems: "center", gap: 6 }}>
+        <Ic n="back" s={15} c={C.text}/> Geri
       </button>
     )}
-    <div style={{ textAlign: "center" }}>
-      {icon && <div style={{ fontSize: 30, marginBottom: 8 }}>{icon}</div>}
-      <div style={{ fontSize: 16, fontWeight: 700, color: T.text }}>{title}</div>
-      {sub && <div style={{ fontSize: 12, color: T.text3, marginTop: 4, lineHeight: 1.5 }}>{sub}</div>}
-    </div>
+    <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em", color: C.text }}>{title}</div>
+    {sub && <div style={{ fontSize: 13.5, color: C.text2, marginTop: 6, lineHeight: 1.55 }}>{sub}</div>}
   </div>
 );
 
@@ -99,16 +92,16 @@ const Shell = ({ children }) => <LoginShell>{children}</LoginShell>;
 
 // Yasal metinler tarayıcıda açılır (uygulama içinde kalmaz)
 const A = ({ href, children }) => (
-  <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: T.goldL, fontWeight: 600, textDecoration: "underline" }}>{children}</a>
+  <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: C.text2, fontWeight: 500, textDecoration: "underline", textDecorationColor: C.text3, textUnderlineOffset: 2 }}>{children}</a>
 );
 const LegalFooter = () => (
-  <div style={{ textAlign: "center", fontSize: 11, color: T.text3, marginTop: 14 }}>
+  <div style={{ textAlign: "center", fontSize: 11.5, color: C.text3, marginTop: 18 }}>
     <A href={LEGAL.gizlilik}>Gizlilik ve KVKK</A> · <A href={LEGAL.sartlar}>Kullanım Şartları</A>
   </div>
 );
 // Kısa bilgilendirme notu (personel ve müşteri ekranları)
 const Note = ({ children }) => (
-  <div style={{ fontSize: 11, color: T.text3, marginTop: 12, lineHeight: 1.6, textAlign: "center" }}>{children}</div>
+  <div style={{ fontSize: 11, color: C.text3, marginTop: 12, lineHeight: 1.6, textAlign: "center" }}>{children}</div>
 );
 
 /**
@@ -200,14 +193,14 @@ export const CloudAuth = ({ stage = "signedOut", team = [], notice = "", onReady
 
   if (mode === "pickStaff") return (
     <Shell>
-      <Head icon="👤" title="Siz kimsiniz?" sub="Ekip listesinden kendi adınızı seçin. Size atanan görevler ve bildirimler buna göre gösterilir."/>
+      <Head title="Siz kimsiniz?" sub="Ekip listesinden kendi adınızı seçin. Size atanan görevler ve bildirimler buna göre gösterilir."/>
       <Msg>{err}</Msg>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {team.map(m => (
           <button key={m.id} onClick={() => doPickStaff(m.id)} disabled={busy}
-            style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px 14px",
+            style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 10, padding: "12px 14px",
               color: T.text, fontSize: 14, fontWeight: 600, textAlign: "left", cursor: "pointer" }}>
-            {m.name} <span style={{ color: T.text3, fontWeight: 400, fontSize: 12 }}>{m.role}</span>
+            {m.name} <span style={{ color: C.text3, fontWeight: 400, fontSize: 12 }}>{m.role}</span>
           </button>
         ))}
       </div>
@@ -218,11 +211,11 @@ export const CloudAuth = ({ stage = "signedOut", team = [], notice = "", onReady
 
   if (mode === "setup") return (
     <Shell>
-      <Head icon="🏢" title="Stüdyo kurulumu" sub="Bu hesap henüz bir stüdyoya bağlı değil. Stüdyonuzun adını girerek kurulumu tamamlayın."/>
+      <Head title="Stüdyo kurulumu" sub="Bu hesap henüz bir stüdyoya bağlı değil. Stüdyonuzun adını girerek kurulumu tamamlayın."/>
       <Msg>{err}</Msg>
-      <Input icon="🏢" label="Stüdyo / Firma adı" value={f.studio} onChange={set("studio")} placeholder="Örn: Işık Fotoğrafçılık"/>
-      <Btn busy={busy} onClick={doSetupCreate}><span>👑</span> Stüdyoyu Oluştur</Btn>
-      <div style={{ fontSize: 12, color: T.text3, marginTop: 14, lineHeight: 1.6 }}>
+      <Input label="Stüdyo / Firma adı" value={f.studio} onChange={set("studio")} placeholder="Örn: Işık Fotoğrafçılık"/>
+      <Btn busy={busy} onClick={doSetupCreate}>Stüdyoyu Oluştur</Btn>
+      <div style={{ fontSize: 12, color: C.text3, marginTop: 14, lineHeight: 1.6 }}>
         Personel misiniz? Personel hesabını stüdyo yöneticiniz açar. Yöneticinizin verdiği telefon numarası ve şifreyle giriş yapın.
       </div>
       {logoutLink}
@@ -232,36 +225,36 @@ export const CloudAuth = ({ stage = "signedOut", team = [], notice = "", onReady
   if (mode === "register") return (
     <Shell>
       <Tabs mode="register" go={go}/>
-      <div style={{ fontSize: 12, color: T.text3, marginBottom: 14, lineHeight: 1.5, textAlign: "center" }}>
-        7 gün boyunca tüm Pro özellikler ücretsiz. Aynı hesapla telefondan ve bilgisayardan giriş yapabilirsiniz.
+      <div style={{ fontSize: 12, color: C.text3, marginBottom: 14, lineHeight: 1.5 }}>
+        1 ay boyunca tüm Pro özellikler ücretsiz. Aynı hesapla telefondan ve bilgisayardan giriş yapabilirsiniz.
       </div>
       <Msg>{err}</Msg>
-      <Input icon="🏢" label="Stüdyo / Firma adı" value={f.studio} onChange={set("studio")} placeholder="Örn: Işık Fotoğrafçılık"/>
-      <Input icon="👤" label="Adınız Soyadınız" value={f.name} onChange={set("name")} placeholder="Yetkili kişi"/>
-      <Input icon="✉️" label="E-posta" type="email" value={f.email} onChange={set("email")} placeholder="ornek@mail.com" autoComplete="email"/>
-      <Input icon="🔒" label="Şifre (en az 6 karakter)" type="password" value={f.password} onChange={set("password")} placeholder="••••••••" autoComplete="new-password"/>
-      <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, color: T.text2, lineHeight: 1.55, marginBottom: 14, cursor: "pointer" }}>
+      <Input label="Stüdyo / Firma adı" value={f.studio} onChange={set("studio")} placeholder="Örn: Işık Fotoğrafçılık"/>
+      <Input label="Adınız Soyadınız" value={f.name} onChange={set("name")} placeholder="Yetkili kişi"/>
+      <Input label="E-posta" type="email" value={f.email} onChange={set("email")} placeholder="ornek@mail.com" autoComplete="email"/>
+      <Input label="Şifre (en az 6 karakter)" type="password" value={f.password} onChange={set("password")} placeholder="••••••••" autoComplete="new-password"/>
+      <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, color: C.text2, lineHeight: 1.55, marginBottom: 14, cursor: "pointer" }}>
         <input type="checkbox" checked={accepted} onChange={e => setAccepted(e.target.checked)}
-          style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0, accentColor: T.gold, cursor: "pointer" }}/>
+          style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0, accentColor: ACCENT, cursor: "pointer" }}/>
         <span>
           <A href={LEGAL.sartlar}>Kullanım Şartları</A>'nı okudum, kabul ediyorum. Kişisel verilerimin{" "}
           <A href={LEGAL.gizlilik}>Gizlilik Politikası ve KVKK Aydınlatma Metni</A>'nde anlatıldığı şekilde işleneceği konusunda bilgilendirildim.
         </span>
       </label>
-      <Btn busy={busy} onClick={doRegister}><span>👑</span> Stüdyomu Oluştur</Btn>
+      <Btn busy={busy} onClick={doRegister}>Stüdyomu Oluştur</Btn>
       <RoleLinks go={go}/>
     </Shell>
   );
 
   if (mode === "personel") return (
     <Shell>
-      <Head icon="👤" title="Personel Girişi" sub="Personel hesabınızı stüdyo yöneticiniz oluşturur ve şifrenizi belirler." onBack={() => go("login")}/>
+      <Head title="Personel Girişi" sub="Personel hesabınızı stüdyo yöneticiniz oluşturur ve şifrenizi belirler." onBack={() => go("login")}/>
       <Msg>{err}</Msg>
-      <Input icon="📱" label="Telefon numaranız" type="tel" value={f.email} onChange={set("email")} placeholder="05xx xxx xx xx" autoComplete="username"/>
-      <Input icon="🔒" label="Şifre" type="password" value={f.password} onChange={set("password")} placeholder="••••••••" autoComplete="current-password"
+      <Input label="Telefon numaranız" type="tel" value={f.email} onChange={set("email")} placeholder="05xx xxx xx xx" autoComplete="username"/>
+      <Input label="Şifre" type="password" value={f.password} onChange={set("password")} placeholder="••••••••" autoComplete="current-password"
         onKeyDown={e => e.key === "Enter" && doLogin()}/>
-      <Btn busy={busy} onClick={doLogin}><span>👤</span> Personel Girişi Yap</Btn>
-      <div style={{ fontSize: 12, color: T.text3, marginTop: 12, lineHeight: 1.6, textAlign: "center" }}>
+      <Btn busy={busy} onClick={doLogin}>Personel Girişi Yap</Btn>
+      <div style={{ fontSize: 12, color: C.text3, marginTop: 12, lineHeight: 1.6, textAlign: "center" }}>
         Şifrenizi unuttuysanız stüdyo yöneticiniz uygulamadaki Ekip bölümünden yeni şifre belirleyebilir.
       </div>
       <Note>Adınız ve telefon numaranız, çalıştığınız stüdyo tarafından iş takibi için işlenir. Ayrıntılar: <A href={LEGAL.gizlilik}>Gizlilik ve KVKK</A></Note>
@@ -270,9 +263,9 @@ export const CloudAuth = ({ stage = "signedOut", team = [], notice = "", onReady
 
   if (mode === "verify") return (
     <Shell>
-      <Head icon="✉️" title="E-postanızı doğrulayın" sub={`${f.email} adresine gönderilen doğrulama kodunu girin.`} onBack={() => go("register")}/>
+      <Head title="E-postanızı doğrulayın" sub={`${f.email} adresine gönderilen doğrulama kodunu girin.`} onBack={() => go("register")}/>
       <Msg kind="ok">{info}</Msg><Msg>{err}</Msg>
-      <Input icon="🔑" label="Doğrulama kodu" value={f.otp} onChange={set("otp")} inputMode="numeric" placeholder="Kod"/>
+      <Input label="Doğrulama kodu" value={f.otp} onChange={set("otp")} inputMode="numeric" placeholder="Kod"/>
       <Btn busy={busy} onClick={doVerify}>Doğrula</Btn>
       <div style={{ textAlign: "center", marginTop: 12 }}>
         <Link onClick={() => run(async () => { await resendSignupCode(f.email); setInfo("Kod tekrar gönderildi."); })}>Kodu tekrar gönder</Link>
@@ -283,10 +276,10 @@ export const CloudAuth = ({ stage = "signedOut", team = [], notice = "", onReady
   // E-postadaki şifre sıfırlama linkinden gelindi: yeni şifre belirlenir, ardından doğrudan stüdyoya girilir
   if (mode === "newpass") return (
     <Shell>
-      <Head icon="🔑" title="Yeni şifrenizi belirleyin" sub="Bundan sonra bu şifreyle telefondan ve bilgisayardan giriş yapacaksınız."/>
+      <Head title="Yeni şifrenizi belirleyin" sub="Bundan sonra bu şifreyle telefondan ve bilgisayardan giriş yapacaksınız."/>
       <Msg>{err}</Msg>
-      <Input icon="🔒" label="Yeni şifre (en az 6 karakter)" type="password" value={f.password} onChange={set("password")} placeholder="••••••••" autoComplete="new-password"/>
-      <Input icon="🔒" label="Yeni şifre (tekrar)" type="password" value={f.password2} onChange={set("password2")} placeholder="••••••••" autoComplete="new-password"
+      <Input label="Yeni şifre (en az 6 karakter)" type="password" value={f.password} onChange={set("password")} placeholder="••••••••" autoComplete="new-password"/>
+      <Input label="Yeni şifre (tekrar)" type="password" value={f.password2} onChange={set("password2")} placeholder="••••••••" autoComplete="new-password"
         onKeyDown={e => e.key === "Enter" && doNewPassword()}/>
       <Btn busy={busy} onClick={doNewPassword}>Şifremi Kaydet ve Giriş Yap</Btn>
     </Shell>
@@ -294,22 +287,22 @@ export const CloudAuth = ({ stage = "signedOut", team = [], notice = "", onReady
 
   if (mode === "reset") return (
     <Shell>
-      <Head icon="🔑" title="Şifremi unuttum" sub="E-posta adresinize şifre sıfırlama bağlantısı gönderilir. Personelseniz şifrenizi yöneticiniz değiştirebilir." onBack={() => go("login")}/>
+      <Head title="Şifremi unuttum" sub="E-posta adresinize şifre sıfırlama bağlantısı gönderilir. Personelseniz şifrenizi yöneticiniz değiştirebilir." onBack={() => go("login")}/>
       <Msg kind="ok">{info}</Msg><Msg>{err}</Msg>
-      <Input icon="✉️" label="E-posta" type="email" value={f.email} onChange={set("email")} placeholder="ornek@mail.com"/>
+      <Input label="E-posta" type="email" value={f.email} onChange={set("email")} placeholder="ornek@mail.com"/>
       <Btn busy={busy} onClick={doReset}>Bağlantı Gönder</Btn>
     </Shell>
   );
 
   if (mode === "musteri") return (
     <Shell>
-      <Head icon="📸" title="Müşteri Portalı" sub="Stüdyonuzun gönderdiği linke tıklayarak da doğrudan girebilirsiniz." onBack={() => go("login")}/>
+      <Head title="Müşteri Portalı" sub="Stüdyonuzun gönderdiği linke tıklayarak da doğrudan girebilirsiniz." onBack={() => go("login")}/>
       <Msg>{err}</Msg>
-      <Input icon="🏢" label="Stüdyo kodu" value={f.code} placeholder="Örn: A1B2C3" autoCapitalize="characters"
+      <Input label="Stüdyo kodu" value={f.code} placeholder="Örn: A1B2C3" autoCapitalize="characters"
         onChange={e => setF(p => ({ ...p, code: e.target.value.replace(/[^0-9a-zA-Z]/g, "").slice(0, 6).toUpperCase() }))}/>
-      <Input icon="👤" label="Ad Soyad" value={f.name} onChange={set("name")} placeholder="Ad Soyad"/>
-      <Input icon="📱" label="Telefonunuzun son 4 hanesi" placeholder="••••" value={f.phone4} onChange={e => setF(p => ({ ...p, phone4: e.target.value.replace(/\D/g, "").slice(0, 4) }))} inputMode="numeric"/>
-      <Btn busy={busy} onClick={doCustomer}><span>📸</span> Portala Giriş Yap</Btn>
+      <Input label="Ad Soyad" value={f.name} onChange={set("name")} placeholder="Ad Soyad"/>
+      <Input label="Telefonunuzun son 4 hanesi" placeholder="••••" value={f.phone4} onChange={e => setF(p => ({ ...p, phone4: e.target.value.replace(/\D/g, "").slice(0, 4) }))} inputMode="numeric"/>
+      <Btn busy={busy} onClick={doCustomer}>Portala Giriş Yap</Btn>
       <Note>Bilgileriniz ve fotoğraflarınız çekimi yapan stüdyo tarafından işlenir; STÜDYOM yalnızca stüdyo adına saklar. Ayrıntılar: <A href={LEGAL.gizlilik}>Gizlilik ve KVKK</A></Note>
     </Shell>
   );
@@ -318,10 +311,10 @@ export const CloudAuth = ({ stage = "signedOut", team = [], notice = "", onReady
     <Shell>
       <Tabs mode="login" go={go}/>
       <Msg>{err}</Msg>
-      <Input icon="✉️" label="E-posta veya telefon" type="text" value={f.email} onChange={set("email")} placeholder="ornek@gmail.com" autoComplete="username"/>
-      <Input icon="🔒" label="Şifre" type="password" value={f.password} onChange={set("password")} placeholder="••••••••" autoComplete="current-password"
+      <Input label="E-posta veya telefon" type="text" value={f.email} onChange={set("email")} placeholder="ornek@gmail.com" autoComplete="username"/>
+      <Input label="Şifre" type="password" value={f.password} onChange={set("password")} placeholder="••••••••" autoComplete="current-password"
         onKeyDown={e => e.key === "Enter" && doLogin()}/>
-      <Btn busy={busy} onClick={doLogin}><span>📸</span> Stüdyoya Giriş Yap</Btn>
+      <Btn busy={busy} onClick={doLogin}>Stüdyoya Giriş Yap</Btn>
       <div style={{ textAlign: "right", marginTop: 6 }}><Link onClick={() => go("reset")}>Şifremi unuttum</Link></div>
       <RoleLinks go={go}/>
       <LegalFooter/>

@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════
-// PLAN SERVİSİ — Basic (ücretsiz) · Standart · Pro + 7 günlük Pro deneme
+// PLAN SERVİSİ — Basic (ücretsiz) · Standart · Pro + 1 ay ücretsiz Pro deneme
 // Hangi özelliğin hangi planda olduğu bu dosyadaki FEATURES listesinden yönetilir.
 // ════════════════════════════════════════════════
 
@@ -13,7 +13,7 @@ export const PLAN_ORDER = ["basic", "standart", "pro"];
 // ─── Plan Tanımları ──────────────────────────────
 export const PLANS = {
   trial: {
-    id: "trial", label: "Pro Deneme (7 Gün)", short: "Deneme", price: 0, level: 2,
+    id: "trial", label: "Pro Deneme (1 Ay)", short: "Deneme", price: 0, level: 2,
     limits: { appointments: Infinity, clients: Infinity, team: Infinity, reminders: Infinity, notes: Infinity },
   },
   basic: {
@@ -82,17 +82,18 @@ export const planHasFeature = (planId, featureId) => {
 export const requiredPlanFor = (featureId) => FEATURES[featureId]?.plan || "basic";
 export const featuresOfPlan = (planId) => Object.keys(FEATURES).filter(k => FEATURES[k].plan === planId);
 
-// ─── 7 Günlük Deneme Yönetimi ────────────────────
+// ─── Deneme Yönetimi: yeni hesaplar 1 ay tüm Pro özellikleri ücretsiz kullanır ───
+export const TRIAL_DAYS = 30;
 export const getTrialInfo = () => {
   try {
     let startStr = localStorage.getItem(PREFIX + "trial_start");
     if (!startStr) {
-      // İlk geliş: 7 günlük denemeyi otomatik başlat
+      // İlk geliş: denemeyi otomatik başlat
       startStr = new Date().toISOString();
       localStorage.setItem(PREFIX + "trial_start", startStr);
     }
     const start = new Date(startStr);
-    const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const end = new Date(start.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
     const now = new Date();
     const diffMs = end.getTime() - now.getTime();
     const daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
@@ -104,7 +105,7 @@ export const getTrialInfo = () => {
   }
 };
 
-// Test amaçlı denemeyi sıfırlama (7 gün baştan başlasın)
+// Test amaçlı denemeyi sıfırlama (süre baştan başlasın)
 export const resetTrial = () => {
   try {
     localStorage.setItem(PREFIX + "trial_start", new Date().toISOString());
@@ -136,7 +137,7 @@ export const getPlan = () => {
     }
     // 2. Açıkça Basic
     if (stored === "basic") return "basic";
-    // 3. İlk 7 gün: Pro deneme
+    // 3. İlk ay: Pro deneme
     if (getTrialInfo().isActive) return "trial";
     // 4. Deneme bitti, ücretli plan yok → Basic
     return "basic";

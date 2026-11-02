@@ -175,7 +175,7 @@ export const Muhasebe = ({ data, setData, role }) => {
 </div>
 
 <div>
-  <span class="fatura-no">📄 FATURA No: ${fNo}</span>
+  <span class="fatura-no">FATURA No: ${fNo}</span>
   <span style="margin-left:12px;font-size:12px;color:#888;">Tarih: ${today}</span>
 </div>
 
@@ -241,10 +241,10 @@ ${format==="detayli" ? `
   };
 
   const TABS = [
-    {id:"ozet",     label:"📊 Özet"},
-    {id:"grafik",   label:"📈 Grafik"},
-    {id:"islemler", label:"💰 İşlemler"},
-    {id:"vergi",    label:"🧾 Vergi & Fatura"},
+    {id:"ozet",     label:"Özet"},
+    {id:"grafik",   label:"Grafik"},
+    {id:"islemler", label:"İşlemler"},
+    {id:"vergi",    label:"Vergi & Fatura"},
   ];
 
   return (
@@ -311,7 +311,7 @@ ${format==="detayli" ? `
               {label:"Bekleyen",      val:fmt(data.clients.filter(c=>c.paid<c.totalAmount).reduce((s,c)=>s+(c.totalAmount-c.paid),0)), color:T.orangeL, icon:"⏳"},
             ].map(s=>(
               <div key={s.label} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:16, padding:14 }}>
-                <div style={{ fontSize:18, marginBottom:6 }}>{s.icon}</div>
+                {!T.flat && <div style={{ fontSize:18, marginBottom:6 }}>{s.icon}</div>}
                 <div style={{ ...NUM_FONT, fontSize:18, fontWeight:700, color:s.color }}>{s.val}</div>
                 <div style={{ fontSize:11, color:T.text3, marginTop:2 }}>{s.label}</div>
               </div>
@@ -398,7 +398,7 @@ ${format==="detayli" ? `
             : <>
               {fInc.map(i=>(
                 <div key={i.id} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:14, marginBottom:8, display:"flex", gap:12, alignItems:"center" }}>
-                  <div style={{ background:T.green+"1A", borderRadius:10, width:38, height:38, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <div style={{ background: T.flat ? T.card2 : T.green+"1A", borderRadius:10, width:38, height:38, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                     <span style={{ fontSize:16 }}>📥</span>
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
@@ -413,7 +413,7 @@ ${format==="detayli" ? `
               ))}
               {fExp.map(e=>(
                 <div key={e.id} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:14, marginBottom:8, display:"flex", gap:12, alignItems:"center" }}>
-                  <div style={{ background:T.red+"1A", borderRadius:10, width:38, height:38, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <div style={{ background: T.flat ? T.card2 : T.red+"1A", borderRadius:10, width:38, height:38, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                     <span style={{ fontSize:16 }}>📤</span>
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
@@ -445,7 +445,7 @@ ${format==="detayli" ? `
 
           {/* Yıllık gelir */}
           <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:12 }}>
-            <div style={{ fontSize:12, color:T.text3, marginBottom:4 }}>📊 {selYear} Yılı Toplam Gelir</div>
+            <div style={{ fontSize:12, color:T.text3, marginBottom:4 }}>{selYear} Yılı Toplam Gelir</div>
             <div style={{ ...NUM_FONT, fontSize:28, fontWeight:700, color:T.goldL }}>{fmt(yearInc)}</div>
           </div>
 
@@ -458,7 +458,7 @@ ${format==="detayli" ? `
               {label:"Net Kalan", val:fmt(Math.max(0,yearInc-gvTutar)), color:T.greenL, icon:"💚", sub:"Vergi sonrası"},
             ].map(s=>(
               <div key={s.label} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:14 }}>
-                <div style={{ fontSize:18, marginBottom:6 }}>{s.icon}</div>
+                {!T.flat && <div style={{ fontSize:18, marginBottom:6 }}>{s.icon}</div>}
                 <div style={{ ...NUM_FONT, fontSize:17, fontWeight:700, color:s.color }}>{s.val}</div>
                 <div style={{ fontSize:12, fontWeight:600, color:T.text, marginTop:2 }}>{s.label}</div>
                 <div style={{ fontSize:10, color:T.text3, marginTop:2 }}>{s.sub}</div>
@@ -468,7 +468,7 @@ ${format==="detayli" ? `
 
           {/* Gelir vergisi dilimi */}
           <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:16 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:T.text, marginBottom:12 }}>📐 Gelir Vergisi Dilimleri (2024)</div>
+            <div style={{ fontSize:13, fontWeight:700, color:T.text, marginBottom:12 }}>Gelir Vergisi Dilimleri (2024)</div>
             {[
               {label:"0 – 110.000",     rate:"15%", active:yearInc<=110000},
               {label:"110.000 – 230.000",rate:"20%", active:yearInc>110000&&yearInc<=230000},
@@ -487,10 +487,10 @@ ${format==="detayli" ? `
 
           {/* Fatura */}
           <div style={{ background:T.card, border:`1.5px solid ${T.gold}44`, borderRadius:16, padding:16, marginBottom:16 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:T.goldL, marginBottom:12 }}>📄 Fatura Oluştur</div>
+            <div style={{ fontSize:13, fontWeight:700, color:T.goldL, marginBottom:12 }}>Fatura Oluştur</div>
             <div style={{ fontSize:12, color:T.text3, marginBottom:10 }}>Format seç:</div>
             <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-              {[["basit","📋 Basit"],["detayli","🔍 Detaylı (KDV)"]].map(([v,l])=>(
+              {[["basit","Basit"],["detayli","Detaylı (KDV)"]].map(([v,l])=>(
                 <button key={v} onClick={()=>setFaturaFormat(v)}
                   style={{ flex:1, background:faturaFormat===v?T.gold+"22":"transparent",
                     border:`1.5px solid ${faturaFormat===v?T.gold:T.border}`,
@@ -521,7 +521,7 @@ ${format==="detayli" ? `
 
           {/* Uyarı notu */}
           <div style={{ background:T.orange+"1A", border:`1px solid ${T.orange}33`, borderRadius:12, padding:"12px 14px", fontSize:11, color:T.orangeL, lineHeight:1.7 }}>
-            ⚠️ Bu vergi hesaplamaları tahminidir. Kesin vergi için muhasebecine danışmanı öneririz.
+            Bu vergi hesaplamaları tahminidir. Kesin vergi için muhasebecine danışmanı öneririz.
           </div>
         </>}
 

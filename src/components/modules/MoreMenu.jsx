@@ -26,7 +26,7 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
     const clean = Object.fromEntries(Object.entries(firma).map(([k, v]) => [k, typeof v === "string" ? v.trim() : v]));
     saveStudioProfile(clean);
     setShowFirma(false);
-    alert("✅ Firma bilgileri kaydedildi. Sözleşme, fatura ve kartvizitte bu bilgiler kullanılacak.");
+    alert("Firma bilgileri kaydedildi. Sözleşme, fatura ve kartvizitte bu bilgiler kullanılacak.");
   };
   const [showSil, setShowSil] = useState(false);
   const [silOnay, setSilOnay] = useState("");
@@ -41,7 +41,7 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
     setExporting(true);
     try {
       const name = await exportStudioData(data, getStudioProfile()?.studio || getCurrentStudio()?.name);
-      if (!Capacitor.isNativePlatform()) alert(`✅ ${name} indirildi.`);
+      if (!Capacitor.isNativePlatform()) alert(`${name} indirildi.`);
     } catch (e) { alert("Veriler indirilemedi: " + (e.message || e)); }
     finally { setExporting(false); }
   };
@@ -52,14 +52,14 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
       try { await changePassword(sForm.adminPass); }
       catch (e) { alert("Şifre değiştirilemedi: " + e.message); return; }
       setShowSifre(false); setSForm({ adminPass:"", personelPass:"" });
-      alert("✅ Şifreniz değiştirildi. Diğer cihazlarda yeni şifreyle giriş yapın.");
+      alert("Şifreniz değiştirildi. Diğer cihazlarda yeni şifreyle giriş yapın.");
       return;
     }
     if(sForm.adminPass.length >= 4)    setPass("geses_admin_pass",    sForm.adminPass);
     if(sForm.personelPass.length >= 4) setPass("geses_personel_pass", sForm.personelPass);
     setShowSifre(false);
     setSForm({ adminPass:"", personelPass:"" });
-    alert("✅ Şifreler güncellendi!");
+    alert("Şifreler güncellendi!");
   };
 
   const isPro = plan === "pro";
@@ -70,9 +70,8 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
   const MODULES = getModules();
 
   const THEMES = [
-    { key: "sapphire", name: "Safir & Titanyum", sub: "Modern stüdyo koyu palet", icon: "💎", primary: "#3B82F6", bg: "#090D16" },
-    { key: "emerald",  name: "Zümrüt & Grafit",   sub: "Derin yeşil fotoğrafçı paleti", icon: "🌿", primary: "#10B981", bg: "#06100D" },
-    { key: "nordic",   name: "Nordic Aydınlık",  sub: "Ferah ve minimalist beyaz", icon: "🕊️", primary: "#2563EB", bg: "#F8FAFC" },
+    { key: "sapphire", name: "Safir",  sub: "Koyu lacivert", icon: "", primary: "#3B82F6", bg: "#090D16" },
+    { key: "nordic",   name: "Nordic", sub: "Açık, beyaz",   icon: "", primary: "#2563EB", bg: "#FFFFFF" },
   ];
 
   return (
@@ -82,7 +81,7 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
 
       {/* Plan Yönetim Kartı */}
       {isAdmin && <Card onClick={()=>setActive("planyonetimi")} style={{ marginBottom:14, padding:16, display:"flex", alignItems:"center", gap:14, borderColor:isPro?T.gold:isTrial?T.blue:T.border, background:isPro?T.gold+"12":isTrial?T.blue+"12":T.card, cursor:"pointer" }}>
-        <div style={{ fontSize:28 }}>{isPro?"👑":isTrial?"⏳":isStd?"⭐":"🆓"}</div>
+        {!T.flat && <div style={{ fontSize:28 }}>{isPro?"👑":isTrial?"⏳":isStd?"⭐":"🆓"}</div>}
         <div style={{ flex:1 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <span style={{ fontWeight:700, fontSize:15 }}>{isPro?"Pro Plan":isTrial?"Pro Deneme":isStd?"Standart Plan":"Basic Plan"}</span>
@@ -97,7 +96,7 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
 
       {isAdmin && MORE_ORDER.map(id => ({ id, ...MODULES[id] })).map(it=>(
         <Card key={it.id} onClick={()=>setActive(it.id)} style={{ marginBottom:10, display:"flex", gap:14, alignItems:"center", padding:16 }}>
-          <div style={{ background:it.color+"1A", borderRadius:14, padding:12, flexShrink:0 }}>
+          <div style={{ background: T.flat ? T.card2 : it.color+"1A", borderRadius:14, padding:12, flexShrink:0 }}>
             <Ic n={it.icon} s={22} c={it.color}/>
           </div>
           <div style={{ flex:1 }}>
@@ -113,7 +112,7 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
 
       {/* Ayarlar */}
       <Card onClick={()=>setShowAyarlar(true)} style={{ marginBottom:10, display:"flex", gap:14, alignItems:"center", padding:16 }}>
-        <div style={{ background:T.text3+"1A", borderRadius:14, padding:12, flexShrink:0 }}>
+        <div style={{ background: T.flat ? T.card2 : T.text3+"1A", borderRadius:14, padding:12, flexShrink:0 }}>
           <Ic n="settings" s={22} c={T.text2}/>
         </div>
         <div style={{ flex:1 }}>
@@ -135,7 +134,7 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
           {/* Tema Seçimi */}
           <div>
             <div style={{ fontSize:13, fontWeight:700, color:T.text, marginBottom:8, display:"flex", alignItems:"center", gap:6 }}>
-              <span>🎨 Stüdyo Renk Paleti</span>
+              <span>Stüdyo Renk Paleti</span>
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
               {THEMES.map(th => {
@@ -172,7 +171,7 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
                       <div style={{ width: 12, height: 12, borderRadius: "50%", background: th.primary, boxShadow: `0 0 8px ${th.primary}66` }} />
                       <div style={{ width: 12, height: 12, borderRadius: "50%", background: th.bg, border: `1px solid ${T.border}` }} />
                       {isSelected && (
-                        <div style={{ marginLeft: 4, width: 20, height: 20, borderRadius: "50%", background: T.gold, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 11, fontWeight: 900 }}>
+                        <div style={{ marginLeft: 4, width: 20, height: 20, borderRadius: "50%", background: T.gold, display: "flex", alignItems: "center", justifyContent: "center", color: T.onAccent, fontSize: 11, fontWeight: 900 }}>
                           ✓
                         </div>
                       )}
@@ -185,9 +184,9 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
 
           {/* Müşteri portalı kodu — müşteri elle girişte bu kodu yazar */}
           {role==="admin" && IS_CLOUD && getCurrentStudio()?.portal_code && (
-            <Card onClick={()=>{ try { navigator.clipboard.writeText(getCurrentStudio().portal_code); alert("✅ Stüdyo kodu kopyalandı."); } catch(e) {} }}
+            <Card onClick={()=>{ try { navigator.clipboard.writeText(getCurrentStudio().portal_code); alert("Stüdyo kodu kopyalandı."); } catch(e) {} }}
               style={{ display:"flex", alignItems:"center", gap:14, padding:16, cursor:"pointer" }}>
-              <div style={{ background:T.green+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
+              <div style={{ background: T.flat ? T.card2 : T.green+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
                 <Ic n="eye" s={20} c={T.greenL}/>
               </div>
               <div style={{ flex:1 }}>
@@ -201,7 +200,7 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
           {role==="admin" && (
             <Card onClick={openFirma}
               style={{ display:"flex", alignItems:"center", gap:14, padding:16, cursor:"pointer" }}>
-              <div style={{ background:T.blue+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
+              <div style={{ background: T.flat ? T.card2 : T.blue+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
                 <Ic n="users" s={20} c={T.blueL}/>
               </div>
               <div style={{ flex:1 }}>
@@ -216,7 +215,7 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
           {(role==="admin" || IS_CLOUD) && (
             <Card onClick={()=>{ setShowAyarlar(false); setTimeout(()=>setShowSifre(true),200); }}
               style={{ display:"flex", alignItems:"center", gap:14, padding:16, cursor:"pointer" }}>
-              <div style={{ background:T.red+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
+              <div style={{ background: T.flat ? T.card2 : T.red+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
                 <Ic n="warn" s={20} c={T.redL}/>
               </div>
               <div style={{ flex:1 }}>
@@ -231,7 +230,7 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
           {role==="admin" && (
             <Card onClick={exporting ? undefined : doExport}
               style={{ display:"flex", alignItems:"center", gap:14, padding:16, cursor: exporting ? "wait" : "pointer" }}>
-              <div style={{ background:T.green+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
+              <div style={{ background: T.flat ? T.card2 : T.green+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
                 <Ic n="doc" s={20} c={T.greenL}/>
               </div>
               <div style={{ flex:1 }}>
@@ -245,7 +244,7 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
           {IS_CLOUD && (
             <Card onClick={()=>{ setShowAyarlar(false); setSilOnay(""); setTimeout(()=>setShowSil(true),200); }}
               style={{ display:"flex", alignItems:"center", gap:14, padding:16, cursor:"pointer", borderColor:T.red+"44" }}>
-              <div style={{ background:T.red+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
+              <div style={{ background: T.flat ? T.card2 : T.red+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
                 <Ic n="trash" s={20} c={T.redL}/>
               </div>
               <div style={{ flex:1 }}>
@@ -289,10 +288,10 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
           <div style={{ background:T.orange+"1A", border:`1px solid ${T.orange}33`, borderRadius:12,
             padding:"12px 14px", fontSize:13, color:T.orangeL }}>
-            ⚠️ Şifreyi not almayı unutma! En az 4 karakter olmalı.
+            Şifreyi not almayı unutma! En az 4 karakter olmalı.
           </div>
           <div>
-            <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:8 }}>👑 Yeni Admin Şifresi</div>
+            <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:8 }}>Yeni Admin Şifresi</div>
             <input type="password" value={sForm.adminPass}
               onChange={e=>setSForm(p=>({...p,adminPass:e.target.value}))}
               placeholder="Boş bırakırsan değişmez"
@@ -300,7 +299,7 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
                 padding:"12px 14px", color:T.text, fontSize:14, width:"100%", outline:"none" }}/>
           </div>
           <div>
-            <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:8 }}>👤 Yeni Personel Şifresi</div>
+            <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:8 }}>Yeni Personel Şifresi</div>
             <input type="password" value={sForm.personelPass}
               onChange={e=>setSForm(p=>({...p,personelPass:e.target.value}))}
               placeholder="Boş bırakırsan değişmez"
@@ -318,8 +317,8 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           <div style={{ background:T.red+"14", border:`1px solid ${T.red}44`, borderRadius:12, padding:"12px 14px", fontSize:13, color:T.text2, lineHeight:1.6 }}>
             {role==="admin"
-              ? <>⚠️ Bu işlem <b>geri alınamaz</b>. Hesabınızla birlikte <b>stüdyonuz, tüm müşteri, randevu, muhasebe kayıtları</b> ve <b>personel hesapları</b> kalıcı olarak silinir. Muhasebe kayıtlarını yasal süre boyunca saklamanız gerekebilir; silmeden önce <b>Ayarlar → Verilerimi İndir</b> ile Excel olarak indirin.</>
-              : <>⚠️ Bu işlem <b>geri alınamaz</b>. Personel hesabınız silinir; stüdyonun verileri etkilenmez.</>}
+              ? <>Bu işlem <b>geri alınamaz</b>. Hesabınızla birlikte <b>stüdyonuz, tüm müşteri, randevu, muhasebe kayıtları</b> ve <b>personel hesapları</b> kalıcı olarak silinir. Muhasebe kayıtlarını yasal süre boyunca saklamanız gerekebilir; silmeden önce <b>Ayarlar → Verilerimi İndir</b> ile Excel olarak indirin.</>
+              : <>Bu işlem <b>geri alınamaz</b>. Personel hesabınız silinir; stüdyonun verileri etkilenmez.</>}
           </div>
           <div style={{ fontSize:12.5, color:T.text3 }}>Onaylamak için aşağıya <b>SİL</b> yazın.</div>
           <input value={silOnay} onChange={e=>setSilOnay(e.target.value)} placeholder="SİL"
@@ -340,17 +339,17 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
           <div style={{ fontSize:12, color:T.text3, lineHeight:1.6 }}>
             Bu bilgiler sözleşme, fatura, kartvizit ve müşteriye giden mesajlarda kullanılır.
           </div>
-          <div style={{ fontSize:13, fontWeight:700, color:T.text }}>🏢 Firma</div>
+          <div style={{ fontSize:13, fontWeight:700, color:T.text }}>Firma</div>
           <Field label="Firma / Stüdyo Adı (Unvan)" value={firma.studio||""} onChange={ff("studio")} placeholder="Örn: Işık Fotoğrafçılık"/>
           <Field label="Adres" value={firma.address||""} onChange={ff("address")} placeholder="Mahalle, cadde, ilçe / il"/>
           <Field label="Firma Telefonu" type="tel" value={firma.phone||""} onChange={ff("phone")} placeholder="05xx xxx xx xx"/>
           <Field label="E-posta" type="email" value={firma.email||""} onChange={ff("email")} placeholder="studyo@mail.com"/>
           <Field label="Instagram" value={firma.instagram||""} onChange={ff("instagram")} placeholder="@kullaniciadi"/>
 
-          <div style={{ fontSize:13, fontWeight:700, color:T.text, marginTop:4 }}>👤 Yetkili Kişi</div>
+          <div style={{ fontSize:13, fontWeight:700, color:T.text, marginTop:4 }}>Yetkili Kişi</div>
           <Field label="Ad Soyad" value={firma.name||""} onChange={ff("name")} placeholder="Sözleşmede imza atan kişi"/>
 
-          <div style={{ fontSize:13, fontWeight:700, color:T.text, marginTop:4 }}>🧾 Fatura Bilgileri</div>
+          <div style={{ fontSize:13, fontWeight:700, color:T.text, marginTop:4 }}>Fatura Bilgileri</div>
           <Field label="Vergi Dairesi" value={firma.vdaire||""} onChange={ff("vdaire")} placeholder="Örn: Gebze Vergi Dairesi"/>
           <Field label="Vergi / TC Kimlik No" value={firma.vno||""} onChange={ff("vno")} placeholder="Vergi numarası"/>
           <Field label="IBAN" value={firma.iban||""} onChange={ff("iban")} placeholder="TR.. .... .... .... .... .... .."/>

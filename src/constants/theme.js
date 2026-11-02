@@ -1,20 +1,22 @@
+// Safir: uygulamanın kendi koyu lacivert paleti; düz yüzeyler (parlama, geçiş ve buzlu cam yok)
 export const SAPPHIRE_THEME = {
   id: "sapphire",
-  name: "Safir & Titanyum (Mavi)",
+  name: "Safir",
   bg: "#090D16",
-  surface: "rgba(15, 23, 42, 0.78)",
-  card: "rgba(22, 33, 56, 0.65)",
-  card2: "rgba(30, 41, 69, 0.6)",
-  card3: "rgba(42, 58, 96, 0.5)",
-  border: "rgba(148, 163, 184, 0.16)",
-  borderL: "rgba(148, 163, 184, 0.3)",
-  gold: "#3B82F6",
+  surface: "#0D1424",
+  card: "#111A2E",
+  card2: "#172238",
+  card3: "#1F2C47",
+  border: "rgba(148, 163, 184, 0.14)",
+  borderL: "rgba(148, 163, 184, 0.28)",
+  gold: "#2563EB",
   goldL: "#60A5FA",
   goldD: "#1D4ED8",
-  goldGlow: "rgba(59, 130, 246, 0.35)",
+  goldGlow: "rgba(0, 0, 0, 0)",
+  onAccent: "#FFFFFF",
   text: "#F8FAFC",
   text2: "#94A3B8",
-  text3: "#64748B",
+  text3: "#7C8BA1",
   green: "#10B981",
   greenL: "#34D399",
   red: "#F43F5E",
@@ -23,77 +25,55 @@ export const SAPPHIRE_THEME = {
   orangeL: "#FDBA74",
   blue: "#06B6D4",
   blueL: "#67E8F9",
-  glass: "linear-gradient(135deg, rgba(59, 130, 246, 0.09) 0%, rgba(255, 255, 255, 0.02) 100%)",
-  glassCard: "linear-gradient(145deg, rgba(22, 33, 56, 0.75) 0%, rgba(15, 23, 42, 0.8) 100%)",
-  glassHighlight: "rgba(255, 255, 255, 0.22)",
-  glassBorder: "rgba(148, 163, 184, 0.18)",
-  glassBlur: "blur(28px) saturate(190%)",
+  glass: "#111A2E",
+  glassCard: "#111A2E",
+  glassBorder: "rgba(148, 163, 184, 0.14)",
+  glassHighlight: "rgba(255, 255, 255, 0)",
+  glassBlur: "none",
+  font: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  flat: true,
+  radius: 14,
+  btnRadius: 10,
   isDark: true,
 };
 
-export const EMERALD_THEME = {
-  id: "emerald",
-  name: "Zümrüt & Grafit (Yeşil)",
-  bg: "#06100D",
-  surface: "rgba(6, 30, 24, 0.78)",
-  card: "rgba(12, 45, 36, 0.65)",
-  card2: "rgba(18, 58, 46, 0.6)",
-  card3: "rgba(26, 77, 62, 0.5)",
-  border: "rgba(52, 211, 153, 0.16)",
-  borderL: "rgba(52, 211, 153, 0.3)",
-  gold: "#10B981",
-  goldL: "#34D399",
-  goldD: "#047857",
-  goldGlow: "rgba(16, 185, 129, 0.35)",
-  text: "#F0FDF4",
-  text2: "#86EFAC",
-  text3: "#4ADE80",
-  green: "#10B981",
-  greenL: "#34D399",
-  red: "#F43F5E",
-  redL: "#FB7185",
-  orange: "#FB923C",
-  orangeL: "#FDBA74",
-  blue: "#38BDF8",
-  blueL: "#7DD3FC",
-  glass: "linear-gradient(135deg, rgba(16, 185, 129, 0.09) 0%, rgba(255, 255, 255, 0.02) 100%)",
-  glassCard: "linear-gradient(145deg, rgba(12, 45, 36, 0.75) 0%, rgba(6, 30, 24, 0.8) 100%)",
-  glassHighlight: "rgba(255, 255, 255, 0.22)",
-  glassBorder: "rgba(52, 211, 153, 0.18)",
-  glassBlur: "blur(28px) saturate(190%)",
-  isDark: true,
-};
-
+// Nordic: uygulamanın kendi açık paleti (beyaz ve mavi); düz yüzeyler
 export const NORDIC_LIGHT = {
   id: "nordic",
-  name: "Nordic Ferah Aydınlık (Beyaz & Mavi)",
+  name: "Nordic",
   bg: "#F8FAFC",
-  surface: "rgba(255, 255, 255, 0.94)",
-  card: "rgba(255, 255, 255, 0.88)",
+  surface: "#FFFFFF",
+  card: "#FFFFFF",
   card2: "#F1F5F9",
   card3: "#E2E8F0",
-  border: "rgba(203, 213, 225, 0.85)",
-  borderL: "rgba(148, 163, 184, 0.45)",
+  border: "rgba(15, 23, 42, 0.08)",
+  borderL: "rgba(15, 23, 42, 0.16)",
   gold: "#2563EB",
-  goldL: "#3B82F6",
+  goldL: "#2563EB",
   goldD: "#1D4ED8",
-  goldGlow: "rgba(37, 99, 235, 0.2)",
+  goldGlow: "rgba(0, 0, 0, 0)",
+  onAccent: "#FFFFFF",
   text: "#0F172A",
   text2: "#475569",
-  text3: "#94A3B8",
-  green: "#059669",
-  greenL: "#10B981",
-  red: "#E11D48",
-  redL: "#F43F5E",
-  orange: "#EA580C",
-  orangeL: "#FB923C",
-  blue: "#0284C7",
-  blueL: "#38BDF8",
-  glass: "linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(241, 245, 249, 0.8) 100%)",
-  glassCard: "rgba(255, 255, 255, 0.92)",
-  glassHighlight: "rgba(255, 255, 255, 0.8)",
-  glassBorder: "rgba(0, 0, 0, 0.08)",
-  glassBlur: "blur(20px)",
+  text3: "#64748B",
+  green: "#047857",
+  greenL: "#047857",
+  red: "#BE123C",
+  redL: "#BE123C",
+  orange: "#C2410C",
+  orangeL: "#C2410C",
+  blue: "#0369A1",
+  blueL: "#0369A1",
+  glass: "#FFFFFF",
+  glassCard: "#FFFFFF",
+  glassBorder: "rgba(15, 23, 42, 0.08)",
+  cardShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
+  glassHighlight: "rgba(255, 255, 255, 0)",
+  glassBlur: "none",
+  font: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  flat: true,
+  radius: 14,
+  btnRadius: 10,
   isDark: false,
 };
 
@@ -102,9 +82,10 @@ export const LIGHT_THEME = NORDIC_LIGHT;
 
 export const THEME_PALETTES = {
   sapphire: SAPPHIRE_THEME,
-  emerald: EMERALD_THEME,
   nordic: NORDIC_LIGHT,
 };
+// Denenip kaldırılan temalardan geçiş: açık olanlar Nordic'e, koyu olanlar Safir'e
+export const migrateThemeKey = (key) => THEME_PALETTES[key] ? key : (["bento", "grafit-acik"].includes(key) ? "nordic" : "sapphire");
 
 export let T = SAPPHIRE_THEME;
 export const setGlobalTheme = (theme) => {
@@ -119,12 +100,17 @@ ${FONT}
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html, body { height:100%; background:${theme.bg}; }
 html { color-scheme: ${theme.isDark ? "dark" : "light"}; }
-body { font-family:'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Inter", sans-serif; color:${theme.text}; overflow-x:hidden; max-width:430px; margin:0 auto; -webkit-font-smoothing:antialiased; }
-input,textarea,select,button { font-family:'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Inter", sans-serif; }
+body { font-family:${theme.font || `'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Inter", sans-serif`}; color:${theme.text}; overflow-x:hidden; max-width:430px; margin:0 auto; -webkit-font-smoothing:antialiased; }
+input,textarea,select,button { font-family:${theme.font || `'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Inter", sans-serif`}; }
 input,textarea,select { outline:none; background:transparent; color:${theme.text}; border:none; width:100%; color-scheme: ${theme.isDark ? "dark" : "light"}; }
 select option { background-color: ${theme.isDark ? "#111827" : "#FFFFFF"} !important; color: ${theme.text} !important; padding: 10px 14px; }
 button { cursor:pointer; border:none; background:transparent; }
 .num { font-family:'DM Sans',-apple-system,sans-serif; font-variant-numeric:tabular-nums; }
+${theme.flat ? `[style*="Playfair"] { font-family: inherit !important; letter-spacing: -0.02em; }
+[style*="font-size: 8px"], [style*="font-size: 8.5px"], [style*="font-size: 9px"], [style*="font-size: 9.5px"],
+[style*="font-size: 10px"], [style*="font-size: 10.5px"], [style*="font-size: 11px"], [style*="font-size: 11.5px"] { font-size: 12px !important; }
+:focus-visible { outline: 2px solid ${theme.text} !important; outline-offset: 2px; border-radius: 6px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }` : ""}
 ::-webkit-scrollbar { width:2px; height:2px; }
 ::-webkit-scrollbar-thumb { background:${theme.border}; border-radius:2px; }
 .fade-in { animation: fadeIn 0.3s ease; }

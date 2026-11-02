@@ -179,7 +179,7 @@ END:VCARD`;
             gap: 6
           }}
         >
-          <span>✏️</span> Bilgilerimi Düzenle
+          Bilgilerimi Düzenle
         </button>
       </div>}
 
@@ -273,7 +273,7 @@ END:VCARD`;
                 transition: "all 0.2s"
               }}
             >
-              📇 Rehbere Kaydet
+              Rehbere Kaydet
             </button>
             <button
               onClick={() => setQrType("wa")}
@@ -289,7 +289,7 @@ END:VCARD`;
                 transition: "all 0.2s"
               }}
             >
-              💬 WhatsApp
+              WhatsApp
             </button>
           </div>
 
@@ -368,7 +368,7 @@ END:VCARD`;
         <button
           onClick={downloadVCard}
           style={{
-            background: `linear-gradient(135deg, ${T.gold}, ${T.goldD})`,
+            background: `${T.gold}`,
             color: "#000",
             fontWeight: 700,
             fontSize: 13,
@@ -383,7 +383,7 @@ END:VCARD`;
             boxShadow: `0 6px 20px ${T.gold}44`
           }}
         >
-          <span>📲</span> Rehbere Kaydet
+          Rehbere Kaydet
         </button>
 
         <button
@@ -403,7 +403,7 @@ END:VCARD`;
             gap: 6
           }}
         >
-          <span>🔗</span> {copied ? "Kopyalandı! ✅" : "Kartı Paylaş"}
+          {copied ? "Kopyalandı!" : "Kartı Paylaş"}
         </button>
       </div>
 
@@ -429,7 +429,7 @@ END:VCARD`;
           boxShadow: "0 6px 20px rgba(37, 211, 102, 0.3)"
         }}
       >
-        <span>💬</span> Müşteri WhatsApp İletişim Hattı
+        Müşteri WhatsApp İletişim Hattı
       </button>
 
       {/* Bilgileri Düzenleme BottomSheet */}

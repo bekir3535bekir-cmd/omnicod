@@ -157,7 +157,7 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
           return (
             <div style={{ marginTop:20, padding:"0 20px" }}>
               <div style={{ fontSize:13, fontWeight:700, color:T.text, marginBottom:12 }}>
-                🗓 {yr} Yoğunluk Haritası
+                {yr} Yoğunluk Haritası
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:6 }}>
                 {monthCounts.map(({m,cnt})=>{
@@ -226,7 +226,7 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
                   </div>
                 </div>
                 <div style={{ marginTop:8 }}><Pill label={a.package} color={pkgColor(a.package)}/></div>
-                {a.notes && <div style={{ marginTop:8, fontSize:12, color:T.text3 }}>📝 {a.notes}</div>}
+                {a.notes && <div style={{ marginTop:8, fontSize:12, color:T.text3 }}>{a.notes}</div>}
               </Card>
             ))}
           </div>
@@ -288,8 +288,8 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
                 <Pill label={apt.package} color={pkgColor(apt.package)}/>
                 {showDetail.isExtraDate && <Pill label={showDetail.extraDateLabel} color={T.blueL}/>}
               </div>
-              {[["📅 Ana Tarih", fmtDate(apt.date)],["⏰ Saat", apt.time||"—"],
-                ["📍 Konum", apt.location||"—"],["🎯 Tür", apt.type||"—"]].map(([l,v])=>(
+              {[["Ana Tarih", fmtDate(apt.date)],["Saat", apt.time||"—"],
+                ["Konum", apt.location||"—"],["Tür", apt.type||"—"]].map(([l,v])=>(
                 <div key={l} style={{ display:"flex", justifyContent:"space-between",
                   borderBottom:`1px solid ${T.border}`, paddingBottom:10 }}>
                   <span style={{ fontSize:13, color:T.text3 }}>{l}</span>
@@ -300,7 +300,7 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
               {/* Ek Günler / İkinci Çekim Tarihleri */}
               {allExtraDates.length > 0 && (
                 <div style={{ background:T.card2, borderRadius:12, padding:"12px 14px" }}>
-                  <div style={{ fontSize:12, color:T.text3, fontWeight:600, marginBottom:8 }}>📅 Ek Çekim Günleri</div>
+                  <div style={{ fontSize:12, color:T.text3, fontWeight:600, marginBottom:8 }}>Ek Çekim Günleri</div>
                   <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                     {allExtraDates.map((ed, idx) => (
                       <div key={idx} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", fontSize:13 }}>
@@ -315,7 +315,7 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
               {/* Notlar & İkinci Açıklamalar */}
               {noteText && (
                 <div style={{ background:T.card2, borderRadius:12, padding:"12px 14px" }}>
-                  <div style={{ fontSize:11, color:T.text3, marginBottom:4 }}>📝 Çekim Notları / Açıklamalar</div>
+                  <div style={{ fontSize:11, color:T.text3, marginBottom:4 }}>Çekim Notları / Açıklamalar</div>
                   <div style={{ fontSize:13, color:T.text, whiteSpace:"pre-wrap", lineHeight:1.5 }}>{noteText}</div>
                 </div>
               )}

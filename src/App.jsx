@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { T, DARK_THEME, LIGHT_THEME, SAPPHIRE_THEME, EMERALD_THEME, NORDIC_LIGHT, THEME_PALETTES, setGlobalTheme, makeCSS } from "./constants/theme";
+import { T, DARK_THEME, LIGHT_THEME, SAPPHIRE_THEME, THEME_PALETTES, migrateThemeKey, setGlobalTheme, makeCSS } from "./constants/theme";
 import { Ic } from "./constants/icons";
 import { fmt, fmtDate, todayStr, uid } from "./utils/helpers";
 import { INIT } from "./constants/initialData";
@@ -8,7 +8,7 @@ import { getAuthSession, onAuthChange, fetchMyStudio, signOut, fetchProofData, f
 import { initNotifications, showSystemNotification } from "./services/notify";
 import { getModules, DESKTOP_GROUPS, STAFF_SCREENS } from "./constants/modules";
 import { CloudAuth } from "./components/modules/CloudAuth";
-import { getSession, getClientId, getStaffId, saveSession, clearSession, getLocalData, saveLocalData, getStudioInfo, getCurrentStudio, setCurrentStudio, clearCloudSession } from "./services/storage";
+import { getSession, getClientId, getStaffId, saveSession, clearSession, getLocalData, saveLocalData, getStudioInfo, getStudioProfile, getCurrentStudio, setCurrentStudio, clearCloudSession } from "./services/storage";
 import { getPlan, planHasFeature, requiredPlanFor } from "./services/plan";
 import { Logo, BottomSheet } from "./components/common";
 import { ProGate, LockBadge } from "./components/common/ProGate";
@@ -60,8 +60,8 @@ export default function App() {
   const [themeKey, setThemeKeyState] = useState(() => {
     try {
       const p = new URLSearchParams(window.location.search);
-      if (p.get("theme")) return p.get("theme");
-      return localStorage.getItem("studyom_theme_key") || "sapphire";
+      if (p.get("theme")) return migrateThemeKey(p.get("theme"));
+      return migrateThemeKey(localStorage.getItem("studyom_theme_key"));
     } catch(e) { return "sapphire"; }
   });
   const setThemeKey = (key) => {
@@ -414,6 +414,8 @@ export default function App() {
 
   // Update global T on theme change
   const currentTheme = THEME_PALETTES[themeKey] || SAPPHIRE_THEME;
+  // Üst çubuğun ortasında gösterilen stüdyo adı
+  const studioName = (getStudioProfile()?.studio || getCurrentStudio()?.name || "").trim();
   setGlobalTheme(currentTheme);
 
   const Splash = ({ text }) => (
@@ -482,15 +484,14 @@ export default function App() {
       <div style={{ minHeight:"100vh", background:T.bg, display:"flex", flexDirection:"column",
         alignItems:"center", justifyContent:"center", gap:16, padding:24 }}>
         <Logo/>
-        <div style={{ fontSize:40 }}>⚠️</div>
         <div style={{ fontSize:18, fontWeight:700, color:T.redL, textAlign:"center" }}>Bağlantı Hatası</div>
         <div style={{ fontSize:13, color:T.text3, textAlign:"center", lineHeight:1.7 }}>
           Supabase'e bağlanılamadı.<br/>İnternet bağlantını kontrol et ve yenile.
         </div>
         <button onClick={()=>{ setLoadError(false); setLoading(true); window.location.reload(); }}
           style={{ background:T.gold, border:"none", borderRadius:14, padding:"14px 28px",
-            fontSize:15, fontWeight:700, color:T.bg, marginTop:8 }}>
-          🔄 Yenile
+            fontSize:15, fontWeight:700, color: T.onAccent, marginTop:8 }}>
+          Yenile
         </button>
       </div>
     </>
@@ -640,11 +641,22 @@ export default function App() {
       : [{ group: "Menü", items: STAFF_SCREENS.filter(id => id !== "more").map(id => ({ id, ...MODULES[id] })) }];
     const staffMember = role === "personel" ? (data.team||[]).find(m => String(m.id) === String(staffId)) : null;
     const who = isAdmin ? (getStudioInfo().ad || "Yönetici") : (staffMember?.name || "Personel");
-    const sideBg = currentTheme.isDark ? "rgba(255,255,255,0.025)" : "#FFFFFF";
+    const sideBg = T.flat ? T.surface : currentTheme.isDark ? "rgba(255,255,255,0.025)" : "#FFFFFF";
     const NavBtn = ({ item }) => {
       const on = active === item.id;
       const locked = isAdmin && item.id !== "more" && !planHasFeature(plan, item.id);
       const col = item.color || T.text2;
+      // Düz tema: tek renk ikon, seçili satır hafif gri zemin (renkli ikon kutusu yok)
+      if (T.flat) return (
+        <button onClick={()=>setActive(item.id)}
+          style={{ display:"flex", alignItems:"center", gap:10, width:"100%", padding:"9px 10px", borderRadius:8,
+            background: on ? T.card2 : "transparent", border:"none",
+            color: on ? T.text : T.text2, fontSize:13.5, fontWeight: on ? 600 : 500, cursor:"pointer", textAlign:"left" }}>
+          <Ic n={item.icon} s={16} c={on ? T.text : T.text3}/>
+          <span style={{ flex:1, minWidth:0, opacity: locked ? 0.55 : 1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{item.label}</span>
+          {locked && <LockBadge plan={requiredPlanFor(item.id)}/>}
+        </button>
+      );
       return (
         <button onClick={()=>setActive(item.id)}
           style={{ display:"flex", alignItems:"center", gap:11, width:"100%", padding:"7px 12px", borderRadius:10,
@@ -671,7 +683,7 @@ export default function App() {
                 if (!items.length) return null;
                 return (
                   <div key={g.group}>
-                    <div style={{ fontSize:10.5, fontWeight:700, letterSpacing:1, textTransform:"uppercase", color:T.text3, padding:"0 12px 6px" }}>{g.group}</div>
+                    <div style={{ fontSize:10.5, fontWeight:700, letterSpacing:1, textTransform:"uppercase", color:T.text3, padding:"0 12px 6px", ...(T.flat ? { fontWeight:500, letterSpacing:0.4, fontSize:11 } : {}) }}>{g.group}</div>
                     <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
                       {items.map(i => <NavBtn key={i.id} item={i}/>)}
                     </div>
@@ -700,11 +712,12 @@ export default function App() {
           {/* İçerik */}
           <main style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column" }}>
             <header style={{ position:"sticky", top:0, zIndex:90, display:"flex", alignItems:"center", gap:12, padding:"14px 32px",
-              background: currentTheme.isDark ? "rgba(10,10,14,0.8)" : "rgba(255,255,255,0.88)", backdropFilter:"blur(20px)",
+              background: T.flat ? T.bg : currentTheme.isDark ? "rgba(10,10,14,0.8)" : "rgba(255,255,255,0.88)", backdropFilter: T.flat ? "none" : "blur(20px)",
               borderBottom:`1px solid ${T.border}` }}>
-              <div style={{ fontSize:13, color:T.text3, fontWeight:500 }}>{new Date().toLocaleDateString("tr-TR",{ weekday:"long", day:"numeric", month:"long", year:"numeric" })}</div>
-              <div style={{ marginLeft:"auto", display:"flex", gap:8 }}>
-                <button onClick={()=> hasInbox ? setShowBildirim(true) : setActive("hatirlatici")} title="Bildirimler"
+              <div style={{ flex:1, minWidth:0, fontSize:13, color:T.text3, fontWeight:500 }}>{new Date().toLocaleDateString("tr-TR",{ weekday:"long", day:"numeric", month:"long", year:"numeric" })}</div>
+              {studioName && <div style={{ fontSize:15, fontWeight:600, color:T.text, letterSpacing:"-0.01em", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", maxWidth:"40%" }}>{studioName}</div>}
+              <div style={{ flex:1, display:"flex", justifyContent:"flex-end", gap:8 }}>
+                <button onClick={()=> hasInbox ? setShowBildirim(true) : setActive("hatirlatici")} title="Bildirimler" aria-label="Bildirimler"
                   style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:99, width:38, height:38,
                     display:"flex", alignItems:"center", justifyContent:"center", position:"relative", cursor:"pointer" }}>
                   <Ic n="bell" s={17} c={T.gold}/>
@@ -733,24 +746,26 @@ export default function App() {
       <div style={{ minHeight:"100vh", background:T.bg, paddingTop:56, paddingBottom:84, maxWidth:430, margin:"0 auto", position:"relative" }}>
         {/* Top bar (Apple Liquid Glass) */}
         <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:100,
-          background: currentTheme.isDark ? "rgba(10, 10, 14, 0.75)" : "rgba(255, 255, 255, 0.85)",
+          background: T.flat ? T.bg : currentTheme.isDark ? "rgba(10, 10, 14, 0.75)" : "rgba(255, 255, 255, 0.85)",
           backdropFilter:"blur(24px) saturate(190%)",
           WebkitBackdropFilter:"blur(24px) saturate(190%)",
           borderBottom: currentTheme.isDark ? `1px solid rgba(255, 255, 255, 0.08)` : `1px solid ${T.border}`,
           boxShadow: currentTheme.isDark ? "0 4px 20px rgba(0,0,0,0.35)" : "0 4px 20px rgba(15,23,42,0.08)",
           maxWidth:430, margin:"0 auto" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 16px" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 16px", position:"relative" }}>
             {isSubScreen && (
-              <button onClick={()=>setActive("more")}
-                style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${T.border}`, borderRadius:99, width:34, height:34,
+              <button onClick={()=>setActive("more")} aria-label="Geri"
+                style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${T.border}`, borderRadius:99, width:40, height:40,
                   display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                 <Ic n="back" s={16} c={T.text2}/>
               </button>
             )}
-            <Logo compact/>
+            <Logo compact showText={!studioName}/>
+            {studioName && <div style={{ position:"absolute", left:"50%", transform:"translateX(-50%)", maxWidth:"55%", fontSize:15, fontWeight:600, color:T.text,
+              whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", pointerEvents:"none" }}>{studioName}</div>}
             <div style={{ marginLeft:"auto", display:"flex", gap:8, alignItems:"center" }}>
-              <button onClick={()=> hasInbox ? setShowBildirim(true) : setActive("hatirlatici")}
-                style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${T.border}`, borderRadius:99, width:34, height:34,
+              <button onClick={()=> hasInbox ? setShowBildirim(true) : setActive("hatirlatici")} aria-label="Bildirimler"
+                style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${T.border}`, borderRadius:99, width:44, height:44,
                   display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
                 <Ic n="bell" s={16} c={T.gold}/>
                 {hasInbox && myUnread.length>0 ? ((
@@ -773,7 +788,7 @@ export default function App() {
 
         {/* Bottom Nav (Apple Liquid Glass Dock) */}
         <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:100,
-          background: currentTheme.isDark ? "rgba(12, 12, 16, 0.78)" : "rgba(255, 255, 255, 0.9)",
+          background: T.flat ? T.surface : currentTheme.isDark ? "rgba(12, 12, 16, 0.78)" : "rgba(255, 255, 255, 0.9)",
           backdropFilter:"blur(32px) saturate(200%)",
           WebkitBackdropFilter:"blur(32px) saturate(200%)",
           borderTop: currentTheme.isDark ? `1px solid rgba(255, 255, 255, 0.09)` : `1px solid ${T.border}`,
@@ -785,12 +800,12 @@ export default function App() {
               return (
                 <button key={n.id} onClick={()=>setActive(n.id)}
                   style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center",
-                    gap:4, padding:"8px 0 6px", background:isOn?"rgba(255,255,255,0.06)":"transparent",
-                    borderRadius:16, border:isOn?"1px solid rgba(255,255,255,0.1)":"1px solid transparent",
-                    boxShadow:isOn?"inset 0 1px 0 rgba(255,255,255,0.18)":"none",
+                    gap:4, padding:"8px 0 6px", background:isOn&&!T.flat?"rgba(255,255,255,0.06)":"transparent",
+                    borderRadius:16, border:isOn&&!T.flat?"1px solid rgba(255,255,255,0.1)":"1px solid transparent",
+                    boxShadow:isOn&&!T.flat?"inset 0 1px 0 rgba(255,255,255,0.18)":"none",
                     position:"relative", cursor:"pointer", transition:"all 0.2s cubic-bezier(0.16,1,0.3,1)" }}>
-                  <Ic n={n.icon} s={20} c={isOn?T.goldL:T.text3}/>
-                  <span style={{ fontSize:11, fontWeight:isOn?700:500, color:isOn?T.goldL:T.text3, letterSpacing:"0.2px" }}>{n.label}</span>
+                  <Ic n={n.icon} s={20} c={isOn?(T.flat?T.text:T.goldL):T.text3}/>
+                  <span style={{ fontSize:11, fontWeight:isOn?700:500, color:isOn?(T.flat?T.text:T.goldL):T.text3, letterSpacing:"0.2px" }}>{n.label}</span>
                 </button>
               );
             })}

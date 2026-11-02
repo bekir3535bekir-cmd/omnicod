@@ -100,13 +100,13 @@ export const AltinSaat = ({ appointments = [], onSelectAppointment }) => {
       const diffMins = Math.round((sunTimes.goldenStartHours - currentHours) * 60);
       const h = Math.floor(diffMins / 60);
       const m = diffMins % 60;
-      statusText = `Akşam altın saatine ${h > 0 ? h + " saat " : ""}${m} dakika kaldı! 🌅`;
+      statusText = `Akşam altın saatine ${h > 0 ? h + " saat " : ""}${m} dakika kaldı!`;
       statusColor = T.goldL;
     } else if (currentHours <= sunTimes.sunsetHours) {
-      statusText = `ŞU ANDA ALTIN SAATTESİNİZ! En iyi kareleri şimdi yakalayın! ✨📸`;
+      statusText = `ŞU ANDA ALTIN SAATTESİNİZ! En iyi kareleri şimdi yakalayın!`;
       statusColor = T.greenL;
     } else {
-      statusText = `Bugünkü altın saat bitti. Mavi saat ve gece çekim moduna geçildi 🌙`;
+      statusText = `Bugünkü altın saat bitti. Mavi saat ve gece çekim moduna geçildi`;
       statusColor = T.blueL;
     }
   }
@@ -130,7 +130,7 @@ export const AltinSaat = ({ appointments = [], onSelectAppointment }) => {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div>
             <label style={{ fontSize: 11, color: T.text3, fontWeight: 600, display: "block", marginBottom: 6 }}>
-              📍 ÇEKİM ŞEHRİ
+              ÇEKİM ŞEHRİ
             </label>
             <select
               value={selectedCity.name}
@@ -159,7 +159,7 @@ export const AltinSaat = ({ appointments = [], onSelectAppointment }) => {
 
           <div>
             <label style={{ fontSize: 11, color: T.text3, fontWeight: 600, display: "block", marginBottom: 6 }}>
-              📅 ÇEKİM TARİHİ
+              ÇEKİM TARİHİ
             </label>
             <input
               type="date"
@@ -254,7 +254,7 @@ export const AltinSaat = ({ appointments = [], onSelectAppointment }) => {
       {/* Günlük Işık Takvimi Zaman Çizelgesi */}
       <Card style={{ padding: 18, marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: T.text3, letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 14 }}>
-          ☀️ Günlük Işık Evreleri
+          Günlük Işık Evreleri
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -274,7 +274,7 @@ export const AltinSaat = ({ appointments = [], onSelectAppointment }) => {
               border: "1px solid rgba(255,255,255,0.05)"
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 18 }}>{item.icon}</span>
+                {!T.flat && <span style={{ fontSize: 18 }}>{item.icon}</span>}
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{item.label}</div>
                   <div style={{ fontSize: 11, color: T.text3, marginTop: 2 }}>{item.note}</div>
@@ -292,7 +292,7 @@ export const AltinSaat = ({ appointments = [], onSelectAppointment }) => {
       {outdoorApts.length > 0 && (
         <Card style={{ padding: 18 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: T.text3, letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 12 }}>
-            📋 Ajandadaki Dış Çekimlerin Altın Saatleri
+            Ajandadaki Dış Çekimlerin Altın Saatleri
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {outdoorApts.map(apt => (

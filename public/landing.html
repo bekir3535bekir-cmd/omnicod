@@ -134,7 +134,7 @@
           <span>Paketler</span>
         </button>
         <button onclick="selectScreen('register'); document.getElementById('simulator').scrollIntoView({behavior:'smooth'})" class="px-4 py-1.5 text-xs font-semibold rounded-full bg-white text-neutral-950 hover:bg-neutral-200 shadow-sm transition-all">
-          7 Gün Ücretsiz
+          1 Ay Ücretsiz
         </button>
       </div>
 
@@ -165,7 +165,7 @@
       <!-- Action Buttons -->
       <div class="flex flex-col sm:flex-row items-center justify-center gap-3.5 mb-16">
         <button onclick="selectScreen('register'); document.getElementById('simulator').scrollIntoView({behavior:'smooth'})" class="w-full sm:w-auto px-7 py-3.5 rounded-full bg-white text-neutral-950 font-semibold text-xs tracking-tight hover:bg-neutral-200 transition-all shadow-xl flex items-center justify-center gap-2">
-          <span>👑 7 Günlük Pro Denemeyi Başlat</span>
+          <span>1 Aylık Pro Denemeyi Başlat</span>
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
         </button>
         <button onclick="openModal('downloadModal')" class="w-full sm:w-auto px-7 py-3.5 rounded-full liquid-pill text-neutral-300 hover:text-white font-medium text-xs tracking-tight transition-all flex items-center justify-center gap-2">
@@ -486,7 +486,7 @@
 
         <div class="mt-8">
           <button onclick="selectScreen('register'); document.getElementById('simulator').scrollIntoView({behavior:'smooth'})" class="px-6 py-3 rounded-full bg-white text-neutral-950 font-semibold text-xs shadow-lg hover:bg-neutral-200 transition-all">
-            7 Gün Ücretsiz Denemeyi Başlat →
+            1 Ay Ücretsiz Denemeyi Başlat →
           </button>
         </div>
       </div>
@@ -512,7 +512,7 @@
             </div>
             <div class="text-base font-semibold text-white">Studyom.apk (4.4 MB)</div>
             <p class="text-xs text-neutral-400 mt-2 font-normal leading-relaxed">
-              Masaüstünüzdeki dosyayı doğrudan telefonunuza atarak anında kurabilirsiniz. 7 günlük Pro deneme ve e-posta onaylı kayıt akışı entegredir.
+              Masaüstünüzdeki dosyayı doğrudan telefonunuza atarak anında kurabilirsiniz. 1 aylık Pro deneme ve e-posta onaylı kayıt akışı entegredir.
             </p>
           </div>
           <div class="mt-6 pt-4 border-t border-white/[0.04]">
@@ -714,8 +714,8 @@
             <div class="flex items-center gap-2.5">
               <span class="text-lg">⏳</span>
               <div>
-                <div class="text-xs font-semibold text-white">7 Günlük Pro Deneme Aktif</div>
-                <div class="text-[10px] text-neutral-400">Tüm modüller açık • Kalan: 7 gün</div>
+                <div class="text-xs font-semibold text-white">1 Aylık Pro Deneme Aktif</div>
+                <div class="text-[10px] text-neutral-400">Tüm modüller açık • Kalan: 30 gün</div>
               </div>
             </div>
             <span class="text-[10px] font-semibold text-amber-400 px-2 py-1 rounded-lg bg-white/[0.04]">Yönetici</span>
@@ -898,7 +898,7 @@
       register: `
         <div class="space-y-3 text-center">
           <div class="py-1">
-            <div class="text-sm font-bold text-white">👑 7 Gün Ücretsiz Başla</div>
+            <div class="text-sm font-bold text-white">1 Ay Ücretsiz Başla</div>
             <div class="text-[10px] text-neutral-400 mt-0.5">E-posta onayıyla tüm Pro özellikler aktif olur</div>
           </div>
 
@@ -932,7 +932,7 @@
     }
 
     function confirmRegister() {
-      alert("🎉 Tebrikler! E-posta kodunuz doğrulandı ve 7 Günlük Pro Deneme süreniz başarıyla başlatıldı!");
+      alert("E-posta kodunuz doğrulandı, 1 aylık Pro deneme süreniz başladı.");
       selectScreen('dashboard');
     }
 

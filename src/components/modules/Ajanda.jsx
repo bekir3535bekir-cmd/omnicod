@@ -17,7 +17,7 @@ const StaffPicker = ({ team, value, onChange }) => {
   return (
     <div>
       <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:6, display:"flex", alignItems:"center", gap:6 }}>
-        <span>👤</span> Görevli Personel / Fotoğrafçı
+        Görevli Personel / Fotoğrafçı
         <span style={{ fontSize:10, color:T.text3, fontWeight:400 }}>(birden fazla seçilebilir — seçilenlere bildirim gider)</span>
       </div>
       {team.length === 0 ? (
@@ -33,7 +33,7 @@ const StaffPicker = ({ team, value, onChange }) => {
                 style={{ background: on ? T.gold+"33" : T.card2, border:`1px solid ${on ? T.gold : T.border}`,
                   borderRadius:20, padding:"6px 12px", fontSize:12, color: on ? T.goldL : T.text2,
                   cursor:"pointer", fontWeight: on ? 600 : 400 }}>
-                {on ? "✓ " : ""}{m.name}{!m.phone ? " (tel yok)" : ""}
+                {on ? "" : ""}{m.name}{!m.phone ? " (tel yok)" : ""}
               </button>
             );
           })}
@@ -281,7 +281,7 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
       {pending.length > 0 && (
         <div style={{ padding:"0 20px 16px" }}>
           <div style={{ fontSize:12, fontWeight:700, color:T.orangeL, textTransform:"uppercase", letterSpacing:0.6, marginBottom:10 }}>
-            ⏳ {isAdmin ? `Onayınızı bekleyen randevular (${pending.length})` : "Yönetici onayı bekleyenler"}
+            {isAdmin ? `Onayınızı bekleyen randevular (${pending.length})` : "Yönetici onayı bekleyenler"}
           </div>
           {pending.sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(a => (
             <Card key={a.id} style={{ marginBottom:10, borderColor:T.orange+"66", background:T.orange+"0D" }}>
@@ -289,10 +289,10 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
                 <div style={{ minWidth:0 }}>
                   <div style={{ fontWeight:700, fontSize:15 }}>{a.clientName} <span style={{ fontWeight:500, color:T.text3, fontSize:13 }}>· {a.type}</span></div>
                   <div style={{ fontSize:12.5, color:T.text2, marginTop:4 }}>
-                    📅 {fmtDate(a.date)}{a.time ? ` · ${a.time}` : ""}{a.location ? ` · 📍 ${a.location}` : ""}
+                    {fmtDate(a.date)}{a.time ? ` · ${a.time}` : ""}{a.location ? ` · 📍 ${a.location}` : ""}
                   </div>
-                  {a.staffName && <div style={{ fontSize:12, color:T.text3, marginTop:3 }}>👤 Görevli: {a.staffName}</div>}
-                  {isAdmin && <div style={{ fontSize:12, color:T.text3, marginTop:3 }}>✍️ Ekleyen: <b style={{ color:T.text2 }}>{a.requestInfo?.requested_by_name || "Personel"}</b></div>}
+                  {a.staffName && <div style={{ fontSize:12, color:T.text3, marginTop:3 }}>Görevli: {a.staffName}</div>}
+                  {isAdmin && <div style={{ fontSize:12, color:T.text3, marginTop:3 }}>Ekleyen: <b style={{ color:T.text2 }}>{a.requestInfo?.requested_by_name || "Personel"}</b></div>}
                 </div>
                 <Pill label="Onay bekliyor" color={T.orangeL}/>
               </div>
@@ -300,11 +300,11 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
                 <div style={{ display:"flex", gap:8, marginTop:12 }}>
                   <button onClick={()=>openApprove(a)}
                     style={{ flex:1, background:T.green+"22", border:`1px solid ${T.green}66`, color:T.greenL, borderRadius:10, padding:"9px", fontSize:13, fontWeight:700, cursor:"pointer" }}>
-                    ✓ Onayla
+                    Onayla
                   </button>
                   <button onClick={()=>reject(a)}
                     style={{ flex:1, background:"transparent", border:`1px solid ${T.red}55`, color:T.redL, borderRadius:10, padding:"9px", fontSize:13, fontWeight:700, cursor:"pointer" }}>
-                    ✕ Reddet
+                    Reddet
                   </button>
                 </div>
               ) : (
@@ -352,7 +352,7 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
                 <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap", flex:1 }}>
                   {/* Ana tarih */}
-                  <div style={{ background:pkgColor+"1A", borderRadius:14, padding:"10px 14px",
+                  <div style={{ background: T.flat ? T.card2 : pkgColor+"1A", borderRadius:14, padding:"10px 14px",
                     textAlign:"center", minWidth:54, flexShrink:0 }}>
                     <div style={{ fontFamily:"Playfair Display", fontSize:22, fontWeight:700, color:pkgColor, lineHeight:1 }}>
                       {a.date ? new Date(a.date+"T12:00:00").getDate() : "—"}
@@ -393,16 +393,16 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
               </div>
               {a.staffName && (
                 <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: T.text3 }}>
-                  <span>👤 Görevli:</span>
+                  <span>Görevli:</span>
                   <span style={{ color: T.text, fontWeight: 600 }}>{a.staffName}</span>
                   {a.equipmentReady ? (
-                    <span style={{ color: "#4ade80", fontWeight: 700, marginLeft: 4 }}>• Ekipman Hazır ✅</span>
+                    <span style={{ color: "#4ade80", fontWeight: 700, marginLeft: 4 }}>• Ekipman Hazır</span>
                   ) : (
-                    <span style={{ color: "#fbbf24", fontWeight: 500, marginLeft: 4 }}>• Ekipman Bekleniyor 🎒</span>
+                    <span style={{ color: "#fbbf24", fontWeight: 500, marginLeft: 4 }}>• Ekipman Bekleniyor</span>
                   )}
                 </div>
               )}
-              {a.notes && <div style={{ marginTop:10, background:T.card2, borderRadius:10, padding:"8px 12px", fontSize:12, color:T.text2 }}>💬 {a.notes}</div>}
+              {a.notes && <div style={{ marginTop:10, background:T.card2, borderRadius:10, padding:"8px 12px", fontSize:12, color:T.text2 }}>{a.notes}</div>}
               {a.date && <WeatherCard date={a.date} location={a.location||""}/>}
               {isAdmin && (() => {
                 const client = data.clients.find(c=>c.name.toLowerCase()===a.clientName.toLowerCase());
@@ -410,11 +410,11 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
                 const debt = client.totalAmount - client.paid;
                 return (
                   <div style={{ marginTop:8, display:"flex", gap:10 }}>
-                    <div style={{ background:T.green+"1A", borderRadius:8, padding:"5px 10px", fontSize:11, color:T.greenL }}>
-                      ✅ {fmt(client.paid)} alındı
+                    <div style={{ background: T.flat ? T.card2 : T.green+"1A", borderRadius:8, padding:"5px 10px", fontSize:11, color:T.greenL }}>
+                      {fmt(client.paid)} alındı
                     </div>
-                    {debt>0 && <div style={{ background:T.orange+"1A", borderRadius:8, padding:"5px 10px", fontSize:11, color:T.orangeL }}>
-                      ⏳ {fmt(debt)} kalan
+                    {debt>0 && <div style={{ background: T.flat ? T.card2 : T.orange+"1A", borderRadius:8, padding:"5px 10px", fontSize:11, color:T.orangeL }}>
+                      {fmt(debt)} kalan
                     </div>}
                   </div>
                 );
@@ -458,7 +458,7 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
                     gap: 5
                   }}
                 >
-                  <span>💬</span> WhatsApp
+                  WhatsApp
                 </button>
 
                 <button
@@ -482,7 +482,7 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
                     gap: 5
                   }}
                 >
-                  <span>🌅</span> Altın Saat
+                  Altın Saat
                 </button>
               </div>
             </Card>
@@ -511,7 +511,7 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
             const detailExtraDates = (linkedClientForDetail?.extraDates || detail.extraDates || []).filter(Boolean);
             return detailExtraDates.length > 0 && (
               <div style={{ borderBottom:`1px solid ${T.border}`, paddingBottom:14, marginBottom:14 }}>
-                <div style={{ fontSize:13, color:T.text3, marginBottom:8 }}>📅 Ek Günler</div>
+                <div style={{ fontSize:13, color:T.text3, marginBottom:8 }}>Ek Günler</div>
                 {detailExtraDates.map((d,i)=>(
                   <div key={i} style={{ background:T.card2, borderRadius:10, padding:"8px 12px",
                     fontSize:13, fontWeight:500, color:T.text, marginBottom:4 }}>
@@ -556,7 +556,7 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
                   gap: 4,
                   justifyContent: "flex-end"
                 }}>
-                  {detail.equipmentReady ? `✅ Hazırlandı (${detail.equipmentReadyBy || detail.staffName || "Personel"})` : "⏳ Hazırlık Bekleniyor"}
+                  {detail.equipmentReady ? `Hazırlandı (${detail.equipmentReadyBy || detail.staffName || "Personel"})` : "Hazırlık Bekleniyor"}
                 </div>
               </div>
             </div>
@@ -627,7 +627,7 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
                   marginBottom: 10
                 }}
               >
-                <span>💬</span> WhatsApp ile Hatırlat / Mesaj Gönder
+                WhatsApp ile Hatırlat / Mesaj Gönder
               </button>
             );
           })()}
@@ -658,7 +658,7 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
             </div>
             <div>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                <span style={{ fontSize:12, color:T.text2, fontWeight:500 }}>📅 Ek Günler</span>
+                <span style={{ fontSize:12, color:T.text2, fontWeight:500 }}>Ek Günler</span>
                 <button onClick={()=>setEditApt(p=>({...p,extraDates:[...(p.extraDates||[]),""]}))}
                   style={{ background:T.gold+"22", border:`1px solid ${T.gold}44`, borderRadius:8,
                     padding:"5px 12px", fontSize:12, color:T.goldL, fontWeight:600 }}>
@@ -756,7 +756,7 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
             {!isAdmin && (
               <div style={{ background:T.orange+"14", border:`1px solid ${T.orange}44`, borderRadius:12, padding:"10px 14px", fontSize:12.5, color:T.orangeL, lineHeight:1.5 }}>
-                ⏳ Eklediğiniz randevu yönetici onayından sonra sisteme eklenir.
+                Eklediğiniz randevu yönetici onayından sonra sisteme eklenir.
               </div>
             )}
             <Field label="Müşteri Adı" value={form.clientName} onChange={f("clientName")} placeholder="Ad Soyad" required/>
@@ -781,7 +781,7 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
             {/* Ek Günler */}
             <div>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                <span style={{ fontSize:12, color:T.text2, fontWeight:500 }}>📅 Ek Günler</span>
+                <span style={{ fontSize:12, color:T.text2, fontWeight:500 }}>Ek Günler</span>
                 <button onClick={()=>setForm(p=>({...p,extraDates:[...(p.extraDates||[]),""]})) }
                   style={{ background:T.gold+"22", border:`1px solid ${T.gold}44`, borderRadius:8,
                     padding:"5px 12px", fontSize:12, color:T.goldL, fontWeight:600 }}>
@@ -804,7 +804,7 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
             </div>
             {/* Konum - Arşivden seç veya manuel gir */}
             <div>
-              <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:6 }}>📍 Konum / Mekan</div>
+              <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:6 }}>Konum / Mekan</div>
               {data.locations.length > 0 && (
                 <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
                   {data.locations.map(loc => (
@@ -850,7 +850,7 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
             {/* Ödeme Bilgileri — yalnızca yönetici */}
             {isAdmin && <div style={{ background:T.card2, borderRadius:14, padding:14 }}>
               <div style={{ fontSize:12, color:T.text3, fontWeight:600, textTransform:"uppercase",
-                letterSpacing:"0.5px", marginBottom:12 }}>💰 Ödeme Bilgileri</div>
+                letterSpacing:"0.5px", marginBottom:12 }}>Ödeme Bilgileri</div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                 <Field label="Toplam Tutar" type="number" value={form.totalAmount} onChange={f("totalAmount")} placeholder="0"/>
                 <Field label="Alınan Kapora" type="number" value={form.kapora} onChange={f("kapora")} placeholder="0"/>
@@ -865,12 +865,12 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
                 </div>
               )}
               <div style={{ fontSize:11, color:T.text3, marginTop:8 }}>
-                💡 Müşteriler bölümüne otomatik aktarılır
+                Müşteriler bölümüne otomatik aktarılır
               </div>
             </div>}
 
             <div>
-              <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:10 }}>🔔 Kaç gün önce hatırlat?</div>
+              <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:10 }}>Kaç gün önce hatırlat?</div>
               <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                 {[1,2,3,7,14,30].map(d=>(
                   <button key={d} onClick={()=>setForm(p=>({...p,reminderDays:d}))}
@@ -906,7 +906,7 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
         <BottomSheet title="Personeli Bilgilendir" onClose={()=>setNotifyInfo(null)}>
           <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
             <div style={{ background:T.green+"1A", border:`1px solid ${T.green}33`, borderRadius:12, padding:"10px 14px", fontSize:12.5, color:T.greenL, lineHeight:1.5 }}>
-              ✅ Atanan personele uygulama içi bildirim gönderildi. Personel girişinde zil simgesinde görecekler.
+              Atanan personele uygulama içi bildirim gönderildi. Personel girişinde zil simgesinde görecekler.
             </div>
             <div style={{ fontSize:12.5, color:T.text2, lineHeight:1.5 }}>
               <b>{notifyInfo.apt.clientName}</b> — {notifyInfo.apt.type} görevini WhatsApp ile de iletebilirsiniz:
@@ -922,7 +922,7 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
                   {link && (
                     <button onClick={()=>window.open(link, "_blank")}
                       style={{ background:"#25D36622", border:"1px solid #25D36655", color:"#25D366", borderRadius:10, padding:"8px 12px", fontSize:12, fontWeight:700, cursor:"pointer" }}>
-                      💬 WhatsApp
+                      WhatsApp
                     </button>
                   )}
                 </div>
@@ -936,7 +936,6 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
       {requestSent && (
         <BottomSheet title="Yönetici Onayı Bekleniyor" onClose={()=>setRequestSent(null)}>
           <div style={{ display:"flex", flexDirection:"column", gap:14, alignItems:"center", textAlign:"center" }}>
-            <div style={{ fontSize:44 }}>⏳</div>
             <div style={{ fontSize:16, fontWeight:700, color:T.text }}>{requestSent.clientName} — {requestSent.type}</div>
             <div style={{ fontSize:13.5, color:T.text2, lineHeight:1.6 }}>
               Randevu talebiniz yöneticiye gönderildi.<br/>
@@ -952,12 +951,12 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
           <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
             <div style={{ background:T.card2, borderRadius:12, padding:"12px 14px", fontSize:13, color:T.text2, lineHeight:1.7 }}>
               <div style={{ fontSize:15, fontWeight:700, color:T.text }}>{approveApt.clientName} — {approveApt.type}</div>
-              📅 {fmtDate(approveApt.date)}{approveApt.time ? ` · ${approveApt.time}` : ""}<br/>
-              {approveApt.location && <>📍 {approveApt.location}<br/></>}
-              {approveApt.requestInfo?.client_phone && <>📞 {approveApt.requestInfo.client_phone}<br/></>}
-              {approveApt.staffName && <>👤 Görevli: {approveApt.staffName}<br/></>}
-              ✍️ Ekleyen: {approveApt.requestInfo?.requested_by_name || "Personel"}
-              {approveApt.notes && <div style={{ marginTop:6 }}>💬 {approveApt.notes}</div>}
+              {fmtDate(approveApt.date)}{approveApt.time ? ` · ${approveApt.time}` : ""}<br/>
+              {approveApt.location && <>{approveApt.location}<br/></>}
+              {approveApt.requestInfo?.client_phone && <>{approveApt.requestInfo.client_phone}<br/></>}
+              {approveApt.staffName && <>Görevli: {approveApt.staffName}<br/></>}
+              Ekleyen: {approveApt.requestInfo?.requested_by_name || "Personel"}
+              {approveApt.notes && <div style={{ marginTop:6 }}>{approveApt.notes}</div>}
             </div>
             <div style={{ fontSize:12, color:T.text3 }}>İsterseniz ücret bilgisini şimdi girin (personel göremez):</div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>

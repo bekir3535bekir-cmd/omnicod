@@ -114,7 +114,7 @@ export const Mesajlar = ({ data, setData, role }) => {
         {sel.chat.length===0 && <div style={{ textAlign:"center", padding:40 }}><div style={{ fontSize:13, color:T.text3 }}>Konuşmayı başlat veya hazır şablon kullan</div></div>}
         {sel.chat.map((m,i)=>(
           <div key={i} style={{ display:"flex", justifyContent:m.from==="me"?"flex-end":"flex-start", marginBottom:10 }}>
-            <div style={{ background:m.from==="me"?`linear-gradient(135deg,${T.goldL},${T.goldD})`:T.card2, color:m.from==="me"?T.bg:T.text, borderRadius:m.from==="me"?"16px 16px 4px 16px":"16px 16px 16px 4px", padding:"10px 14px", maxWidth:"78%", fontSize:14, lineHeight:1.5 }}>
+            <div style={{ background:m.from==="me"?`${T.gold}`:T.card2, color:m.from==="me"?T.bg:T.text, borderRadius:m.from==="me"?"16px 16px 4px 16px":"16px 16px 16px 4px", padding:"10px 14px", maxWidth:"78%", fontSize:14, lineHeight:1.5 }}>
               {m.text}
               <div style={{ fontSize:10, marginTop:4, opacity:0.6, textAlign:"right" }}>{m.time}</div>
             </div>
@@ -130,7 +130,7 @@ export const Mesajlar = ({ data, setData, role }) => {
           <textarea value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Mesaj yaz..." rows={1}
             onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}}
             style={{ flex:1, background:T.card2, border:`1px solid ${T.border}`, borderRadius:12, padding:"11px 14px", color:T.text, fontSize:14, resize:"none", lineHeight:1.4 }}/>
-          <button onClick={sendMsg} style={{ background:`linear-gradient(135deg,${T.goldL},${T.goldD})`, borderRadius:12, padding:"11px", flexShrink:0 }}>
+          <button onClick={sendMsg} style={{ background:`${T.gold}`, borderRadius:12, padding:"11px", flexShrink:0 }}>
             <Ic n="send" s={18} c={T.bg}/>
           </button>
         </div>
@@ -154,7 +154,7 @@ export const Mesajlar = ({ data, setData, role }) => {
 
       {/* Ana Sekmeler */}
       <div style={{ display:"flex", gap:8, padding:"0 20px 16px" }}>
-        {[["mesajlar","💬 Mesajlar"],["sablonlar","📋 WA Şablonları"]].map(([id,l])=>(
+        {[["mesajlar","Mesajlar"],["sablonlar","WA Şablonları"]].map(([id,l])=>(
           <button key={id} onClick={()=>setMainTab(id)}
             style={{ flex:1, background:mainTab===id?T.gold:"transparent",
               color:mainTab===id?T.bg:T.text2, border:`1px solid ${mainTab===id?T.gold:T.border}`,
@@ -179,7 +179,7 @@ export const Mesajlar = ({ data, setData, role }) => {
                   <div style={{ fontWeight:600, fontSize:15 }}>{m.clientName}</div>
                   <div style={{ fontSize:12, color:T.text3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginTop:3 }}>{m.lastMsg||"Henüz mesaj yok"}</div>
                 </div>
-                {m.unread>0 && <div style={{ background:T.gold, borderRadius:99, minWidth:22, height:22, padding:"0 6px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:T.bg }}>{m.unread}</div>}
+                {m.unread>0 && <div style={{ background:T.gold, borderRadius:99, minWidth:22, height:22, padding:"0 6px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color: T.onAccent }}>{m.unread}</div>}
               </Card>
             ))
           }
@@ -205,7 +205,7 @@ export const Mesajlar = ({ data, setData, role }) => {
                   {tpl.category && <Pill label={tpl.category} color={T.text3}/>}
                   {tpl.custom && (
                     <button onClick={()=>deleteCustomTpl(tpl.id)}
-                      style={{ background:T.red+"1A", borderRadius:8, padding:"4px 6px", display:"flex", alignItems:"center" }}>
+                      style={{ background: T.flat ? T.card2 : T.red+"1A", borderRadius:8, padding:"4px 6px", display:"flex", alignItems:"center" }}>
                       <Ic n="trash" s={12} c={T.redL}/>
                     </button>
                   )}
@@ -251,7 +251,7 @@ export const Mesajlar = ({ data, setData, role }) => {
                 <div style={{ fontSize:14, fontWeight:600 }}>{c.name}</div>
                 <div style={{ fontSize:11, color:T.text3 }}>{c.phone||"Telefon yok"}</div>
               </div>
-              <div style={{ background:"#25D36622", border:"1px solid #25D36644", borderRadius:10, padding:"6px 12px", fontSize:12, fontWeight:700, color:"#25D366" }}>WA 💬</div>
+              <div style={{ background:"#25D36622", border:"1px solid #25D36644", borderRadius:10, padding:"6px 12px", fontSize:12, fontWeight:700, color:"#25D366" }}>WA</div>
             </div>
           ))}
         </BottomSheet>

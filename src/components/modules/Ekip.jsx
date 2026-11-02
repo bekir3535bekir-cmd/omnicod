@@ -154,7 +154,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                 <Card key={m.id} style={{ marginBottom:12 }}>
                   {/* Header */}
                   <div style={{ display:"flex", gap:12, alignItems:"center", marginBottom:14 }}>
-                    <div style={{ background:m.color+"22", borderRadius:99, width:50, height:50, flexShrink:0,
+                    <div style={{ background: T.flat ? T.card2 : m.color+"22", borderRadius:99, width:50, height:50, flexShrink:0,
                       display:"flex", alignItems:"center", justifyContent:"center",
                       ...NUM_FONT, fontSize:20, fontWeight:700, color:m.color }}>
                       {m.name.charAt(0)}
@@ -164,7 +164,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                       <div style={{ fontSize:12, color:T.text2, marginTop:2 }}>{m.role}</div>
                       <div style={{ fontSize:11, color:T.text3, marginTop:1 }}>{m.phone}</div>
                     </div>
-                    <div style={{ background:m.color+"1A", borderRadius:12, padding:"8px 14px", textAlign:"center" }}>
+                    <div style={{ background: T.flat ? T.card2 : m.color+"1A", borderRadius:12, padding:"8px 14px", textAlign:"center" }}>
                       <div style={{ ...NUM_FONT, fontSize:18, fontWeight:700, color:m.color }}>{ms.length}</div>
                       <div style={{ fontSize:10, color:T.text3 }}>shift</div>
                     </div>
@@ -196,7 +196,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                     {isAdmin && <button onClick={()=>{ setShiftForm({...FS, teamId:m.id}); setShowShift(true); }}
                       style={{ flex:1, background:T.blue+"1A", border:`1px solid ${T.blue}33`,
                         borderRadius:10, padding:"9px", fontSize:12, fontWeight:600, color:T.blueL }}>
-                      📅 Shift Ekle
+                      Shift Ekle
                     </button>}
                     {isAdmin && <button onClick={()=>{setSelMember(m);setPForm({...FP,type:"Kazanç"});setShowPay(true);}}
                       style={{ flex:1, background:T.gold+"1A", border:`1px solid ${T.gold}33`,
@@ -211,7 +211,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                     {isAdmin && IS_CLOUD && <button onClick={()=>openAccess(m)}
                       style={{ flex:"1 1 100%", background:accounts[String(m.id)]?T.green+"1A":T.card2, border:`1px solid ${accounts[String(m.id)]?T.green+"55":T.border}`,
                         borderRadius:10, padding:"9px", fontSize:12, fontWeight:600, color:accounts[String(m.id)]?T.greenL:T.text2 }}>
-                      {accounts[String(m.id)] ? `📱 Uygulama girişi açık · 0${accounts[String(m.id)]}` : "📱 Uygulama Girişi Oluştur"}
+                      {accounts[String(m.id)] ? `Uygulama girişi açık · 0${accounts[String(m.id)]}` : "Uygulama Girişi Oluştur"}
                     </button>}
                     {isAdmin && <button onClick={()=>setConfirmDel(m.id)}
                       style={{ background:T.red+"1A", border:`1px solid ${T.red}33`,
@@ -365,12 +365,12 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                           <button onClick={()=>setEditShift({...s})}
                             style={{ flex:1, background:T.gold+"22", border:`1px solid ${T.gold}44`,
                               borderRadius:10, padding:"7px", fontSize:12, fontWeight:600, color:T.goldL }}>
-                            ✏️ Düzenle
+                            Düzenle
                           </button>
                           <button onClick={()=>delShift(s.id)}
                             style={{ flex:1, background:T.red+"1A", border:`1px solid ${T.red}33`,
                               borderRadius:10, padding:"7px", fontSize:12, fontWeight:600, color:T.redL }}>
-                            🗑 Sil
+                            Sil
                           </button>
                         </div>
                       )}
@@ -452,7 +452,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                   style={{ flex:1, background:pForm.type===t?T.gold:T.card2,
                     color:pForm.type===t?T.bg:T.text2, border:`1px solid ${pForm.type===t?T.gold:T.border}`,
                     borderRadius:10, padding:"10px", fontSize:13, fontWeight:600 }}>
-                  {t==="Kazanç"?"💰 Kazanç Ekle":"✅ Ödeme Yap"}
+                  {t==="Kazanç"?"Kazanç Ekle":"Ödeme Yap"}
                 </button>
               ))}
             </div>

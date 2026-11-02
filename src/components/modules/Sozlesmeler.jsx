@@ -150,7 +150,7 @@ export const Sozlesmeler = ({ data, setData, role }) => {
           
           {/* Yazdır / PDF İndir */}
           <div style={{ marginTop:16 }}>
-            <GoldButton label="📄 Sözleşmeyi Yazdır / PDF" icon="doc" variant="outline" full onClick={()=>printContract(detail)}/>
+            <GoldButton label="Sözleşmeyi Yazdır / PDF" icon="doc" variant="outline" full onClick={()=>printContract(detail)}/>
           </div>
 
           <div style={{ marginTop:16 }}>

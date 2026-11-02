@@ -202,7 +202,7 @@ export const PozRehberi = () => {
                 </div>
               </div>
               <span style={{ fontSize: 11, color: T.text3, background: "rgba(255,255,255,0.06)", padding: "3px 8px", borderRadius: 8 }}>
-                Çifte Göster 📱
+                Çifte Göster
               </span>
             </div>
 
@@ -218,14 +218,14 @@ export const PozRehberi = () => {
               fontStyle: "italic",
               lineHeight: 1.45
             }}>
-              🗣️ {pose.instruction}
+              {pose.instruction}
             </div>
 
             {/* Kamera Ayarları ve Püf Noktası */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: T.text3, marginTop: 8 }}>
               <div style={{ display: "flex", gap: 8 }}>
-                <span style={{ color: T.goldL, fontWeight: 600 }}>📷 {pose.lens}</span>
-                <span>⏱️ {pose.shutter}</span>
+                <span style={{ color: T.goldL, fontWeight: 600 }}>{pose.lens}</span>
+                <span>{pose.shutter}</span>
               </div>
               <span style={{ color: T.text2 }}>İpuçları →</span>
             </div>
@@ -290,7 +290,7 @@ export const PozRehberi = () => {
               textAlign: "left"
             }}>
               <div style={{ fontSize: 11, color: T.goldL, fontWeight: 700, marginBottom: 4 }}>
-                🗣️ ÇİFTE SÖYLENECEK YÖNLENDİRME:
+                ÇİFTE SÖYLENECEK YÖNLENDİRME:
               </div>
               {selectedPose.instruction}
             </div>
@@ -306,7 +306,7 @@ export const PozRehberi = () => {
               marginBottom: 18
             }}>
               <div style={{ fontSize: 11, color: T.text3, fontWeight: 700, marginBottom: 4 }}>
-                💡 FOTOĞRAFÇIYA IŞIK & AÇI TAVSİYESİ:
+                FOTOĞRAFÇIYA IŞIK & AÇI TAVSİYESİ:
               </div>
               {selectedPose.tip}
             </div>
@@ -329,7 +329,7 @@ export const PozRehberi = () => {
               onClick={() => setSelectedPose(null)}
               style={{
                 width: "100%",
-                background: `linear-gradient(135deg, ${T.gold}, ${T.goldD})`,
+                background: `${T.gold}`,
                 color: "#000",
                 fontWeight: 700,
                 fontSize: 14,

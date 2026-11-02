@@ -16,6 +16,59 @@ const NativeUpgradeNote = () => (
   </div>
 );
 
+// Düz tema: SaaS yükseltme kartı — ikon ve başlık, tikli özellik listesi, altta fiyat ve buton
+const FlatGate = ({ icon, badge, title, desc, children, price, current, cta, onUpgrade, native }) => (
+  <div className="fade-in" style={{ padding: "0 20px" }}>
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: T.radius || 14, boxShadow: T.cardShadow || "none",
+      margin: "20px 0", maxWidth: 560, overflow: "hidden" }}>
+      <div style={{ padding: "22px 22px 18px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: T.card2, border: `1px solid ${T.border}`,
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Ic n={icon || "star"} s={20} c={T.text2}/>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em", color: T.text }}>{title}</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: T.goldL,
+                background: T.gold + "1A", borderRadius: 99, padding: "2px 9px" }}>
+                <Ic n="lock" s={12} c={T.goldL}/> {badge}
+              </span>
+            </div>
+            {desc && <div style={{ fontSize: 13.5, color: T.text2, marginTop: 4, lineHeight: 1.5 }}>{desc}</div>}
+          </div>
+        </div>
+        {children}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap",
+        padding: "14px 22px", borderTop: `1px solid ${T.border}`, background: T.card2 }}>
+        <div>
+          {!native && price && <div style={{ fontSize: 16, fontWeight: 700, color: T.text }}>{price}<span style={{ fontSize: 13, fontWeight: 500, color: T.text3 }}> / ay</span></div>}
+          {current && <div style={{ fontSize: 12.5, color: T.text3, marginTop: 2 }}>Şu anki planınız: {current}</div>}
+        </div>
+        <button onClick={onUpgrade} style={{ background: T.gold, color: T.onAccent, border: "none", borderRadius: T.btnRadius || 10,
+          padding: "0 18px", minHeight: 44, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+          {cta}
+        </button>
+      </div>
+      {native && <div style={{ padding: "0 22px 16px" }}><NativeUpgradeNote/></div>}
+    </div>
+  </div>
+);
+// Planla açılan özellikler: tikli iki sütunlu liste
+const FeatureChecks = ({ items }) => (
+  <div style={{ marginTop: 18 }}>
+    <div style={{ fontSize: 12.5, fontWeight: 600, color: T.text3, marginBottom: 10 }}>Bu planla açılanlar</div>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: "8px 16px" }}>
+      {items.map(o => (
+        <div key={o} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: T.text }}>
+          <Ic n="check" s={15} c={T.goldL}/> {o}
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 // ─── ProGate: Kilitli özellik veya dolan limit kartı ─────────
 // Özellik kilidi: <ProGate feature="raporlar" onUpgrade={()=>setActive("planyonetimi")} />
 // Limit:          <ProGate check={limitCheck} featureLabel="Randevu" onUpgrade={...} />
@@ -29,6 +82,12 @@ export const ProGate = ({ feature, check, featureLabel, onUpgrade, children, pro
     const need = feature ? requiredPlanFor(feature) : "pro";
     const { c, l } = planColor(need);
     const others = featuresOfPlan(need).filter(k => k !== feature).map(k => FEATURES[k].label);
+    if (T.flat) return (
+      <FlatGate icon={f.icon} badge={PLANS[need].label} title={f.label} desc={f.desc} onUpgrade={onUpgrade} native={native}
+        price={fmtPrice(PLANS[need].price)} current={PLANS[current]?.label || current} cta={`${PLANS[need].label} planına geç`}>
+        <FeatureChecks items={[f.label, ...others]}/>
+      </FlatGate>
+    );
     return (
       <div className="fade-in" style={{ padding: "0 20px" }}>
         <div style={{ background: `linear-gradient(135deg, ${c}08, ${c}18)`, border: `1.5px solid ${c}44`,
@@ -49,7 +108,7 @@ export const ProGate = ({ feature, check, featureLabel, onUpgrade, children, pro
             <div style={{ textAlign: "left", background: T.card2, border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px 14px", marginBottom: 16 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: T.text2, marginBottom: 8 }}>{PLANS[need].label} planıyla ayrıca açılanlar:</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {others.map(o => <span key={o} style={{ fontSize: 11.5, color: l, background: c + "18", borderRadius: 8, padding: "4px 8px" }}>{o}</span>)}
+                {others.map(o => <span key={o} style={{ fontSize: 11.5, color: l, background: T.flat ? T.card2 : c + "18", borderRadius: 8, padding: "4px 8px" }}>{o}</span>)}
               </div>
             </div>
           )}
@@ -72,10 +131,27 @@ export const ProGate = ({ feature, check, featureLabel, onUpgrade, children, pro
   if (check && !check.allowed) {
     const up = check.upgradeTo || "pro";
     const { c, l } = planColor(up);
+    if (T.flat) {
+      const pct = Math.min(100, Math.round((check.current / Math.max(1, check.limit)) * 100));
+      return (
+        <FlatGate icon="warn" badge="Limit doldu" title={`${featureLabel} limiti`} onUpgrade={onUpgrade} native={native}
+          desc={`${PLANS[check.plan]?.label || "Mevcut"} planında en fazla ${check.limit} ${featureLabel.toLowerCase()} eklenebilir.`}
+          price={fmtPrice(PLANS[up].price)} current={PLANS[check.plan]?.label} cta={`${PLANS[up].label} planına geç`}>
+          <div style={{ marginTop: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: T.text2, marginBottom: 8 }}>
+              <span>Kullanılan</span><span style={{ fontWeight: 600, color: T.text }}>{check.current} / {check.limit}</span>
+            </div>
+            <div role="progressbar" aria-valuenow={check.current} aria-valuemin={0} aria-valuemax={check.limit}
+              style={{ height: 6, background: T.card3, borderRadius: 99, overflow: "hidden" }}>
+              <div style={{ width: `${pct}%`, height: "100%", background: pct >= 100 ? T.red : T.gold, borderRadius: 99 }}/>
+            </div>
+          </div>
+        </FlatGate>
+      );
+    }
     return (
       <div className="fade-in" style={{ background: `linear-gradient(135deg, ${T.orange}08, ${T.orange}18)`, border: `1.5px solid ${T.orange}44`,
         borderRadius: 20, padding: "28px 24px", textAlign: "center", margin: "20px 0" }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
         <div style={{ fontFamily: "Playfair Display", fontSize: 18, fontWeight: 700, color: T.orangeL, marginBottom: 8 }}>
           {featureLabel} Limiti Doldu
         </div>
@@ -125,12 +201,15 @@ export const UsageBadge = ({ check, label }) => {
 // ─── PlanBadge: Küçük plan etiketi ───────────────
 export const PlanBadge = ({ plan }) => {
   const map = {
-    pro:      { t: "👑 Pro",          ...planColor("pro") },
-    standart: { t: "⭐ Standart",     ...planColor("standart") },
-    trial:    { t: "⏳ Pro Deneme",   c: T.blue, l: T.blueL },
+    pro:      { t: "Pro",          ...planColor("pro") },
+    standart: { t: "Standart",     ...planColor("standart") },
+    trial:    { t: "Pro Deneme",   c: T.blue, l: T.blueL },
     basic:    { t: "🆓 Basic",        c: T.text3, l: T.text3 },
   };
   const m = map[plan] || map.basic;
+  if (T.flat) return (
+    <span style={{ fontSize: 11, fontWeight: 500, color: T.text2, border: `1px solid ${T.border}`, borderRadius: 6, padding: "3px 8px" }}>{m.t.replace(/^\S+\s/, "")}</span>
+  );
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: m.c + "22", border: `1px solid ${m.c}66`,
       borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, color: m.l }}>{m.t}</span>
@@ -140,9 +219,14 @@ export const PlanBadge = ({ plan }) => {
 // ─── LockBadge: Menüde kilitli özellik etiketi (hangi planda açıldığı) ───
 export const LockBadge = ({ plan = "pro" }) => {
   const { c, l } = planColor(plan);
+  // Düz tema: sade gri etiket, kilit emojisi yok
+  if (T.flat) return (
+    <span style={{ fontSize: 10.5, color: T.text3, border: `1px solid ${T.border}`, borderRadius: 5, padding: "1px 6px",
+      marginLeft: 6, fontWeight: 500, whiteSpace: "nowrap" }}>{PLANS[plan].short}</span>
+  );
   return (
     <span style={{ fontSize: 9.5, background: c + "26", color: l, borderRadius: 6, padding: "2px 6px", fontWeight: 800,
-      marginLeft: 6, letterSpacing: 0.3, whiteSpace: "nowrap" }}>🔒 {PLANS[plan].short.toUpperCase()}</span>
+      marginLeft: 6, letterSpacing: 0.3, whiteSpace: "nowrap" }}>{PLANS[plan].short.toUpperCase()}</span>
   );
 };
 

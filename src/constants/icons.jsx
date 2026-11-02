@@ -40,11 +40,23 @@ export const ICONS = {
   layers:     "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
   zap:        "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
   tag:        "M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01",
+  search:     "M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.35-4.35",
+  lock:       "M5 11h14v10H5zM8 11V7a4 4 0 018 0v4",
   pen:        "M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z",
 };
 
+// Düz temada renkli ikonlar tek renge iner; vurgu rengi ve kırmızı uyarı/silme ikonları kalır
+const isChromatic = (c) => {
+  const m = /^#([0-9a-f]{6})/i.exec(c || "");
+  if (!m) return false;
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16) / 255);
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  return max - min > 0.2;
+};
+const monoColor = (c) => (T.flat && ![T.red, T.redL, T.gold, T.goldL].includes(c) && isChromatic(c)) ? T.text2 : c;
+
 export const Ic = ({ n, s=20, c=T.text, style={} }) => (
-  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={style}>
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={monoColor(c)} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={style}>
     {ICONS[n]?.split("M").filter(Boolean).map((d,i)=><path key={i} d={"M"+d}/>)}
   </svg>
 );

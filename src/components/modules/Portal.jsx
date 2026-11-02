@@ -157,7 +157,7 @@ export const Portal = ({ data, setData }) => {
     if (!clientPortalUrl) return alert("Müşteri linki oluşturulamadı: web sürümünün adresi ayarlanmamış (.env → VITE_PUBLIC_URL).");
     if (!client?.phone) return;
     const cleanPh = client.phone.replace(/\D/g, "").replace(/^0/, "");
-    const msg = `Merhaba ${client.name}! Çekim fotoğraflarınız hazır! 🎉\n\nAşağıdaki linke tıklayarak evinizden telefonunuzla fotoğraflarınızı inceleyebilir ve albümünüz için beğendiklerinizi ❤️ seçebilirsiniz:\n\n🔗 ${clientPortalUrl}${getCurrentStudio()?.portal_code ? `\n\nLink açılmazsa: STÜDYOM → Müşteri Portalı → Stüdyo kodu: ${getCurrentStudio().portal_code}` : ""}\n\nKeyifli seçimler dileriz! — ${getStudioInfo().unvan || "Stüdyomuz"}`;
+    const msg = `Merhaba ${client.name}! Çekim fotoğraflarınız hazır! 🎉\n\nAşağıdaki linke tıklayarak evinizden telefonunuzla fotoğraflarınızı inceleyebilir ve albümünüz için beğendiklerinizi seçebilirsiniz:\n\n🔗 ${clientPortalUrl}${getCurrentStudio()?.portal_code ? `\n\nLink açılmazsa: STÜDYOM → Müşteri Portalı → Stüdyo kodu: ${getCurrentStudio().portal_code}` : ""}\n\nKeyifli seçimler dileriz! — ${getStudioInfo().unvan || "Stüdyomuz"}`;
     window.open(`https://wa.me/90${cleanPh}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -213,7 +213,7 @@ export const Portal = ({ data, setData }) => {
             {/* Fotoğraf Yükleme ve Yönetim Paneli */}
             <Card style={{ padding: 18, marginBottom: 18 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: T.goldL, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 12 }}>
-                📸 Fotoğraf Ekleme & Yönetim
+                Fotoğraf Ekleme & Yönetim
               </div>
 
               {/* Gizli dosya seçici */}
@@ -231,7 +231,7 @@ export const Portal = ({ data, setData }) => {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
                   style={{
-                    background: `linear-gradient(135deg, ${T.gold}, ${T.goldD})`,
+                    background: `${T.gold}`,
                     color: "#000",
                     border: "none",
                     borderRadius: 14,
@@ -245,7 +245,7 @@ export const Portal = ({ data, setData }) => {
                     gap: 6
                   }}
                 >
-                  <span>📁</span> {uploading ? "Yükleniyor..." : "Cihazdan Fotoğraf Seç"}
+                  {uploading ? "Yükleniyor..." : "Cihazdan Fotoğraf Seç"}
                 </button>
 
                 {/* Örnek fotoğraflar yalnızca yerel deneme sürümünde */}
@@ -267,7 +267,7 @@ export const Portal = ({ data, setData }) => {
                       gap: 6
                     }}
                   >
-                    <span>🎲</span> Örnek 10 Kare Ekle
+                    Örnek 10 Kare Ekle
                   </button>
                 )}
               </div>
@@ -301,7 +301,7 @@ export const Portal = ({ data, setData }) => {
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "#25D366", textTransform: "uppercase" }}>
-                  📲 Müşteri Seçim Linki
+                  Müşteri Seçim Linki
                 </div>
                 <Pill label={`${selectedCount} / ${quota} Seçildi`} color={selectedCount >= quota ? T.greenL : T.goldL} />
               </div>
@@ -341,7 +341,7 @@ export const Portal = ({ data, setData }) => {
                     gap: 6
                   }}
                 >
-                  <span>💬</span> WhatsApp ile Gönder
+                  WhatsApp ile Gönder
                 </button>
 
                 <button
@@ -361,7 +361,7 @@ export const Portal = ({ data, setData }) => {
                     gap: 6
                   }}
                 >
-                  <span>🔗</span> {copiedLink ? "Kopyalandı! ✅" : "Linki Kopyala"}
+                  {copiedLink ? "Kopyalandı!" : "Linki Kopyala"}
                 </button>
               </div>
             </div>
@@ -372,16 +372,16 @@ export const Portal = ({ data, setData }) => {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: T.goldL }}>
-                      🎉 Müşterinin Seçtiği {selectedCount} Fotoğraf Hazır!
+                      Müşterinin Seçtiği {selectedCount} Fotoğraf Hazır!
                     </div>
                     <div style={{ fontSize: 11.5, color: T.text2, marginTop: 3 }}>
-                      {coverPhotoId ? "⭐ 1 adet kapak fotoğrafı seçildi" : "Kapak fotoğrafı henüz belirlenmedi"}
+                      {coverPhotoId ? "1 adet kapak fotoğrafı seçildi" : "Kapak fotoğrafı henüz belirlenmedi"}
                     </div>
                   </div>
                   <button
                     onClick={copyLightroomNames}
                     style={{
-                      background: `linear-gradient(135deg, ${T.gold}, ${T.goldD})`,
+                      background: `${T.gold}`,
                       color: "#000",
                       border: "none",
                       borderRadius: 10,
@@ -391,7 +391,7 @@ export const Portal = ({ data, setData }) => {
                       cursor: "pointer"
                     }}
                   >
-                    {copiedNames ? "Kopyalandı! ✅" : "📋 Lightroom İsimlerini Kopyala"}
+                    {copiedNames ? "Kopyalandı!" : "Lightroom İsimlerini Kopyala"}
                   </button>
                 </div>
               </Card>
@@ -401,7 +401,7 @@ export const Portal = ({ data, setData }) => {
             <div style={{ marginTop: 24 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>
-                  👁️ Müşteri Ekranı Önizlemesi
+                  Müşteri Ekranı Önizlemesi
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
                   <button
@@ -417,7 +417,7 @@ export const Portal = ({ data, setData }) => {
                       cursor: "pointer"
                     }}
                   >
-                    🖼️ Tüm Fotoğraflar ({clientPhotos.length})
+                    Tüm Fotoğraflar ({clientPhotos.length})
                   </button>
                   <button
                     onClick={() => setViewMode("card")}
@@ -432,7 +432,7 @@ export const Portal = ({ data, setData }) => {
                       cursor: "pointer"
                     }}
                   >
-                    🎴 Tek Tek İncele
+                    Tek Tek İncele
                   </button>
                 </div>
               </div>
@@ -504,7 +504,7 @@ export const Portal = ({ data, setData }) => {
                                 borderRadius: 10,
                                 boxShadow: "0 2px 8px rgba(0,0,0,0.5)"
                               }}>
-                                ⭐ KAPAK FOTOĞRAFI
+                                KAPAK FOTOĞRAFI
                               </span>
                             ) : isSelected ? (
                               <span style={{
@@ -516,7 +516,7 @@ export const Portal = ({ data, setData }) => {
                                 borderRadius: 10,
                                 boxShadow: "0 2px 8px rgba(0,0,0,0.5)"
                               }}>
-                                ❤️ ALBÜME SEÇİLDİ
+                                ALBÜME SEÇİLDİ
                               </span>
                             ) : null}
                           </div>
@@ -643,7 +643,7 @@ export const Portal = ({ data, setData }) => {
                               gap: 4
                             }}
                           >
-                            {isCover ? "⭐ Kapak" : "☆ Kapak Yap"}
+                            {isCover ? "Kapak" : "Kapak Yap"}
                           </button>
 
                           <button
@@ -666,7 +666,7 @@ export const Portal = ({ data, setData }) => {
                               boxShadow: isSelected ? "0 0 16px rgba(233, 30, 99, 0.4)" : "none"
                             }}
                           >
-                            {isSelected ? "❤️ Seçildi" : "🤍 Albüme Seç"}
+                            {isSelected ? "Seçildi" : "Albüme Seç"}
                           </button>
 
                           <button
@@ -798,7 +798,7 @@ export const Portal = ({ data, setData }) => {
                               cursor: "pointer"
                             }}
                           >
-                            {isSelected ? "❤️ Seçildi" : "🤍 Seç"}
+                            {isSelected ? "Seçildi" : "Seç"}
                           </button>
                           <button
                             onClick={() => setCover(photo.id)}

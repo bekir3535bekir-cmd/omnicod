@@ -31,9 +31,9 @@ export const Sablonlar = ({ data }) => {
   };
 
   const CATEGORIES = [
-    { label:"📅 Randevu", templates: MSG_TEMPLATES.filter((_,i)=>i<2) },
-    { label:"🔔 Hatırlatma", templates: MSG_TEMPLATES.filter((_,i)=>i===2||i===4) },
-    { label:"🎉 Teşekkür & Teslimat", templates: MSG_TEMPLATES.filter((_,i)=>i===3||i===5) },
+    { label:"Randevu", templates: MSG_TEMPLATES.filter((_,i)=>i<2) },
+    { label:"Hatırlatma", templates: MSG_TEMPLATES.filter((_,i)=>i===2||i===4) },
+    { label:"Teşekkür & Teslimat", templates: MSG_TEMPLATES.filter((_,i)=>i===3||i===5) },
   ];
 
   return (
@@ -43,7 +43,7 @@ export const Sablonlar = ({ data }) => {
         {/* Müşteri seç */}
         <Card style={{ marginBottom:20, padding:16 }}>
           <div style={{ fontSize:13, color:T.text2, fontWeight:500, marginBottom:10 }}>
-            💡 Müşteri seçersen bilgiler otomatik dolar
+            Müşteri seçersen bilgiler otomatik dolar
           </div>
           <select value={selClient} onChange={e=>setSelClient(e.target.value)}
             style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:12,

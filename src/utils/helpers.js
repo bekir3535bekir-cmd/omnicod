@@ -1,3 +1,4 @@
+import { T } from "../constants/theme";
 // Ekranda tutarlar para birimi işareti olmadan gösterilir (örn. 18.000)
 export const fmt    = n => new Intl.NumberFormat("tr-TR",{maximumFractionDigits:2}).format(n||0);
 // Belge ve müşteri mesajlarında (fatura, sözleşme, teklif, WhatsApp) para birimi korunur
@@ -16,7 +17,8 @@ export const yearOf   = d => new Date(d+"T12:00:00").getFullYear();
 export const uid      = () => String(Date.now()) + String(Math.floor(Math.random()*1e9));
 
 // DM Sans — tüm sayısal değerler için
-export const NUM_FONT = { fontFamily:"'DM Sans',sans-serif", fontVariantNumeric:"tabular-nums" };
+// Yazı tipi temadan okunur (getter: her yayılımda o anki tema kullanılır)
+export const NUM_FONT = { get fontFamily() { return T.numFont || "'DM Sans',sans-serif"; }, fontVariantNumeric:"tabular-nums" };
 
 // Müşteriye gönderilen linklerin (fotoğraf seçimi / portal) adresi.
 // Masaüstü (file://) ve telefon uygulamasında (https://localhost) kendi adresi dışarıdan açılamaz;

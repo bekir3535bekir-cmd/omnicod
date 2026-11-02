@@ -257,7 +257,7 @@ export const SesliAsistan = ({ data, setData, setActive }) => {
             width: 80,
             height: 80,
             borderRadius: 99,
-            background: listening ? "linear-gradient(135deg, #e53935, #b71c1c)" : `linear-gradient(135deg, ${T.gold}, ${T.goldD})`,
+            background: listening ? "linear-gradient(135deg, #e53935, #b71c1c)" : `${T.gold}`,
             border: "none",
             color: "#000",
             fontSize: 32,
@@ -322,7 +322,7 @@ export const SesliAsistan = ({ data, setData, setActive }) => {
         <Card glow style={{ padding: 20, marginBottom: 20 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: T.goldL, textTransform: "uppercase" }}>
-              ✨ Algılanan Randevu Bilgileri
+              Algılanan Randevu Bilgileri
             </div>
             <Pill label={parsed.type} color={T.goldL} />
           </div>
@@ -357,10 +357,10 @@ export const SesliAsistan = ({ data, setData, setActive }) => {
               fontWeight: 700,
               fontSize: 14
             }}>
-              🎉 Randevu Ajandaya Başarıyla Eklendi!
+              Randevu Ajandaya Başarıyla Eklendi!
             </div>
           ) : (
-            <GoldButton full onClick={handleSave} label="✅ Onayla ve Ajandaya Ekle"/>
+            <GoldButton full onClick={handleSave} label="Onayla ve Ajandaya Ekle"/>
           )}
         </Card>
       )}

@@ -82,15 +82,15 @@ export const Teklif = ({ data, setData, role }) => {
       ``,
       `${studio} olarak hazırladığımız fiyat teklifimiz:`,
       ``,
-      q.package ? `📦 Paket: ${q.package} — ${fmtTL(q.basePrice)}` : "",
-      ...q.items.map(i=>`➕ ${i.label}: ${fmtTL(i.amount)}`),
-      q.discount>0 ? `🎁 İndirim: -${fmtTL(q.discount)}` : "",
+      q.package ? `Paket: ${q.package} — ${fmtTL(q.basePrice)}` : "",
+      ...q.items.map(i=>`${i.label}: ${fmtTL(i.amount)}`),
+      q.discount>0 ? `İndirim: -${fmtTL(q.discount)}` : "",
       ``,
-      `💰 TOPLAM: ${fmtTL(q.total)}`,
+      `TOPLAM: ${fmtTL(q.total)}`,
       ``,
-      q.note ? `📝 Not: ${q.note}` : "",
+      q.note ? `Not: ${q.note}` : "",
       ``,
-      `Sorularınız için her zaman ulaşabilirsiniz. 📸`,
+      `Sorularınız için her zaman ulaşabilirsiniz.`,
     ].filter((l,i,arr)=>l!=null && !(l==="" && arr[i-1]==="")).join("\n");
 
     const url = phone
@@ -107,7 +107,7 @@ export const Teklif = ({ data, setData, role }) => {
 
       {/* Ana Sekmeler */}
       <div style={{ display:"flex", gap:8, padding:"0 20px 16px" }}>
-        {[["teklifler","📋 Teklifler"],["simulatör","🧮 Simülatör"]].map(([id,l])=>(
+        {[["teklifler","Teklifler"],["simulatör","Simülatör"]].map(([id,l])=>(
           <button key={id} onClick={()=>setMainTab(id)}
             style={{ flex:1, background:mainTab===id?T.gold:"transparent",
               color:mainTab===id?T.bg:T.text2, border:`1px solid ${mainTab===id?T.gold:T.border}`,
@@ -174,7 +174,7 @@ export const Teklif = ({ data, setData, role }) => {
                   style={{ background:simExtras[e.id]?T.blue+"22":T.card,
                     border:`1.5px solid ${simExtras[e.id]?T.blueL:T.border}`,
                     borderRadius:12, padding:"12px 10px", textAlign:"left" }}>
-                  <div style={{ fontSize:18, marginBottom:4 }}>{e.icon}</div>
+                  {!T.flat && <div style={{ fontSize:18, marginBottom:4 }}>{e.icon}</div>}
                   <div style={{ fontSize:12, fontWeight:600, color:simExtras[e.id]?T.blueL:T.text, lineHeight:1.3 }}>{e.label}</div>
                   <div style={{ ...NUM_FONT, fontSize:12, color:T.text3, marginTop:3 }}>+{fmt(e.price)}</div>
                 </button>
@@ -211,7 +211,7 @@ export const Teklif = ({ data, setData, role }) => {
 
           {/* Fiyat Özeti */}
           <div style={{ background:T.card, border:`1.5px solid ${T.gold}44`, borderRadius:16, padding:16, marginBottom:16 }}>
-            <div style={{ fontSize:13, fontWeight:600, color:T.text, marginBottom:12 }}>💰 Fiyat Özeti</div>
+            <div style={{ fontSize:13, fontWeight:600, color:T.text, marginBottom:12 }}>Fiyat Özeti</div>
             {simPkg && (
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                 <span style={{ fontSize:13, color:T.text2 }}>{simPkg}</span>
@@ -226,7 +226,7 @@ export const Teklif = ({ data, setData, role }) => {
             ))}
             {Number(simDiscount)>0 && (
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                <span style={{ fontSize:13, color:T.greenL }}>🎁 İndirim</span>
+                <span style={{ fontSize:13, color:T.greenL }}>İndirim</span>
                 <span style={{ ...NUM_FONT, fontSize:13, color:T.greenL }}>-{fmt(Number(simDiscount))}</span>
               </div>
             )}
@@ -260,19 +260,19 @@ export const Teklif = ({ data, setData, role }) => {
           <div style={{ background:T.card2, borderRadius:14, padding:14, marginBottom:16 }}>
             {detail.package && (
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:10, paddingBottom:10, borderBottom:`1px solid ${T.border}` }}>
-                <span style={{ fontSize:13, fontWeight:600 }}>📦 {detail.package}</span>
+                <span style={{ fontSize:13, fontWeight:600 }}>{detail.package}</span>
                 <span style={{ ...NUM_FONT, fontSize:14, fontWeight:600, color:T.gold }}>{fmt(detail.basePrice)}</span>
               </div>
             )}
             {(detail.items||[]).map(i=>(
               <div key={i.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                <span style={{ fontSize:13, color:T.text2 }}>➕ {i.label}</span>
+                <span style={{ fontSize:13, color:T.text2 }}>{i.label}</span>
                 <span style={{ ...NUM_FONT, fontSize:13, fontWeight:600 }}>{fmt(i.amount)}</span>
               </div>
             ))}
             {detail.discount>0 && (
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8, color:T.greenL }}>
-                <span style={{ fontSize:13 }}>🎁 İndirim</span>
+                <span style={{ fontSize:13 }}>İndirim</span>
                 <span style={{ ...NUM_FONT, fontSize:13, fontWeight:600 }}>-{fmt(detail.discount)}</span>
               </div>
             )}
@@ -281,7 +281,7 @@ export const Teklif = ({ data, setData, role }) => {
               <span style={{ ...NUM_FONT, fontSize:20, fontWeight:700, color:T.gold }}>{fmt(detail.total)}</span>
             </div>
           </div>
-          {detail.note && <div style={{ background:T.card2, borderRadius:12, padding:"12px 14px", fontSize:13, color:T.text2, marginBottom:16 }}>📝 {detail.note}</div>}
+          {detail.note && <div style={{ background:T.card2, borderRadius:12, padding:"12px 14px", fontSize:13, color:T.text2, marginBottom:16 }}>{detail.note}</div>}
           <div style={{ display:"flex", gap:8, marginBottom:8 }}>
             {["taslak","gönderildi","onaylandı","reddedildi"].map(s=>(
               <button key={s} onClick={()=>setData(p=>({...p,quotes:p.quotes.map(q=>q.id===detail.id?{...q,status:s}:q)}))}
