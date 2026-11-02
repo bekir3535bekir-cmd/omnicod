@@ -10,7 +10,7 @@ import { getModules, DESKTOP_GROUPS, STAFF_SCREENS } from "./constants/modules";
 import { CloudAuth } from "./components/modules/CloudAuth";
 import { getSession, getClientId, getStaffId, saveSession, clearSession, getLocalData, saveLocalData, getStudioInfo, getStudioProfile, getCurrentStudio, setCurrentStudio, clearCloudSession } from "./services/storage";
 import { getPlan, planHasFeature, requiredPlanFor } from "./services/plan";
-import { Logo, BottomSheet } from "./components/common";
+import { Logo, BottomSheet, FirstVisitTip } from "./components/common";
 import { ProGate, LockBadge } from "./components/common/ProGate";
 
 // Modules
@@ -731,6 +731,7 @@ export default function App() {
               </div>
             </header>
             <div style={{ flex:1, width:"100%", maxWidth:1180, margin:"0 auto", padding:"24px 16px 48px" }}>
+              {(active === "dashboard" || planHasFeature(plan, active)) && <FirstVisitTip id={active}/>}
               {SCREENS[active]||SCREENS.dashboard}
             </div>
           </main>
@@ -782,6 +783,7 @@ export default function App() {
         </div>
 
         {/* Screen */}
+        {(active === "dashboard" || planHasFeature(plan, active)) && <FirstVisitTip id={active}/>}
         {SCREENS[active]||SCREENS.dashboard}
 
         {overlays}

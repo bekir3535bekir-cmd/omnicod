@@ -3,6 +3,7 @@ import { T } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmt, fmtDate, uid, MN, daysLeft } from "../../utils/helpers";
 import { CEKIM_CHECKLIST } from "../../constants/templates";
+import { TIPS, isTipSeen, markTipSeen } from "../../constants/tips";
 
 // ─── BASE COMPONENTS ─────────────────────────────────────────────────────────
 // Tıklanabilir kart klavyeyle de seçilebilir (Tab ile gelinir, Enter/Boşluk ile açılır)
@@ -810,4 +811,42 @@ const CekimGunuModu = ({ apt, data, onClose, onComplete }) => {
   );
 };
 
-export { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo, Toast, WeatherCard, CekimGunuModu };
+// ─── İLK ZİYARET İPUCU: ekran ilk kez açıldığında üstte kısa tanıtım kartı ───
+const FirstVisitTip = ({ id }) => {
+  const tip = TIPS[id];
+  const [open, setOpen] = useState(() => !!tip && !isTipSeen(id));
+  useEffect(() => { setOpen(!!TIPS[id] && !isTipSeen(id)); }, [id]);
+  if (!tip || !open) return null;
+  const close = () => { markTipSeen(id); setOpen(false); };
+  return (
+    <div className="fade-in" role="note" aria-label={`${tip.title} hakkında bilgi`}
+      style={{ margin: "4px 20px 16px", padding: "16px 16px 14px", borderRadius: T.radius || 14, background: T.card,
+        border: `1px solid ${T.gold}55`, boxShadow: T.cardShadow || "none", display: "flex", gap: 12, alignItems: "flex-start" }}>
+      <div style={{ width: 32, height: 32, borderRadius: 10, background: T.gold + "1F", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Ic n="info" s={17} c={T.goldL}/>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{tip.title}</div>
+        <div style={{ fontSize: 13.5, color: T.text2, marginTop: 3, lineHeight: 1.5 }}>{tip.text}</div>
+        {tip.points.length > 0 && (
+          <ul style={{ margin: "10px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
+            {tip.points.map(pt => (
+              <li key={pt} style={{ display: "flex", gap: 8, fontSize: 13.5, color: T.text, lineHeight: 1.45 }}>
+                <span style={{ marginTop: 2, flexShrink: 0 }}><Ic n="check" s={14} c={T.goldL}/></span>{pt}
+              </li>
+            ))}
+          </ul>
+        )}
+        <button onClick={close} style={{ marginTop: 12, minHeight: 36, padding: "0 14px", borderRadius: T.btnRadius || 10, border: "none",
+          background: T.gold, color: T.onAccent || "#FFFFFF", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Anladım</button>
+      </div>
+      <button onClick={close} aria-label="Bilgiyi kapat"
+        style={{ width: 32, height: 32, margin: "-6px -6px 0 0", borderRadius: 8, border: "none", background: "transparent",
+          display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+        <Ic n="close" s={16} c={T.text3}/>
+      </button>
+    </div>
+  );
+};
+
+export { FirstVisitTip, Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo, Toast, WeatherCard, CekimGunuModu };

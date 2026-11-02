@@ -6,6 +6,7 @@ import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yea
 import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { PlanBadge, LockBadge } from "../common/ProGate";
+import { resetTips } from "../../constants/tips";
 import { PLANS, getTrialInfo, planHasFeature, requiredPlanFor } from "../../services/plan";
 import { sb, fromDB, toDB, IS_CLOUD } from "../../services/supabase";
 import { changePassword, deleteMyAccount } from "../../services/auth";
@@ -36,6 +37,7 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
     try { await deleteMyAccount(); onLogout && onLogout(); }
     catch (e) { alert("Hesap silinemedi: " + e.message); setSilBusy(false); }
   };
+  const [tipsReset, setTipsReset] = useState(false);
   const [exporting, setExporting] = useState(false);
   const doExport = async () => {
     setExporting(true);
@@ -225,6 +227,18 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
               <Ic n="back" s={16} c={T.text3} style={{ transform:"rotate(180deg)" }}/>
             </Card>
           )}
+
+          {/* Ekran tanıtımlarını yeniden göster */}
+          <Card onClick={() => { resetTips(); setTipsReset(true); }}
+            style={{ display:"flex", alignItems:"center", gap:14, padding:16, cursor:"pointer" }}>
+            <div style={{ background: T.flat ? T.card2 : T.blue+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
+              <Ic n="info" s={20} c={T.blueL}/>
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontWeight:600, fontSize:15 }}>İpuçlarını yeniden göster</div>
+              <div style={{ fontSize:12, color:T.text3, marginTop:2 }}>{tipsReset ? "Tamam: ekranlara girdikçe tanıtım kartları yeniden çıkacak" : "Ekranların ne işe yaradığını anlatan kartlar"}</div>
+            </div>
+          </Card>
 
           {/* Verilerimi İndir — yalnızca yönetici; hesap silmeden önce kayıtları saklamak için */}
           {role==="admin" && (
