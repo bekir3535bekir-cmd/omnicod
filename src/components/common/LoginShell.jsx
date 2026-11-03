@@ -26,12 +26,13 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) { .ls-root * { animation: none !important; } }
 .ls-cap { position: absolute; left: 28px; right: 28px; bottom: 28px; z-index: 1; max-width: 420px; }
 .ls-brand { position: absolute; top: 22px; left: 22px; z-index: 1; display: flex; align-items: center; gap: 10px; }
+/* Telefon: fotoğraf üstte kenardan kenara kısa kapak; marka yalnızca fotoğrafın üstünde, form altında */
 @media (max-width: 860px) {
   .ls-root { flex-direction: column; }
-  .ls-photo { flex: none; height: 42vh; min-height: 260px; max-height: 380px; margin: 10px 10px 0; background-position: center 35%; }
-  .ls-cap { left: 20px; right: 20px; bottom: 18px; }
-  .ls-brand { top: 16px; left: 16px; }
-  .ls-side { justify-content: flex-start; padding: 24px 20px 36px; }
+  .ls-photo { flex: none; height: 34vh; min-height: 220px; max-height: 300px; margin: 0; border-radius: 0 0 24px 24px; background-position: center 40%; }
+  .ls-cap, .ls-head { display: none !important; }
+  .ls-brand { top: 18px; left: 20px; }
+  .ls-side { justify-content: flex-start; padding: 28px 20px 36px; }
 }
 `;
 
@@ -97,7 +98,7 @@ export const LoginShell = ({ children }) => (
 
     <div className="ls-side">
       <div className="ls-form">
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 32 }}>
+        <div className="ls-head" style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 32 }}>
           <Lens/>
           <div>
             <Wordmark/>
