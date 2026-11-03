@@ -17,7 +17,7 @@ const CSS = `
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
 .ls-root button, .ls-root input { font-family: inherit; }
 .ls-photo { flex: 1.1; position: relative; overflow: hidden; margin: 12px 0 12px 12px; border-radius: 16px; background: #111A2E center / cover no-repeat; }
-.ls-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,0.65) 100%); }
+.ls-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.55) 75%, rgba(0,0,0,0.85) 100%); }
 .ls-side { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 48px 28px; }
 .ls-form { width: 100%; max-width: 360px; }
 @keyframes lsBlades { 0%, 100% { transform: rotate(0deg) scale(1); } 6% { transform: rotate(14deg) scale(1.08); } 12% { transform: rotate(-8deg) scale(0.95); } 18% { transform: rotate(4deg) scale(1.02); } 24% { transform: rotate(0deg) scale(1); } }
