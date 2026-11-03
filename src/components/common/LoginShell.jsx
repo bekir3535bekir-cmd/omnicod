@@ -32,7 +32,8 @@ const CSS = `
   .ls-root { flex-direction: column; }
   .ls-photo { flex: none; height: 30vh; min-height: 200px; max-height: 280px; margin: 0; border-radius: 0 0 24px 24px; background-position: center 40%; }
   .ls-cap, .ls-head, .ls-brand { display: none !important; }
-  .ls-mbrand { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .ls-mbrand { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 18px; }
+  .ls-title { text-align: center; }
   .ls-side { justify-content: flex-start; padding: 28px 20px 36px; }
 }
 `;

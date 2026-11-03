@@ -48,7 +48,7 @@ const Msg = ({ kind = "err", children }) => children ? (
 
 // Giriş Yap / 1 Ay Ücretsiz: başlık + alt satırda diğerine geçiş
 const Tabs = ({ mode }) => (
-  <div style={{ marginBottom: 24, fontSize: 28, fontWeight: 700, color: C.text, letterSpacing: "-0.03em" }}>
+  <div className="ls-title" style={{ marginBottom: 24, fontSize: 28, fontWeight: 700, color: C.text, letterSpacing: "-0.03em" }}>
     {mode === "login" ? "Tekrar hoş geldiniz" : "Stüdyonuzu oluşturun"}
   </div>
 );
