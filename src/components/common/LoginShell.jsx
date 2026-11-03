@@ -1,10 +1,11 @@
 // ════════════════════════════════════════════════
-// GİRİŞ EKRANI ÇERÇEVESİ — solda stüdyo fotoğrafı, sağda kamera diyaframı + STÜDYOM ve form
-// Telefonda ve dar pencerede fotoğraf gizlenir, yalnızca form kalır.
+// GİRİŞ EKRANI ÇERÇEVESİ — solda stüdyo fotoğrafı (üstünde STÜDYOM logosu), sağda kamera diyaframı + form
+// Telefonda ve dar pencerede fotoğraf üstte kapak görseli olur, form altında devam eder.
 // ════════════════════════════════════════════════
 import React from "react";
 // Fotoğraf: Unsplash (ücretsiz lisans). Uygulamaya gömülü; açılışta dışarıya istek gitmez.
 import PHOTO from "../../assets/login-photo.webp";
+import LOGO from "../../assets/studyom-logo.png";
 
 // Giriş ekranı renkleri (Safir temasıyla aynı)
 export const C = {
@@ -17,13 +18,21 @@ const CSS = `
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
 .ls-root button, .ls-root input { font-family: inherit; }
 .ls-photo { flex: 1.1; position: relative; overflow: hidden; margin: 12px 0 12px 12px; border-radius: 16px; background: #111A2E center / cover no-repeat; }
-.ls-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.55) 75%, rgba(0,0,0,0.85) 100%); }
+.ls-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 22%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.55) 75%, rgba(0,0,0,0.85) 100%); }
 .ls-side { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 48px 28px; }
 .ls-form { width: 100%; max-width: 360px; }
 @keyframes lsBlades { 0%, 100% { transform: rotate(0deg) scale(1); } 6% { transform: rotate(14deg) scale(1.08); } 12% { transform: rotate(-8deg) scale(0.95); } 18% { transform: rotate(4deg) scale(1.02); } 24% { transform: rotate(0deg) scale(1); } }
 @keyframes lsRing { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .ls-root * { animation: none !important; } }
-@media (max-width: 860px) { .ls-photo { display: none; } }
+.ls-cap { position: absolute; left: 28px; right: 28px; bottom: 28px; z-index: 1; max-width: 420px; }
+.ls-brand { position: absolute; top: 22px; left: 22px; z-index: 1; display: flex; align-items: center; gap: 10px; }
+@media (max-width: 860px) {
+  .ls-root { flex-direction: column; }
+  .ls-photo { flex: none; height: 42vh; min-height: 260px; max-height: 380px; margin: 10px 10px 0; background-position: center 35%; }
+  .ls-cap { left: 20px; right: 20px; bottom: 18px; }
+  .ls-brand { top: 16px; left: 16px; }
+  .ls-side { justify-content: flex-start; padding: 24px 20px 36px; }
+}
 `;
 
 // Kamera diyaframı (STÜDYOM simgesi): kanatlar ara sıra açılıp kapanır; parlama yok
@@ -70,7 +79,13 @@ export const LoginShell = ({ children }) => (
     <style>{CSS}</style>
 
     <div className="ls-photo" style={{ backgroundImage: `url(${PHOTO})` }}>
-      <div style={{ position: "absolute", left: 28, right: 28, bottom: 28, zIndex: 1, maxWidth: 420 }}>
+      {/* STÜDYOM logosu (uygulama ikonu) */}
+      <div className="ls-brand">
+        <img src={LOGO} alt="" width={40} height={40} style={{ borderRadius: 10, display: "block" }}/>
+        <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 17, fontWeight: 800, letterSpacing: "0.04em", color: "#FFFFFF",
+          textShadow: "0 1px 8px rgba(0,0,0,0.35)" }}>STÜDYOM</span>
+      </div>
+      <div className="ls-cap">
         <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em", color: "#FFFFFF", lineHeight: 1.35 }}>
           Siz çekime odaklanın.
         </div>
