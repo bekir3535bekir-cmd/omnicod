@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════
 // GİRİŞ EKRANI ÇERÇEVESİ — solda stüdyo fotoğrafı (üstünde STÜDYOM logosu), sağda kamera diyaframı + form
-// Telefonda ve dar pencerede fotoğraf üstte kapak görseli olur, form altında devam eder.
+// Telefonda ve dar pencerede fotoğraf üstte kapak görseli olur; logo ve form altında.
 // ════════════════════════════════════════════════
 import React from "react";
 // Fotoğraf: Unsplash (ücretsiz lisans). Uygulamaya gömülü; açılışta dışarıya istek gitmez.
@@ -26,12 +26,13 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) { .ls-root * { animation: none !important; } }
 .ls-cap { position: absolute; left: 28px; right: 28px; bottom: 28px; z-index: 1; max-width: 420px; }
 .ls-brand { position: absolute; top: 22px; left: 22px; z-index: 1; display: flex; align-items: center; gap: 10px; }
-/* Telefon: fotoğraf üstte kenardan kenara kısa kapak; marka yalnızca fotoğrafın üstünde, form altında */
+.ls-mbrand { display: none; }
+/* Telefon: fotoğraf üstte kenardan kenara kısa kapak; logo ve STÜDYOM başlığın üstünde */
 @media (max-width: 860px) {
   .ls-root { flex-direction: column; }
-  .ls-photo { flex: none; height: 34vh; min-height: 220px; max-height: 300px; margin: 0; border-radius: 0 0 24px 24px; background-position: center 40%; }
-  .ls-cap, .ls-head { display: none !important; }
-  .ls-brand { top: 18px; left: 20px; }
+  .ls-photo { flex: none; height: 30vh; min-height: 200px; max-height: 280px; margin: 0; border-radius: 0 0 24px 24px; background-position: center 40%; }
+  .ls-cap, .ls-head, .ls-brand { display: none !important; }
+  .ls-mbrand { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
   .ls-side { justify-content: flex-start; padding: 28px 20px 36px; }
 }
 `;
@@ -98,6 +99,11 @@ export const LoginShell = ({ children }) => (
 
     <div className="ls-side">
       <div className="ls-form">
+        {/* Telefon: logo ve STÜDYOM başlığın üstünde */}
+        <div className="ls-mbrand">
+          <img src={LOGO} alt="" width={44} height={44} style={{ borderRadius: 11, display: "block" }}/>
+          <Wordmark size={22}/>
+        </div>
         <div className="ls-head" style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 32 }}>
           <Lens/>
           <div>
