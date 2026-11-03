@@ -47,16 +47,17 @@ const Msg = ({ kind = "err", children }) => children ? (
 ) : null;
 
 // Giriş Yap / 1 Ay Ücretsiz: başlık + alt satırda diğerine geçiş
-const Tabs = ({ mode, go }) => (
-  <div style={{ marginBottom: 26 }}>
-    <div style={{ fontSize: 28, fontWeight: 700, color: C.text, letterSpacing: "-0.03em" }}>
-      {mode === "login" ? "Tekrar hoş geldiniz" : "Stüdyonuzu oluşturun"}
-    </div>
-    <div style={{ fontSize: 13.5, color: C.text2, marginTop: 6 }}>
-      {mode === "login"
-        ? <>Hesabınız yok mu? <Link onClick={() => go("register")}>1 ay ücretsiz deneyin</Link></>
-        : <>Zaten hesabınız var mı? <Link onClick={() => go("login")}>Giriş yapın</Link></>}
-    </div>
+const Tabs = ({ mode }) => (
+  <div style={{ marginBottom: 24, fontSize: 28, fontWeight: 700, color: C.text, letterSpacing: "-0.03em" }}>
+    {mode === "login" ? "Tekrar hoş geldiniz" : "Stüdyonuzu oluşturun"}
+  </div>
+);
+// Giriş ↔ kayıt geçişi: ana butonun hemen altında
+const SwitchLine = ({ mode, go }) => (
+  <div style={{ textAlign: "center", fontSize: 13.5, color: C.text2, marginTop: 14 }}>
+    {mode === "login"
+      ? <>Hesabınız yok mu? <Link onClick={() => go("register")}>1 ay ücretsiz deneyin</Link></>
+      : <>Zaten hesabınız var mı? <Link onClick={() => go("login")}>Giriş yapın</Link></>}
   </div>
 );
 
@@ -242,6 +243,7 @@ export const CloudAuth = ({ stage = "signedOut", team = [], notice = "", onReady
         </span>
       </label>
       <Btn busy={busy} onClick={doRegister}>Stüdyomu Oluştur</Btn>
+      <SwitchLine mode="register" go={go}/>
       <RoleLinks go={go}/>
     </Shell>
   );
@@ -314,8 +316,9 @@ export const CloudAuth = ({ stage = "signedOut", team = [], notice = "", onReady
       <Input label="E-posta veya telefon" type="text" value={f.email} onChange={set("email")} placeholder="ornek@gmail.com" autoComplete="username"/>
       <Input label="Şifre" type="password" value={f.password} onChange={set("password")} placeholder="••••••••" autoComplete="current-password"
         onKeyDown={e => e.key === "Enter" && doLogin()}/>
+      <div style={{ textAlign: "right", marginTop: -6, marginBottom: 8 }}><Link onClick={() => go("reset")}>Şifremi unuttum</Link></div>
       <Btn busy={busy} onClick={doLogin}>Stüdyoya Giriş Yap</Btn>
-      <div style={{ textAlign: "right", marginTop: 6 }}><Link onClick={() => go("reset")}>Şifremi unuttum</Link></div>
+      <SwitchLine mode="login" go={go}/>
       <RoleLinks go={go}/>
       <LegalFooter/>
     </Shell>
