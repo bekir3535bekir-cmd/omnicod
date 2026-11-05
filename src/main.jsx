@@ -3,6 +3,11 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 // Yazı tipi uygulamanın içinde: internet olmasa da logo ve yazılar aynı görünür
 import './fonts.css';
+import { haptic } from './services/native';
+
+// HIG: geri alınamayacak işlemden önce uyarı titreşimi (iOS'ta confirm() Apple'ın kendi uyarı penceresidir)
+const nativeConfirm = window.confirm.bind(window);
+window.confirm = (msg) => { haptic.warning(); return nativeConfirm(msg); };
 
 // Klavye erişimi: role="button" olan div/span'lar Enter ve Boşluk ile tıklanır.
 // Kendi tuş işleyicisi olan bileşenler (preventDefault yapanlar) iki kez tetiklenmez.

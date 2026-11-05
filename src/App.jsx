@@ -10,6 +10,7 @@ import { getModules, DESKTOP_GROUPS, STAFF_SCREENS } from "./constants/modules";
 import { CloudAuth } from "./components/modules/CloudAuth";
 import { getSession, getClientId, getStaffId, saveSession, clearSession, getLocalData, saveLocalData, getStudioInfo, getStudioProfile, getCurrentStudio, setCurrentStudio, clearCloudSession } from "./services/storage";
 import { getPlan, planHasFeature, requiredPlanFor } from "./services/plan";
+import { haptic, setStatusBarForBackground } from "./services/native";
 import { Logo, BottomSheet, FirstVisitTip } from "./components/common";
 import { ProGate, LockBadge } from "./components/common/ProGate";
 
@@ -417,6 +418,12 @@ export default function App() {
   // Üst çubuğun ortasında gösterilen stüdyo adı
   const studioName = (getStudioProfile()?.studio || getCurrentStudio()?.name || "").trim();
   setGlobalTheme(currentTheme);
+  // Durum çubuğu: giriş ekranı hep koyu; içeride temanın zeminine göre
+  const onLoginScreen = ["signedOut", "noStudio", "recovery"].includes(cloudPhase);
+  useEffect(() => {
+    if (onLoginScreen) setStatusBarForBackground(true, "#090D16");
+    else setStatusBarForBackground(currentTheme.isDark, currentTheme.bg);
+  }, [onLoginScreen, themeKey]);
 
   const Splash = ({ text }) => (
     <>
@@ -800,7 +807,7 @@ export default function App() {
             {NAV.map(n=>{
               const isOn = active===n.id||(n.id==="more"&&isSubScreen);
               return (
-                <button key={n.id} onClick={()=>setActive(n.id)}
+                <button key={n.id} onClick={()=>{ if (active !== n.id) haptic.selection(); setActive(n.id); }}
                   style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center",
                     gap:4, padding:"8px 0 6px", background:isOn&&!T.flat?"rgba(255,255,255,0.06)":"transparent",
                     borderRadius:16, border:isOn&&!T.flat?"1px solid rgba(255,255,255,0.1)":"1px solid transparent",

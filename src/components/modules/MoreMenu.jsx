@@ -7,6 +7,7 @@ import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../cons
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { PlanBadge, LockBadge } from "../common/ProGate";
 import { resetTips } from "../../constants/tips";
+import { hapticsEnabled, setHapticsEnabled, haptic } from "../../services/native";
 import { PLANS, getTrialInfo, planHasFeature, requiredPlanFor } from "../../services/plan";
 import { sb, fromDB, toDB, IS_CLOUD } from "../../services/supabase";
 import { changePassword, deleteMyAccount } from "../../services/auth";
@@ -38,6 +39,7 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
     catch (e) { alert("Hesap silinemedi: " + e.message); setSilBusy(false); }
   };
   const [tipsReset, setTipsReset] = useState(false);
+  const [hapticsOn, setHapticsOn] = useState(hapticsEnabled());
   const [exporting, setExporting] = useState(false);
   const doExport = async () => {
     setExporting(true);
@@ -225,6 +227,25 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
                 <div style={{ fontSize:12, color:T.text3, marginTop:2 }}>{IS_CLOUD ? "Hesabınızın giriş şifresini güncelleyin" : "Admin ve personel şifrelerini güncelle"}</div>
               </div>
               <Ic n="back" s={16} c={T.text3} style={{ transform:"rotate(180deg)" }}/>
+            </Card>
+          )}
+
+          {/* Titreşim (yalnızca telefon uygulamasında). HIG: haptikler kapatılabilir olmalı */}
+          {Capacitor.isNativePlatform() && (
+            <Card style={{ display:"flex", alignItems:"center", gap:14, padding:16 }}>
+              <div style={{ background: T.flat ? T.card2 : T.blue+"1A", borderRadius:12, padding:10, flexShrink:0 }}>
+                <Ic n="zap" s={20} c={T.blueL}/>
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontWeight:600, fontSize:15 }}>Titreşim</div>
+                <div style={{ fontSize:12, color:T.text3, marginTop:2 }}>Kayıt, ödeme ve silme gibi işlemlerde hafif titreşim</div>
+              </div>
+              <button role="switch" aria-checked={hapticsOn} aria-label="Titreşim"
+                onClick={() => { const v = !hapticsOn; setHapticsEnabled(v); setHapticsOn(v); if (v) haptic.selection(); }}
+                style={{ width:51, height:31, borderRadius:99, border:"none", padding:2, cursor:"pointer", flexShrink:0,
+                  background: hapticsOn ? T.green : T.card3, display:"flex", justifyContent: hapticsOn ? "flex-end" : "flex-start", transition:"background 0.2s" }}>
+                <span style={{ width:27, height:27, borderRadius:99, background:"#FFFFFF", boxShadow:"0 2px 4px rgba(0,0,0,0.25)" }}/>
+              </button>
             </Card>
           )}
 

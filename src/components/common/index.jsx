@@ -4,6 +4,7 @@ import { Ic } from "../../constants/icons";
 import { fmt, fmtDate, uid, MN, daysLeft } from "../../utils/helpers";
 import { CEKIM_CHECKLIST } from "../../constants/templates";
 import { TIPS, isTipSeen, markTipSeen } from "../../constants/tips";
+import { haptic } from "../../services/native";
 
 // ─── BASE COMPONENTS ─────────────────────────────────────────────────────────
 // Tıklanabilir kart klavyeyle de seçilebilir (Tab ile gelinir, Enter/Boşluk ile açılır)
@@ -340,27 +341,46 @@ const DatePicker = ({ label, value, onChange, required }) => {
 const BottomSheet = ({ title, onClose, footer, children }) => {
   // Açık temada pencere de açık renkli olmalı (koyu zemin + koyu yazı okunmuyordu)
   const light = T.isDark === false;
+  // HIG (sheets): telefonda aşağı çekerek kapatma; masaüstünde Esc
+  const [drag, setDrag] = useState(0);
+  const startY = useRef(null);
+  const titleId = useRef("bs-" + Math.random().toString(36).slice(2, 8)).current;
+  useEffect(() => {
+    const onKey = e => { if (e.key === "Escape") onClose && onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const onTouchStart = e => { startY.current = e.touches[0].clientY; };
+  const onTouchMove = e => { if (startY.current == null) return; setDrag(Math.max(0, e.touches[0].clientY - startY.current)); };
+  const onTouchEnd = () => { if (drag > 110) onClose && onClose(); setDrag(0); startY.current = null; };
+  const flat = !!T.flat;
   return (
-  <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:"max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))" }}>
+  <div className="bs-wrap" style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:"max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))" }}>
     {/* Backdrop */}
     <div onClick={onClose} role="presentation" aria-hidden="true" style={{ position:"absolute", inset:0, background: light ? "rgba(15,23,42,0.45)" : "rgba(0,0,0,0.8)", backdropFilter:"blur(16px)", WebkitBackdropFilter:"blur(16px)" }}/>
     {/* Modal Box */}
-    <div className="modal-pop" style={{
+    <div className="modal-pop bs-box" role="dialog" aria-modal="true" aria-labelledby={titleId} style={{
       position:"relative", zIndex:1,
-      background: light ? "linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 100%)" : "linear-gradient(145deg, rgba(22, 22, 28, 0.96) 0%, rgba(14, 14, 18, 0.98) 100%)",
-      backdropFilter:"blur(36px) saturate(200%)",
-      WebkitBackdropFilter:"blur(36px) saturate(200%)",
-      borderRadius:28,
-      border: light ? `1px solid ${T.border}` : "1px solid rgba(255, 255, 255, 0.12)",
-      boxShadow: light ? "0 24px 60px rgba(15,23,42,0.25)" : "0 32px 80px rgba(0,0,0,0.95), inset 0 1px 1px rgba(255,255,255,0.22)",
+      transform: drag ? `translateY(${drag}px)` : undefined, transition: drag ? "none" : "transform 0.25s ease",
+      background: flat ? T.card : light ? "linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 100%)" : "linear-gradient(145deg, rgba(22, 22, 28, 0.96) 0%, rgba(14, 14, 18, 0.98) 100%)",
+      backdropFilter: flat ? "none" : "blur(36px) saturate(200%)",
+      WebkitBackdropFilter: flat ? "none" : "blur(36px) saturate(200%)",
+      borderRadius: flat ? 20 : 28,
+      border: light || flat ? `1px solid ${T.border}` : "1px solid rgba(255, 255, 255, 0.12)",
+      boxShadow: flat ? "0 20px 50px rgba(0,0,0,0.35)" : light ? "0 24px 60px rgba(15,23,42,0.25)" : "0 32px 80px rgba(0,0,0,0.95), inset 0 1px 1px rgba(255,255,255,0.22)",
       maxWidth:440, width:"100%",
       maxHeight:"90vh",
       display:"flex", flexDirection:"column",
       overflow: "hidden"
     }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 20px 14px", borderBottom:`1px solid ${T.border}`, background: light ? "rgba(255,255,255,0.92)" : "rgba(22, 22, 28, 0.8)", backdropFilter:"blur(20px)", zIndex:10 }}>
-        <span style={{ fontFamily:"Playfair Display", fontSize:19, fontWeight:700, color:T.goldL }}>{title}</span>
-        <button onClick={onClose} style={{ background: light ? T.card2 : "rgba(255,255,255,0.06)", border:`1px solid ${T.border}`,
+      {/* Tutma çubuğu: yalnızca telefonda görünür (CSS .bs-grab) */}
+      <div className="bs-grab" aria-hidden="true" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+        style={{ padding:"8px 0 2px", display:"none", justifyContent:"center", touchAction:"none" }}>
+        <span style={{ width:36, height:5, borderRadius:3, background:T.borderL }}/>
+      </div>
+      <div onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 20px 14px", borderBottom:`1px solid ${T.border}`, background: flat ? T.card : light ? "rgba(255,255,255,0.92)" : "rgba(22, 22, 28, 0.8)", backdropFilter:"blur(20px)", zIndex:10 }}>
+        <span id={titleId} style={{ fontFamily:"Playfair Display", fontSize:19, fontWeight:700, color: flat ? T.text : T.goldL }}>{title}</span>
+        <button onClick={onClose} aria-label="Kapat" style={{ background: light ? T.card2 : "rgba(255,255,255,0.06)", border:`1px solid ${T.border}`,
           borderRadius:99, width:34, height:34, display:"flex", alignItems:"center", justifyContent:"center" }}>
           <Ic n="close" s={15} c={T.text2}/>
         </button>
@@ -374,9 +394,9 @@ const BottomSheet = ({ title, onClose, footer, children }) => {
         <div style={{
           padding:"14px 20px 18px",
           borderTop:`1px solid ${T.border}`,
-          background: light ? "rgba(255,255,255,0.95)" : "rgba(18, 18, 22, 0.95)",
-          backdropFilter:"blur(24px)",
-          WebkitBackdropFilter:"blur(24px)",
+          background: flat ? T.card : light ? "rgba(255,255,255,0.95)" : "rgba(18, 18, 22, 0.95)",
+          backdropFilter: flat ? "none" : "blur(24px)",
+          WebkitBackdropFilter: flat ? "none" : "blur(24px)",
           zIndex:10
         }}>
           {footer}
@@ -476,6 +496,8 @@ const Logo = ({ compact, showText = true }) => {
 
 // ─── TOAST NOTIFICATION ──────────────────────────────────────────────────
 const Toast = ({ message, type="success", onClose }) => {
+  // HIG: önemli bir işlemin sonucunu dokunsal olarak da bildir
+  useEffect(() => { if (message) (type === "success" ? haptic.success : haptic.error)(); }, [message, type]);
   if (!message) return null;
   return (
     <div style={{
