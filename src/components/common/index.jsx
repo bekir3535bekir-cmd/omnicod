@@ -184,7 +184,7 @@ export const CustomSelect = ({ value, onChange, options, placeholder="Seçiniz..
             const isEmptyChoice = !val && !lbl;
 
             return (
-              <div
+              <div role="button" tabIndex={0}
                 key={idx}
                 onClick={() => {
                   onChange(val);
@@ -341,9 +341,9 @@ const BottomSheet = ({ title, onClose, footer, children }) => {
   // Açık temada pencere de açık renkli olmalı (koyu zemin + koyu yazı okunmuyordu)
   const light = T.isDark === false;
   return (
-  <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+  <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:"max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))" }}>
     {/* Backdrop */}
-    <div onClick={onClose} style={{ position:"absolute", inset:0, background: light ? "rgba(15,23,42,0.45)" : "rgba(0,0,0,0.8)", backdropFilter:"blur(16px)", WebkitBackdropFilter:"blur(16px)" }}/>
+    <div onClick={onClose} role="presentation" aria-hidden="true" style={{ position:"absolute", inset:0, background: light ? "rgba(15,23,42,0.45)" : "rgba(0,0,0,0.8)", backdropFilter:"blur(16px)", WebkitBackdropFilter:"blur(16px)" }}/>
     {/* Modal Box */}
     <div className="modal-pop" style={{
       position:"relative", zIndex:1,
@@ -441,7 +441,7 @@ const Logo = ({ compact, showText = true }) => {
       position: "relative",
       padding: compact ? 2 : 3
     }}>
-      <svg width="100%" height="100%" viewBox="0 0 100 100" fill="none">
+      <svg role="img" aria-label="STÜDYOM" width="100%" height="100%" viewBox="0 0 100 100" fill="none">
         {/* Arkadaki Ajanda / Takvim (Zümrüt / Turkuaz #00B594) */}
         {/* Makinenin biraz üstünde durur ki ajanda belli olsun */}
         <rect x="38" y="15" width="46" height="44" rx="7" fill={cal}/>

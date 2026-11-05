@@ -45,7 +45,7 @@ export const Galeri = ({ data, setData, role }) => {
         {filtered.length===0 ? <EmptyState icon="camera" title="Portföy Boş" sub="Fotoğraflarını ekleyerek portföyünü oluştur." action="Fotoğraf Ekle" onAction={()=>setShowAdd(true)}/> : (
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
             {filtered.map(g=>(
-              <div key={g.id} onClick={()=>setSel(g)}
+              <div role="button" tabIndex={0} key={g.id} onClick={()=>setSel(g)}
                 style={{ borderRadius:16, overflow:"hidden", cursor:"pointer", position:"relative", aspectRatio:"1",
                   background:T.card, display:"flex", alignItems:"center", justifyContent:"center" }}>
                 {g.url ? (

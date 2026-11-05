@@ -106,6 +106,7 @@ input,textarea,select { outline:none; background:transparent; color:${theme.text
 select option { background-color: ${theme.isDark ? "#111827" : "#FFFFFF"} !important; color: ${theme.text} !important; padding: 10px 14px; }
 button { cursor:pointer; border:none; background:transparent; }
 .num { font-family:'DM Sans',-apple-system,sans-serif; font-variant-numeric:tabular-nums; }
+@media (max-width: 860px) { input, textarea, select { font-size: 16px !important; } }
 ${theme.flat ? `[style*="Playfair"] { font-family: inherit !important; letter-spacing: -0.02em; }
 [style*="font-size: 8px"], [style*="font-size: 8.5px"], [style*="font-size: 9px"], [style*="font-size: 9.5px"],
 [style*="font-size: 10px"], [style*="font-size: 10.5px"], [style*="font-size: 11px"], [style*="font-size: 11.5px"] { font-size: 12px !important; }

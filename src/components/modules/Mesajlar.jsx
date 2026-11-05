@@ -138,7 +138,7 @@ export const Mesajlar = ({ data, setData, role }) => {
       {showTpl && (
         <BottomSheet title="Hazır Şablonlar" onClose={()=>setShowTpl(false)}>
           {allTpls.map((t,i)=>(
-            <div key={i} onClick={()=>useTpl(t)} style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:14, padding:"14px 16px", marginBottom:10, cursor:"pointer" }}>
+            <div role="button" tabIndex={0} key={i} onClick={()=>useTpl(t)} style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:14, padding:"14px 16px", marginBottom:10, cursor:"pointer" }}>
               <div style={{ fontSize:13, fontWeight:600, color:T.goldL, marginBottom:6 }}>{t.label}</div>
               <div style={{ fontSize:12, color:T.text2, lineHeight:1.5 }}>{t.text.slice(0,90)}...</div>
             </div>
@@ -245,7 +245,7 @@ export const Mesajlar = ({ data, setData, role }) => {
       {selTplWA && (
         <BottomSheet title={`Müşteri Seç — ${selTplWA.label}`} onClose={()=>setSelTplWA(null)}>
           {data.clients.filter(c=>c.status!=="arşiv").map(c=>(
-            <div key={c.id} onClick={()=>sendWATpl(selTplWA,c)}
+            <div role="button" tabIndex={0} key={c.id} onClick={()=>sendWATpl(selTplWA,c)}
               style={{ display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:`1px solid ${T.border}`, paddingBottom:12, marginBottom:12, cursor:"pointer" }}>
               <div>
                 <div style={{ fontSize:14, fontWeight:600 }}>{c.name}</div>

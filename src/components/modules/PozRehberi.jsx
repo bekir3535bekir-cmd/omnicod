@@ -177,7 +177,7 @@ export const PozRehberi = () => {
       {/* Poz Kartları Izgarası */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 14 }}>
         {filtered.map(pose => (
-          <div
+          <div role="button" tabIndex={0}
             key={pose.id}
             onClick={() => setSelectedPose(pose)}
             style={{
@@ -235,7 +235,7 @@ export const PozRehberi = () => {
 
       {/* Büyük Görsel / Çifte Gösterme Modalı (Full-Screen Moodboard Card) */}
       {selectedPose && (
-        <div 
+        <div role="button" tabIndex={0} 
           onClick={() => setSelectedPose(null)}
           style={{
             position: "fixed",
@@ -253,7 +253,7 @@ export const PozRehberi = () => {
             padding: 20
           }}
         >
-          <div 
+          <div role="button" tabIndex={0} 
             onClick={e => e.stopPropagation()}
             style={{
               width: "100%",

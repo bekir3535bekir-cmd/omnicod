@@ -142,7 +142,7 @@ export const MoreMenu = ({ data, setActive, darkMode, setDarkMode, role, plan, o
               {THEMES.map(th => {
                 const isSelected = themeKey === th.key;
                 return (
-                  <div
+                  <div role="button" tabIndex={0}
                     key={th.key}
                     onClick={() => setThemeKey && setThemeKey(th.key)}
                     style={{

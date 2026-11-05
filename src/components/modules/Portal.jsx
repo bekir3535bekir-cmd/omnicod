@@ -707,7 +707,7 @@ export const Portal = ({ data, setData }) => {
                               const pCov = selections[p.id] === "cover";
 
                               return (
-                                <div
+                                <div role="button" tabIndex={0}
                                   key={p.id}
                                   onClick={() => setCurrentIdx(idx)}
                                   style={{

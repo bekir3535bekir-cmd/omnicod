@@ -56,7 +56,7 @@ const isChromatic = (c) => {
 const monoColor = (c) => (T.flat && ![T.red, T.redL, T.gold, T.goldL].includes(c) && isChromatic(c)) ? T.text2 : c;
 
 export const Ic = ({ n, s=20, c=T.text, style={} }) => (
-  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={monoColor(c)} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={style}>
+  <svg aria-hidden="true" focusable="false" width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={monoColor(c)} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={style}>
     {ICONS[n]?.split("M").filter(Boolean).map((d,i)=><path key={i} d={"M"+d}/>)}
   </svg>
 );

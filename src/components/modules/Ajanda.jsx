@@ -424,7 +424,7 @@ export const Ajanda = ({ data: fullData, setData, role, plan, setActive, staffId
               </div>}
 
               {/* Hızlı Eylemler (WhatsApp & Altın Saat) */}
-              <div style={{ display: "flex", gap: 8, marginTop: 10, paddingTop: 8, borderTop: `1px solid ${T.border}` }} onClick={e => e.stopPropagation()}>
+              <div role="button" tabIndex={0} style={{ display: "flex", gap: 8, marginTop: 10, paddingTop: 8, borderTop: `1px solid ${T.border}` }} onClick={e => e.stopPropagation()}>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

@@ -606,7 +606,7 @@ export default function App() {
                 ) : (
                   <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
                     {myNotifications.map(n => (
-                      <div key={n.id} onClick={()=>{ markRead([n.id]); setShowBildirim(false); setActive("ajanda"); }}
+                      <div role="button" tabIndex={0} key={n.id} onClick={()=>{ markRead([n.id]); setShowBildirim(false); setActive("ajanda"); }}
                         style={{ background: n.read ? T.card2 : T.gold+"14", border:`1px solid ${n.read ? T.border : T.gold+"55"}`,
                           borderRadius:12, padding:"12px 14px", cursor:"pointer" }}>
                         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -744,7 +744,7 @@ export default function App() {
   return (
     <>
       <style>{CSS}</style>
-      <div style={{ minHeight:"100vh", background:T.bg, paddingTop:56, paddingBottom:84, maxWidth:430, margin:"0 auto", position:"relative" }}>
+      <div style={{ minHeight:"100vh", background:T.bg, paddingTop:"calc(56px + env(safe-area-inset-top))", paddingBottom:"calc(84px + env(safe-area-inset-bottom))", maxWidth:430, margin:"0 auto", position:"relative" }}>
         {/* Top bar (Apple Liquid Glass) */}
         <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:100,
           background: T.flat ? T.bg : currentTheme.isDark ? "rgba(10, 10, 14, 0.75)" : "rgba(255, 255, 255, 0.85)",
@@ -752,8 +752,8 @@ export default function App() {
           WebkitBackdropFilter:"blur(24px) saturate(190%)",
           borderBottom: currentTheme.isDark ? `1px solid rgba(255, 255, 255, 0.08)` : `1px solid ${T.border}`,
           boxShadow: currentTheme.isDark ? "0 4px 20px rgba(0,0,0,0.35)" : "0 4px 20px rgba(15,23,42,0.08)",
-          maxWidth:430, margin:"0 auto" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 16px", position:"relative" }}>
+          maxWidth:430, margin:"0 auto", paddingTop:"env(safe-area-inset-top)" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12, padding:"10px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left))", position:"relative" }}>
             {isSubScreen && (
               <button onClick={()=>setActive("more")} aria-label="Geri"
                 style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${T.border}`, borderRadius:99, width:40, height:40,
@@ -795,7 +795,7 @@ export default function App() {
           WebkitBackdropFilter:"blur(32px) saturate(200%)",
           borderTop: currentTheme.isDark ? `1px solid rgba(255, 255, 255, 0.09)` : `1px solid ${T.border}`,
           boxShadow: currentTheme.isDark ? "0 -12px 36px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12)" : "0 -8px 24px rgba(15,23,42,0.08)",
-          maxWidth:430, margin:"0 auto", paddingBottom:16 }}>
+          maxWidth:430, margin:"0 auto", paddingBottom:"max(16px, env(safe-area-inset-bottom))" }}>
           <div style={{ display:"flex", padding:"4px 8px 0" }}>
             {NAV.map(n=>{
               const isOn = active===n.id||(n.id==="more"&&isSubScreen);

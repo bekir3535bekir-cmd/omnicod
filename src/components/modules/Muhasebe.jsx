@@ -166,13 +166,13 @@ export const Muhasebe = ({ data, setData, role }) => {
   .badge{display:inline-block;background:#e8f5e9;color:#2e7d32;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;}
   @media print{body{padding:20px;}}
 </style></head><body>
-<div class="header">
+<header class="header">
   ${S.logo ? `<img src="${S.logo}" class="logo" alt=""/>` : ""}
   <div class="firm">
     <h2>${S.unvan}</h2>
     <p>${S.adres}<br/>${S.tel} · ${S.email}${S.vdaire ? `<br/>Vergi Dairesi: ${S.vdaire}` : ""}${S.vno ? `<br/>Vergi No: ${S.vno}` : ""}</p>
   </div>
-</div>
+</header>
 
 <div>
   <span class="fatura-no">FATURA No: ${fNo}</span>
@@ -229,9 +229,9 @@ ${format==="detayli" ? `
   <br/><span style="font-size:11px;color:#888;">*Stopaj, müşteri tarafından vergi dairesine yatırılır.</span>
 </div>` : ""}
 
-<div class="footer">
+<footer class="footer">
   Bu belge bilgilendirme amaçlıdır. ${S.unvan} · ${today}
-</div>
+</footer>
 </body></html>`;
 
     const win = window.open("","_blank");

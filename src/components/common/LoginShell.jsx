@@ -32,9 +32,10 @@ const CSS = `
   .ls-root { flex-direction: column; }
   .ls-photo { flex: none; height: 30vh; min-height: 200px; max-height: 280px; margin: 0; border-radius: 0 0 24px 24px; background-position: center 40%; }
   .ls-cap, .ls-head, .ls-brand { display: none !important; }
-  .ls-mbrand { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 18px; }
+  .ls-root input { font-size: 16px !important; }
+  .ls-mbrand { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 14px; }
   .ls-title { text-align: center; }
-  .ls-side { justify-content: flex-start; padding: 28px 20px 36px; }
+  .ls-side { justify-content: flex-start; padding: 28px 20px calc(36px + env(safe-area-inset-bottom)); }
 }
 `;
 
@@ -42,7 +43,7 @@ const CSS = `
 const Lens = ({ size = 64 }) => (
   <div style={{ width: size, height: size, borderRadius: "50%", border: `1.5px solid ${C.accent}`, background: C.field,
     display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }} aria-hidden="true">
-    <svg width={size * 0.66} height={size * 0.66} viewBox="0 0 100 100" style={{ overflow: "visible" }}>
+    <svg aria-hidden="true" focusable="false" width={size * 0.66} height={size * 0.66} viewBox="0 0 100 100" style={{ overflow: "visible" }}>
       <defs>
         <radialGradient id="lsLensCore" cx="42%" cy="40%" r="58%">
           <stop offset="0%" stopColor="#38BDF8"/><stop offset="40%" stopColor="#1E1B4B"/><stop offset="100%" stopColor="#020306"/>

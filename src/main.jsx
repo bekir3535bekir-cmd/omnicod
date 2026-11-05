@@ -4,6 +4,17 @@ import App from './App.jsx';
 // Yazı tipi uygulamanın içinde: internet olmasa da logo ve yazılar aynı görünür
 import './fonts.css';
 
+// Klavye erişimi: role="button" olan div/span'lar Enter ve Boşluk ile tıklanır.
+// Kendi tuş işleyicisi olan bileşenler (preventDefault yapanlar) iki kez tetiklenmez.
+document.addEventListener("keydown", (e) => {
+  if (e.defaultPrevented || (e.key !== "Enter" && e.key !== " ")) return;
+  const el = e.target;
+  if (el instanceof HTMLElement && el.getAttribute("role") === "button" && el.tagName !== "BUTTON") {
+    e.preventDefault();
+    el.click();
+  }
+});
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);

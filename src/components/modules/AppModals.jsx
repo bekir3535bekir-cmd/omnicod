@@ -40,7 +40,7 @@ export const HizliNot = ({ data, setData }) => {
     <>
       {/* Floating buton */}
       <button onClick={()=>setOpen(true)} aria-label="Hızlı not"
-        style={{ position:"fixed", bottom:"var(--fab-bottom-1, 90px)", right:"var(--fab-right, max(16px, calc(50% - 200px)))", zIndex:80,
+        style={{ position:"fixed", bottom:"var(--fab-bottom-1, calc(90px + env(safe-area-inset-bottom)))", right:"var(--fab-right, max(16px, calc(50% - 200px)))", zIndex:80,
           width:50, height:50, borderRadius:99,
           background: T.gold,
           border:"none", boxShadow: T.flat ? "0 4px 14px rgba(0,0,0,0.4)" : `0 4px 20px ${T.gold}50`,
@@ -100,7 +100,7 @@ export const HizliArama = ({ data, setActive }) => {
   return (
     <>
       <button onClick={()=>setOpen(true)} aria-label="Hızlı arama"
-        style={{ position:"fixed", bottom:"var(--fab-bottom-2, 148px)", right:"var(--fab-right, max(16px, calc(50% - 200px)))", zIndex:80,
+        style={{ position:"fixed", bottom:"var(--fab-bottom-2, calc(148px + env(safe-area-inset-bottom)))", right:"var(--fab-right, max(16px, calc(50% - 200px)))", zIndex:80,
           width:50, height:50, borderRadius:99,
           background:T.card2, border:`1px solid ${T.border}`,
           boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
@@ -1583,7 +1583,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
                           const pCov = selections[p.id] === "cover";
 
                           return (
-                            <div
+                            <div role="button" tabIndex={0}
                               key={p.id}
                               onClick={() => setProofIdx(idx)}
                               style={{
@@ -2096,7 +2096,7 @@ export const LoginScreen = ({ onLogin, data, team = [] }) => {
           }} />
 
           {/* Diyafram Kanatları & Mercek SVG */}
-          <svg width="56" height="56" viewBox="0 0 100 100" style={{ position: "relative", zIndex: 2, overflow: "visible" }}>
+          <svg aria-hidden="true" focusable="false" width="56" height="56" viewBox="0 0 100 100" style={{ position: "relative", zIndex: 2, overflow: "visible" }}>
             <defs>
               <radialGradient id="studyoLensCoreGrad" cx="42%" cy="40%" r="58%">
                 <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.95" />
@@ -2437,7 +2437,7 @@ export const LoginScreen = ({ onLogin, data, team = [] }) => {
                 style={{ background:"transparent", border:"none", color:T.text3,
                   fontSize:12, cursor:"pointer", padding:"0 0 14px 0",
                   display:"flex", alignItems:"center", gap:6 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none">
                   <path d="M15 18l-6-6 6-6" stroke={T.text3} strokeWidth="2.2" strokeLinecap="round"/>
                 </svg>
                 Bilgileri Düzenle
@@ -2457,7 +2457,7 @@ export const LoginScreen = ({ onLogin, data, team = [] }) => {
 
               {/* Hızlı Test / Simülasyon Kodu Kolaylığı */}
               {simCode && (
-                <div onClick={()=>setVerifyCode(simCode)}
+                <div role="button" tabIndex={0} onClick={()=>setVerifyCode(simCode)}
                   style={{ background:T.card2, border:`1px dashed ${T.gold}60`, borderRadius:12,
                     padding:"10px 12px", marginBottom:14, textAlign:"center", cursor:"pointer" }}>
                   <div style={{ fontSize:11, color:T.text3 }}>Test / Simülasyon Kodu:</div>
@@ -2515,7 +2515,7 @@ export const LoginScreen = ({ onLogin, data, team = [] }) => {
                 style={{ background:"transparent", border:"none", color:T.text3,
                   fontSize:12, cursor:"pointer", padding:"0 0 14px 0",
                   display:"flex", alignItems:"center", gap:6 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none">
                   <path d="M15 18l-6-6 6-6" stroke={T.text3} strokeWidth="2.2" strokeLinecap="round"/>
                 </svg>
                 Stüdyo Girişine Dön
@@ -2579,7 +2579,7 @@ export const LoginScreen = ({ onLogin, data, team = [] }) => {
                 style={{ background:"transparent", border:"none", color:T.text3,
                   fontSize:12, cursor:"pointer", padding:"0 0 14px 0",
                   display:"flex", alignItems:"center", gap:6 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none">
                   <path d="M15 18l-6-6 6-6" stroke={T.text3} strokeWidth="2.2" strokeLinecap="round"/>
                 </svg>
                 Stüdyo Girişine Dön

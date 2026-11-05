@@ -168,7 +168,7 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
                     : T.gold;
                   const isNow = m===new Date().getMonth();
                   return (
-                    <div key={m} onClick={()=>{ setCurMonth(m); setCurYear(yr); }}
+                    <div role="button" tabIndex={0} key={m} onClick={()=>{ setCurMonth(m); setCurYear(yr); }}
                       style={{ background:bg, borderRadius:10, padding:"8px 4px",
                         textAlign:"center", cursor:"pointer",
                         border:`1.5px solid ${isNow?T.goldL:"transparent"}` }}>
@@ -250,7 +250,7 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
                 {MN[curMonth]} {curYear} — {monthApts.length} randevu
               </div>
               {monthApts.map(a=>(
-                <div key={a.id} onClick={()=>setShowDetail(a)}
+                <div role="button" tabIndex={0} key={a.id} onClick={()=>setShowDetail(a)}
                   style={{ display:"flex", gap:12, alignItems:"center", cursor:"pointer",
                   borderBottom:`1px solid ${T.border}`, paddingBottom:12, marginBottom:12 }}>
                   <div style={{ background:pkgColor(a.package)+"1A", borderRadius:10, padding:"8px 10px",

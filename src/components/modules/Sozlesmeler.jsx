@@ -54,7 +54,7 @@ export const Sozlesmeler = ({ data, setData, role }) => {
   </style>
 </head>
 <body>
-  <div class="header">
+  <header class="header">
     <div>
       <h1 class="title">${S.unvan || "Fotoğraf Stüdyosu"}</h1>
       <div style="font-size: 12px; color: #666; margin-top: 4px;">Fotoğrafçılık & Prodüksiyon Hizmet Sözleşmesi</div>
@@ -62,7 +62,7 @@ export const Sozlesmeler = ({ data, setData, role }) => {
     <div>
       <span class="badge">DURUM: ${(c.status||"taslak").toUpperCase()}</span>
     </div>
-  </div>
+  </header>
 
   <table>
     <tr><th style="width:30%">Müşteri Adı</th><td><strong>${c.clientName}</strong></td></tr>

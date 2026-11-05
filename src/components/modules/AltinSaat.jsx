@@ -296,7 +296,7 @@ export const AltinSaat = ({ appointments = [], onSelectAppointment }) => {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {outdoorApts.map(apt => (
-              <div
+              <div role="button" tabIndex={0}
                 key={apt.id}
                 onClick={() => setSelectedDate(apt.date)}
                 style={{

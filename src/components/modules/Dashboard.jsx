@@ -282,7 +282,7 @@ const PreparationCard = ({ apt, isTmr, storageKey, onGoAltinSaat, onGoPoz, onMar
         {PREP_ITEMS.map(it => {
           const checked = !!checkedMap[it.id] || !!apt.equipmentReady;
           return (
-            <div
+            <div role="button" tabIndex={0}
               key={it.id}
               onClick={() => toggle(it.id)}
               style={{
@@ -497,7 +497,7 @@ export const Dashboard = ({ data, setData, setActive, role, plan, staffId }) => 
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
             {plan === "pro" && (
-              <div onClick={() => setActive("planyonetimi")} style={{ cursor: "pointer" }}>
+              <div role="button" tabIndex={0} onClick={() => setActive("planyonetimi")} style={{ cursor: "pointer" }}>
                 <PlanBadge plan={plan}/>
               </div>
             )}
@@ -683,13 +683,12 @@ export const Dashboard = ({ data, setData, setActive, role, plan, staffId }) => 
             { id: "kartvizit", label: "QR Kart" },
             { id: "sesliasistan", label: "Sesli Not" },
           ].map(tool => ({ ...tool, ...getModules()[tool.id], label: tool.label })).map(tool => (
-            <div
+            <button
+              type="button"
               key={tool.id}
-              role="button"
-              tabIndex={0}
-              onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActive(tool.id); } }}
               onClick={() => setActive(tool.id)}
               style={{
+                width: "100%", font: "inherit", color: "inherit",
                 borderRadius: T.flat ? T.radius : 14,
                 padding: T.flat ? "14px" : "12px 4px",
                 background: T.flat ? T.card : "rgba(255,255,255,0.03)",
@@ -710,7 +709,7 @@ export const Dashboard = ({ data, setData, setActive, role, plan, staffId }) => 
                 </div>
                 <div style={{ fontSize: 11, fontWeight: 600, color: T.text }}>{tool.label}</div>
               </>)}
-            </div>
+            </button>
           ))}
         </div>}
 
