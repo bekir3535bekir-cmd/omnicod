@@ -1,5 +1,7 @@
 name: Build iOS (STÜDYOM)
 
+# Her PR ve main'e her gönderimde: iOS uygulamasının imzasız derlenebildiğini kontrol eder.
+# App Store'a yükleme için release-ios.yml kullanılır.
 on:
   push:
     branches: [ main, master ]
@@ -10,16 +12,20 @@ on:
 jobs:
   build-ios:
     name: 🍎 Build iOS IPA
-    runs-on: macos-14
+    # Apple, Nisan 2026'dan beri App Store gönderimlerinde Xcode 26 / iOS 26 SDK istiyor
+    runs-on: macos-26
 
     steps:
       - name: 📥 Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
+
+      - name: 🧰 Xcode sürümü
+        run: xcodebuild -version
 
       - name: 📦 Install Node dependencies
         run: npm install --legacy-peer-deps
@@ -32,6 +38,7 @@ jobs:
 
       - name: 🛠️ Build iOS App with Xcode
         run: |
+          status=0
           xcodebuild build \
             -project ios/App/App.xcodeproj \
             -scheme App \
@@ -40,7 +47,13 @@ jobs:
             -derivedDataPath ios/build \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO > xcodebuild.log 2>&1 || status=$?
+          grep -E "BUILD (SUCCEEDED|FAILED)" xcodebuild.log || true
+          exit $status
+
+      - name: 🧾 Hata kaydı (başarısız olursa)
+        if: failure()
+        run: grep -nE "error:" xcodebuild.log | head -50 || tail -80 xcodebuild.log
 
       - name: 📦 Package App into IPA
         run: |
@@ -51,7 +64,7 @@ jobs:
           ls -lh Studyom.ipa
 
       - name: 🚀 Upload iOS IPA Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: Studyom-iOS
           path: build-output/Studyom.ipa

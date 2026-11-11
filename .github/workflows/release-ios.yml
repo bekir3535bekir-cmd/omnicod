@@ -1,0 +1,121 @@
+name: Release iOS (TestFlight)
+
+# Elle başlatılır (Actions → Release iOS → Run workflow).
+# İmzalı arşiv üretir ve App Store Connect'e (TestFlight) yükler. İmza otomatik:
+# Xcode, App Store Connect API anahtarıyla sertifika ve profili kendisi oluşturur.
+#
+# Gerekli GitHub Secrets (Settings → Secrets and variables → Actions):
+#   APPLE_TEAM_ID     Apple Developer ekip kimliği (10 karakter)
+#   ASC_KEY_ID        App Store Connect API anahtar kimliği
+#   ASC_ISSUER_ID     App Store Connect API "Issuer ID"
+#   ASC_API_KEY_P8    API anahtar dosyasının (.p8) içeriği, olduğu gibi
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: "Sürüm (kullanıcıya görünen, örn. 1.0.1)"
+        required: true
+        default: "1.0.0"
+
+jobs:
+  release-ios:
+    name: 🍎 TestFlight yüklemesi
+    # Apple, Nisan 2026'dan beri App Store gönderimlerinde Xcode 26 / iOS 26 SDK istiyor
+    runs-on: macos-26
+
+    steps:
+      - name: 🔐 Gizli bilgiler tanımlı mı
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          KID: ${{ secrets.ASC_KEY_ID }}
+          ISS: ${{ secrets.ASC_ISSUER_ID }}
+          KEY: ${{ secrets.ASC_API_KEY_P8 }}
+        run: |
+          missing=""
+          [ -z "$TEAM" ] && missing="$missing APPLE_TEAM_ID"
+          [ -z "$KID" ] && missing="$missing ASC_KEY_ID"
+          [ -z "$ISS" ] && missing="$missing ASC_ISSUER_ID"
+          [ -z "$KEY" ] && missing="$missing ASC_API_KEY_P8"
+          if [ -n "$missing" ]; then echo "::error::Eksik GitHub Secrets:$missing"; exit 1; fi
+
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v5
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: 🧰 Xcode sürümü
+        run: xcodebuild -version
+
+      - name: 📦 Install Node dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: 🔨 Build Web Assets (Vite)
+        run: npm run build
+
+      - name: 🔄 Sync Capacitor iOS
+        run: npx cap sync ios
+
+      - name: 🔑 API anahtarını yerleştir
+        env:
+          KEY: ${{ secrets.ASC_API_KEY_P8 }}
+        run: printf '%s\n' "$KEY" > "$RUNNER_TEMP/AuthKey.p8"
+
+      - name: 🗄️ Arşiv (imzalı)
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          KID: ${{ secrets.ASC_KEY_ID }}
+          ISS: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          status=0
+          xcodebuild archive \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Studyom.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$KID" \
+            -authenticationKeyIssuerID "$ISS" \
+            DEVELOPMENT_TEAM="$TEAM" \
+            CODE_SIGN_STYLE=Automatic \
+            MARKETING_VERSION="${{ inputs.version_name }}" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" > archive.log 2>&1 || status=$?
+          grep -E "ARCHIVE (SUCCEEDED|FAILED)" archive.log || true
+          if [ $status -ne 0 ]; then grep -nE "error:" archive.log | head -50 || tail -80 archive.log; fi
+          exit $status
+
+      - name: ☁️ App Store Connect'e yükle (TestFlight)
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          KID: ${{ secrets.ASC_KEY_ID }}
+          ISS: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Studyom.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$KID" \
+            -authenticationKeyIssuerID "$ISS"
+
+      - name: 🧹 Anahtarı sil
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"

@@ -66,6 +66,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!-- Yalnızca standart HTTPS kullanılır: ihracat şifreleme beyanı gerekmez -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Sesli asistanla randevu ve not eklerken sesinizi dinlemek için mikrofon kullanılır. Ses kaydı saklanmaz.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
