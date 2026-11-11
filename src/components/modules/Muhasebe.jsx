@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
-import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
+import { fmt, fmtTL, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
+import { getPass, setPass, getSession, saveSession, clearSession, getStudioInfo } from "../../services/storage";
 
 export const Muhasebe = ({ data, setData, role }) => {
   const isAdmin = role === "admin";
@@ -22,7 +22,7 @@ export const Muhasebe = ({ data, setData, role }) => {
   const [faturaClient, setFaturaClient] = useState(null);
   const [faturaFormat, setFaturaFormat] = useState("basit"); // basit | detayli
   const [faturaNo, setFaturaNo]   = useState(() => {
-    const n = parseInt(localStorage.getItem("geses_fatura_no")||"1");
+    const n = parseInt(localStorage.getItem("geses_fatura_no")||"0") + 1;
     return String(n).padStart(4,"0");
   });
   const FI = { clientName:"", amount:"", type:"Kapora", method:"Nakit", date:todayStr(), note:"", category:"Düğün" };
@@ -82,14 +82,14 @@ export const Muhasebe = ({ data, setData, role }) => {
   const maxVal = Math.max(...chartData.map(d=>d.inc), 1);
 
   const saveInc = () => {
-    if(!iForm.amount||!iForm.date) return;
+    if(!(Number(iForm.amount) > 0)||!iForm.date) return;
     const newInc = {...iForm, id:uid(), amount:Number(iForm.amount)};
     setData(p=>({...p, incomes:[...p.incomes, newInc]}));
     sb.upsert("incomes", toDB.incomes(newInc)).catch(()=>{});
     setShowInc(false); setIForm(FI);
   };
   const saveExp = () => {
-    if(!eForm.amount||!eForm.date) return;
+    if(!(Number(eForm.amount) > 0)||!eForm.date) return;
     const newExp = {...eForm, id:uid(), amount:Number(eForm.amount)};
     setData(p=>({...p, expenses:[...p.expenses, newExp]}));
     sb.upsert("expenses", toDB.expenses(newExp)).catch(()=>{});
@@ -97,14 +97,22 @@ export const Muhasebe = ({ data, setData, role }) => {
   };
 
   const saveEditInc = () => {
-    if(!editInc) return;
+    if(!editInc || !(Number(editInc.amount) > 0)) return;
     const updated = {...editInc, amount:Number(editInc.amount)};
-    setData(p=>({...p, incomes:p.incomes.map(i=>i.id===editInc.id?updated:i)}));
+    // Müşteri ödemesiyse müşteri kartındaki ödeme ve "ödenen" tutarını da güncelle
+    const old = data.incomes.find(i=>i.id===editInc.id);
+    const diff = updated.amount - Number(old?.amount||0);
+    const owner = diff!==0 && data.clients.find(c=>(c.payments||[]).some(pp=>pp.id===editInc.id));
+    const newClient = owner && {...owner, paid:Math.max(0,Number(owner.paid||0)+diff), payments:owner.payments.map(pp=>pp.id===editInc.id?{...pp,amount:updated.amount}:pp)};
+    setData(p=>({...p,
+      incomes:p.incomes.map(i=>i.id===editInc.id?updated:i),
+      clients:newClient ? p.clients.map(c=>c.id===newClient.id?newClient:c) : p.clients}));
+    if(newClient) sb.upsert("clients", toDB.clients(newClient)).catch(()=>{});
     sb.upsert("incomes", toDB.incomes(updated)).catch(()=>{});
     setEditInc(null);
   };
   const saveEditExp = () => {
-    if(!editExp) return;
+    if(!editExp || !(Number(editExp.amount) > 0)) return;
     const updated = {...editExp, amount:Number(editExp.amount)};
     setData(p=>({...p, expenses:p.expenses.map(e=>e.id===editExp.id?updated:e)}));
     sb.upsert("expenses", toDB.expenses(updated)).catch(()=>{});
@@ -115,18 +123,20 @@ export const Muhasebe = ({ data, setData, role }) => {
 
   // Fatura oluştur
   const nextFaturaNo = () => {
-    const n = parseInt(localStorage.getItem("geses_fatura_no")||"1") + 1;
+    const n = parseInt(localStorage.getItem("geses_fatura_no")||"0") + 1;
     localStorage.setItem("geses_fatura_no", String(n));
     return String(n).padStart(4,"0");
   };
 
   const generateFatura = (client, format) => {
+    const S      = getStudioInfo();
     const apt    = data.appointments.find(a=>a.clientName===client.name)||{};
-    const fNo    = `OMNICOD-${selYear}-${nextFaturaNo()}`;
+    const fNo    = `STUDYOM-${selYear}-${nextFaturaNo()}`;
     const today  = new Date().toLocaleDateString("tr-TR");
-    const kdv    = format==="detayli" ? client.totalAmount * KDV_RATE : 0;
-    const stopaj = format==="detayli" ? client.totalAmount * STOPAJ_RATE : 0;
+    // Toplam tutar KDV dahildir: KDV ve stopaj, KDV hariç ara toplam üzerinden hesaplanır
     const net    = format==="detayli" ? client.totalAmount / (1 + KDV_RATE) : client.totalAmount;
+    const kdv    = format==="detayli" ? client.totalAmount - net : 0;
+    const stopaj = format==="detayli" ? net * STOPAJ_RATE : 0;
 
     const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/>
 <title>Fatura ${fNo}</title>
@@ -156,23 +166,23 @@ export const Muhasebe = ({ data, setData, role }) => {
   .badge{display:inline-block;background:#e8f5e9;color:#2e7d32;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;}
   @media print{body{padding:20px;}}
 </style></head><body>
-<div class="header">
-  <img src="${SIRKET.logo}" class="logo" alt="OmniCod"/>
+<header class="header">
+  ${S.logo ? `<img src="${S.logo}" class="logo" alt=""/>` : ""}
   <div class="firm">
-    <h2>${SIRKET.unvan}</h2>
-    <p>${SIRKET.adres}<br/>${SIRKET.tel} · ${SIRKET.email}<br/>Vergi Dairesi: ${SIRKET.vdaire}<br/>Vergi No: ${SIRKET.vno}</p>
+    <h2>${S.unvan}</h2>
+    <p>${S.adres}<br/>${S.tel} · ${S.email}${S.vdaire ? `<br/>Vergi Dairesi: ${S.vdaire}` : ""}${S.vno ? `<br/>Vergi No: ${S.vno}` : ""}</p>
   </div>
-</div>
+</header>
 
 <div>
-  <span class="fatura-no">📄 FATURA No: ${fNo}</span>
+  <span class="fatura-no">FATURA No: ${fNo}</span>
   <span style="margin-left:12px;font-size:12px;color:#888;">Tarih: ${today}</span>
 </div>
 
 <div class="parties" style="margin-top:16px;">
   <div class="party">
     <h4>Satıcı</h4>
-    <p>${SIRKET.ad}<br/><span style="font-size:11px;color:#666;font-weight:400;">${SIRKET.unvan}</span></p>
+    <p>${S.ad}<br/><span style="font-size:11px;color:#666;font-weight:400;">${S.unvan}</span></p>
   </div>
   <div class="party">
     <h4>Müşteri / Alıcı</h4>
@@ -186,7 +196,7 @@ export const Muhasebe = ({ data, setData, role }) => {
     <tr>
       <td>${apt.type||"Düğün"} Fotoğraf & Video Çekimi Hizmeti<br/><span style="font-size:11px;color:#888;">${apt.package||client.package||""}</span></td>
       <td>${fmtDate(apt.date||client.date)}</td>
-      <td style="text-align:right;font-weight:700;">${format==="detayli"?fmt(net):fmt(client.totalAmount)}</td>
+      <td style="text-align:right;font-weight:700;">${format==="detayli"?fmtTL(net):fmtTL(client.totalAmount)}</td>
     </tr>
     ${(apt.extraDates||[]).filter(Boolean).map((d,i)=>`
     <tr>
@@ -199,29 +209,29 @@ export const Muhasebe = ({ data, setData, role }) => {
 
 <table class="totals">
   ${format==="detayli" ? `
-  <tr><td>Ara Toplam (KDV Hariç)</td><td>${fmt(net)}</td></tr>
-  <tr><td>KDV (%20)</td><td style="color:#e53e3e;">+ ${fmt(kdv)}</td></tr>
-  <tr><td>Stopaj (%17)</td><td style="color:#e53e3e;">- ${fmt(stopaj)}</td></tr>
+  <tr><td>Ara Toplam (KDV Hariç)</td><td>${fmtTL(net)}</td></tr>
+  <tr><td>KDV (%20)</td><td style="color:#e53e3e;">+ ${fmtTL(kdv)}</td></tr>
+  <tr><td>Stopaj (%17)</td><td style="color:#e53e3e;">- ${fmtTL(stopaj)}</td></tr>
   ` : ""}
-  <tr class="grand"><td>TOPLAM TUTAR</td><td>${fmt(client.totalAmount)}</td></tr>
-  <tr><td style="font-size:11px;color:#888;">Ödenen</td><td style="font-size:11px;color:#2e7d32;">- ${fmt(client.paid)}</td></tr>
-  <tr><td style="font-size:12px;font-weight:700;">Kalan Bakiye</td><td style="font-size:12px;font-weight:700;color:#c53030;">${fmt(Math.max(0,client.totalAmount-client.paid))}</td></tr>
+  <tr class="grand"><td>TOPLAM TUTAR</td><td>${fmtTL(client.totalAmount)}</td></tr>
+  <tr><td style="font-size:11px;color:#888;">Ödenen</td><td style="font-size:11px;color:#2e7d32;">- ${fmtTL(client.paid)}</td></tr>
+  <tr><td style="font-size:12px;font-weight:700;">Kalan Bakiye</td><td style="font-size:12px;font-weight:700;color:#c53030;">${fmtTL(Math.max(0,client.totalAmount-client.paid))}</td></tr>
 </table>
 
-<div class="iban">
-  🏦 <strong>Ödeme Bilgisi:</strong> ${SIRKET.iban}<br/>
-  <span style="font-size:11px;">Hesap Sahibi: ${SIRKET.ad}</span>
-</div>
+${S.iban ? `<div class="iban">
+  🏦 <strong>Ödeme Bilgisi:</strong> ${S.iban}<br/>
+  <span style="font-size:11px;">Hesap Sahibi: ${S.ad}</span>
+</div>` : ""}
 
 ${format==="detayli" ? `
 <div style="margin-top:16px;background:#fff8e1;border-radius:8px;padding:12px 16px;font-size:12px;">
-  <strong>Vergi Özeti:</strong> KDV: ${fmt(kdv)} · Stopaj: ${fmt(stopaj)}
+  <strong>Vergi Özeti:</strong> KDV: ${fmtTL(kdv)} · Stopaj: ${fmtTL(stopaj)}
   <br/><span style="font-size:11px;color:#888;">*Stopaj, müşteri tarafından vergi dairesine yatırılır.</span>
 </div>` : ""}
 
-<div class="footer">
-  Bu belge bilgilendirme amaçlıdır. ${SIRKET.unvan} · ${today}
-</div>
+<footer class="footer">
+  Bu belge bilgilendirme amaçlıdır. ${S.unvan} · ${today}
+</footer>
 </body></html>`;
 
     const win = window.open("","_blank");
@@ -231,10 +241,10 @@ ${format==="detayli" ? `
   };
 
   const TABS = [
-    {id:"ozet",     label:"📊 Özet"},
-    {id:"grafik",   label:"📈 Grafik"},
-    {id:"islemler", label:"💰 İşlemler"},
-    {id:"vergi",    label:"🧾 Vergi & Fatura"},
+    {id:"ozet",     label:"Özet"},
+    {id:"grafik",   label:"Grafik"},
+    {id:"islemler", label:"İşlemler"},
+    {id:"vergi",    label:"Vergi & Fatura"},
   ];
 
   return (
@@ -273,14 +283,14 @@ ${format==="detayli" ? `
           </div>
           {(period==="aylik"||period==="yillik") && (
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <button onClick={()=>{ if(period==="aylik"){ if(selMonth===0){setSelMonth(11);setSelYear(y=>y-1);}else setSelMonth(m=>m-1); } else setSelYear(y=>y-1); }}
+              <button aria-label="Önceki dönem" onClick={()=>{ if(period==="aylik"){ if(selMonth===0){setSelMonth(11);setSelYear(y=>y-1);}else setSelMonth(m=>m-1); } else setSelYear(y=>y-1); }}
                 style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                 <Ic n="back" s={15} c={T.text2}/>
               </button>
               <div style={{ flex:1, textAlign:"center", fontSize:14, fontWeight:700, color:T.goldL }}>
                 {period==="aylik"?`${MN[selMonth]} ${selYear}`:String(selYear)}
               </div>
-              <button onClick={()=>{ if(period==="aylik"){ if(selMonth===11){setSelMonth(0);setSelYear(y=>y+1);}else setSelMonth(m=>m+1); } else setSelYear(y=>y+1); }}
+              <button aria-label="Sonraki dönem" onClick={()=>{ if(period==="aylik"){ if(selMonth===11){setSelMonth(0);setSelYear(y=>y+1);}else setSelMonth(m=>m+1); } else setSelYear(y=>y+1); }}
                 style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                 <Ic n="back" s={15} c={T.text2} style={{transform:"rotate(180deg)"}}/>
               </button>
@@ -301,7 +311,7 @@ ${format==="detayli" ? `
               {label:"Bekleyen",      val:fmt(data.clients.filter(c=>c.paid<c.totalAmount).reduce((s,c)=>s+(c.totalAmount-c.paid),0)), color:T.orangeL, icon:"⏳"},
             ].map(s=>(
               <div key={s.label} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:16, padding:14 }}>
-                <div style={{ fontSize:18, marginBottom:6 }}>{s.icon}</div>
+                {!T.flat && <div style={{ fontSize:18, marginBottom:6 }}>{s.icon}</div>}
                 <div style={{ ...NUM_FONT, fontSize:18, fontWeight:700, color:s.color }}>{s.val}</div>
                 <div style={{ fontSize:11, color:T.text3, marginTop:2 }}>{s.label}</div>
               </div>
@@ -309,7 +319,8 @@ ${format==="detayli" ? `
           </div>
           {/* En çok kazandıran paketler */}
           {pkgs.map(pkg=>{
-            const pkgInc = allIncomes.filter(i=>{ const c=data.clients.find(x=>x.name===i.clientName); return c?.package===pkg.name; }).reduce((s,i)=>s+Number(i.amount||0),0);
+            // Seçili dönemin gelirinden (fInc) hesaplanır; toplamla aynı dönem olmalı, yoksa çubuk %100'ü aşıp taşar
+            const pkgInc = fInc.filter(i=>{ const c=data.clients.find(x=>x.name===i.clientName); return c?.package===pkg.name; }).reduce((s,i)=>s+Number(i.amount||0),0);
             if(pkgInc===0) return null;
             const pct = totalInc > 0 ? pkgInc/totalInc*100 : 0;
             return (
@@ -319,7 +330,7 @@ ${format==="detayli" ? `
                   <span style={{ ...NUM_FONT, fontSize:13, fontWeight:700, color:pkg.color }}>{fmt(pkgInc)}</span>
                 </div>
                 <div style={{ background:T.card2, borderRadius:99, height:6 }}>
-                  <div style={{ background:pkg.color, borderRadius:99, height:"100%", width:`${pct}%`, transition:"width 0.4s" }}/>
+                  <div style={{ background:pkg.color, borderRadius:99, height:"100%", width:`${Math.min(100, pct)}%`, transition:"width 0.4s" }}/>
                 </div>
               </div>
             );
@@ -388,7 +399,7 @@ ${format==="detayli" ? `
             : <>
               {fInc.map(i=>(
                 <div key={i.id} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:14, marginBottom:8, display:"flex", gap:12, alignItems:"center" }}>
-                  <div style={{ background:T.green+"1A", borderRadius:10, width:38, height:38, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <div style={{ background: T.flat ? T.card2 : T.green+"1A", borderRadius:10, width:38, height:38, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                     <span style={{ fontSize:16 }}>📥</span>
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
@@ -397,13 +408,13 @@ ${format==="detayli" ? `
                   </div>
                   <div style={{ textAlign:"right" }}>
                     <div style={{ ...NUM_FONT, fontSize:15, fontWeight:700, color:T.greenL }}>+{fmt(i.amount)}</div>
-                    {isAdmin && <button onClick={()=>delInc(i)} style={{ fontSize:10, color:T.redL, background:"none", marginTop:2 }}>sil</button>}
+                    {isAdmin && <button onClick={()=>{ if(confirm(`${fmt(i.amount)} tutarındaki gelir kaydı silinsin mi?`)) delInc(i); }} style={{ fontSize:10, color:T.redL, background:"none", marginTop:2 }}>sil</button>}
                   </div>
                 </div>
               ))}
               {fExp.map(e=>(
                 <div key={e.id} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:14, marginBottom:8, display:"flex", gap:12, alignItems:"center" }}>
-                  <div style={{ background:T.red+"1A", borderRadius:10, width:38, height:38, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <div style={{ background: T.flat ? T.card2 : T.red+"1A", borderRadius:10, width:38, height:38, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                     <span style={{ fontSize:16 }}>📤</span>
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
@@ -412,7 +423,7 @@ ${format==="detayli" ? `
                   </div>
                   <div style={{ textAlign:"right" }}>
                     <div style={{ ...NUM_FONT, fontSize:15, fontWeight:700, color:T.redL }}>-{fmt(e.amount)}</div>
-                    {isAdmin && <button onClick={()=>delExp(e)} style={{ fontSize:10, color:T.redL, background:"none", marginTop:2 }}>sil</button>}
+                    {isAdmin && <button onClick={()=>{ if(confirm(`${fmt(e.amount)} tutarındaki gider kaydı silinsin mi?`)) delExp(e); }} style={{ fontSize:10, color:T.redL, background:"none", marginTop:2 }}>sil</button>}
                   </div>
                 </div>
               ))}
@@ -424,18 +435,18 @@ ${format==="detayli" ? `
         {tab==="vergi" && <>
           {/* Yıl seçici */}
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
-            <button onClick={()=>setSelYear(y=>y-1)} style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <button aria-label="Önceki dönem" onClick={()=>setSelYear(y=>y-1)} style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center" }}>
               <Ic n="back" s={15} c={T.text2}/>
             </button>
             <div style={{ flex:1, textAlign:"center", fontSize:15, fontWeight:700, color:T.goldL }}>{selYear} Vergi Özeti</div>
-            <button onClick={()=>setSelYear(y=>y+1)} style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <button aria-label="Sonraki dönem" onClick={()=>setSelYear(y=>y+1)} style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center" }}>
               <Ic n="back" s={15} c={T.text2} style={{transform:"rotate(180deg)"}}/>
             </button>
           </div>
 
           {/* Yıllık gelir */}
           <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:12 }}>
-            <div style={{ fontSize:12, color:T.text3, marginBottom:4 }}>📊 {selYear} Yılı Toplam Gelir</div>
+            <div style={{ fontSize:12, color:T.text3, marginBottom:4 }}>{selYear} Yılı Toplam Gelir</div>
             <div style={{ ...NUM_FONT, fontSize:28, fontWeight:700, color:T.goldL }}>{fmt(yearInc)}</div>
           </div>
 
@@ -448,7 +459,7 @@ ${format==="detayli" ? `
               {label:"Net Kalan", val:fmt(Math.max(0,yearInc-gvTutar)), color:T.greenL, icon:"💚", sub:"Vergi sonrası"},
             ].map(s=>(
               <div key={s.label} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:14 }}>
-                <div style={{ fontSize:18, marginBottom:6 }}>{s.icon}</div>
+                {!T.flat && <div style={{ fontSize:18, marginBottom:6 }}>{s.icon}</div>}
                 <div style={{ ...NUM_FONT, fontSize:17, fontWeight:700, color:s.color }}>{s.val}</div>
                 <div style={{ fontSize:12, fontWeight:600, color:T.text, marginTop:2 }}>{s.label}</div>
                 <div style={{ fontSize:10, color:T.text3, marginTop:2 }}>{s.sub}</div>
@@ -458,13 +469,13 @@ ${format==="detayli" ? `
 
           {/* Gelir vergisi dilimi */}
           <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:16 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:T.text, marginBottom:12 }}>📐 Gelir Vergisi Dilimleri (2024)</div>
+            <div style={{ fontSize:13, fontWeight:700, color:T.text, marginBottom:12 }}>Gelir Vergisi Dilimleri (2024)</div>
             {[
-              {label:"0 – 110.000 ₺",     rate:"15%", active:yearInc<=110000},
-              {label:"110.000 – 230.000 ₺",rate:"20%", active:yearInc>110000&&yearInc<=230000},
-              {label:"230.000 – 580.000 ₺",rate:"27%", active:yearInc>230000&&yearInc<=580000},
-              {label:"580.000 – 3.000.000 ₺",rate:"35%",active:yearInc>580000&&yearInc<=3000000},
-              {label:"3.000.000 ₺ üzeri",  rate:"40%", active:yearInc>3000000},
+              {label:"0 – 110.000",     rate:"15%", active:yearInc<=110000},
+              {label:"110.000 – 230.000",rate:"20%", active:yearInc>110000&&yearInc<=230000},
+              {label:"230.000 – 580.000",rate:"27%", active:yearInc>230000&&yearInc<=580000},
+              {label:"580.000 – 3.000.000",rate:"35%",active:yearInc>580000&&yearInc<=3000000},
+              {label:"3.000.000 üzeri",  rate:"40%", active:yearInc>3000000},
             ].map(d=>(
               <div key={d.label} style={{ display:"flex", justifyContent:"space-between", padding:"8px 12px", borderRadius:8, marginBottom:4,
                 background:d.active?T.gold+"22":"transparent", border:`1px solid ${d.active?T.gold+"44":"transparent"}` }}>
@@ -477,10 +488,10 @@ ${format==="detayli" ? `
 
           {/* Fatura */}
           <div style={{ background:T.card, border:`1.5px solid ${T.gold}44`, borderRadius:16, padding:16, marginBottom:16 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:T.goldL, marginBottom:12 }}>📄 Fatura Oluştur</div>
+            <div style={{ fontSize:13, fontWeight:700, color:T.goldL, marginBottom:12 }}>Fatura Oluştur</div>
             <div style={{ fontSize:12, color:T.text3, marginBottom:10 }}>Format seç:</div>
             <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-              {[["basit","📋 Basit"],["detayli","🔍 Detaylı (KDV)"]].map(([v,l])=>(
+              {[["basit","Basit"],["detayli","Detaylı (KDV)"]].map(([v,l])=>(
                 <button key={v} onClick={()=>setFaturaFormat(v)}
                   style={{ flex:1, background:faturaFormat===v?T.gold+"22":"transparent",
                     border:`1.5px solid ${faturaFormat===v?T.gold:T.border}`,
@@ -511,7 +522,7 @@ ${format==="detayli" ? `
 
           {/* Uyarı notu */}
           <div style={{ background:T.orange+"1A", border:`1px solid ${T.orange}33`, borderRadius:12, padding:"12px 14px", fontSize:11, color:T.orangeL, lineHeight:1.7 }}>
-            ⚠️ Bu vergi hesaplamaları tahminidir. Kesin vergi için muhasebecine danışmanı öneririz.
+            Bu vergi hesaplamaları tahminidir. Kesin vergi için muhasebecine danışmanı öneririz.
           </div>
         </>}
 
@@ -522,7 +533,7 @@ ${format==="detayli" ? `
         <BottomSheet title="Gelir Ekle" onClose={()=>setShowInc(false)}>
           <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
             <Field label="Müşteri / Kaynak" value={iForm.clientName} onChange={fi("clientName")} placeholder="Müşteri adı"/>
-            <Field label="Tutar (₺)" type="number" value={iForm.amount} onChange={fi("amount")} placeholder="0" required/>
+            <Field label="Tutar" type="number" value={iForm.amount} onChange={fi("amount")} placeholder="0" required/>
             <DatePicker label="Tarih" value={iForm.date} onChange={fi("date")} required/>
             <Field label="Tür" value={iForm.type} onChange={fi("type")} options={["Kapora","Ödeme","Bonus","Diğer"]}/>
             <Field label="Yöntem" value={iForm.method} onChange={fi("method")} options={["Nakit","Havale","Kredi Kartı","Diğer"]}/>
@@ -536,7 +547,7 @@ ${format==="detayli" ? `
       {showExp && (
         <BottomSheet title="Gider Ekle" onClose={()=>setShowExp(false)}>
           <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-            <Field label="Tutar (₺)" type="number" value={eForm.amount} onChange={fe("amount")} placeholder="0" required/>
+            <Field label="Tutar" type="number" value={eForm.amount} onChange={fe("amount")} placeholder="0" required/>
             <DatePicker label="Tarih" value={eForm.date} onChange={fe("date")} required/>
             <Field label="Kategori" value={eForm.category} onChange={fe("category")} options={["Ekipman","Ulaşım","Yazılım","Kira","Personel","Vergi","Diğer"]}/>
             <Field label="Açıklama" value={eForm.description} onChange={fe("description")} placeholder="Ne için?"/>

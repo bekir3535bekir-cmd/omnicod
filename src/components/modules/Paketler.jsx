@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { sb, fromDB, toDB } from "../../services/supabase";
 import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
@@ -25,14 +25,29 @@ export const Paketler = ({ data, setData, role }) => {
 
   const saveEdit = () => {
     if(!editPkg.name||!editPkg.price) return;
-    setData(p=>({...p,packages:p.packages.map(pkg=>pkg.id===editPkg.id
-      ? {...editPkg, price:Number(editPkg.price), includes:(editPkg.includes||[]).filter(Boolean)}
-      : pkg
-    )}));
+    const updated = {...editPkg, price:Number(editPkg.price), includes:(editPkg.includes||[]).filter(Boolean)};
+    const oldName = data.packages.find(pkg=>pkg.id===editPkg.id)?.name;
+    const renamed = oldName && oldName!==updated.name;
+    // Müşteri ve randevular pakete isimle bağlı: ad değişirse onları da güncelle
+    const movedClients = renamed ? data.clients.filter(c=>c.package===oldName).map(c=>({...c, package:updated.name})) : [];
+    const movedAppts   = renamed ? data.appointments.filter(a=>a.package===oldName).map(a=>({...a, package:updated.name})) : [];
+    setData(p=>({...p,
+      packages:p.packages.map(pkg=>pkg.id===editPkg.id ? updated : pkg),
+      clients: renamed ? p.clients.map(c=>c.package===oldName?{...c, package:updated.name}:c) : p.clients,
+      appointments: renamed ? p.appointments.map(a=>a.package===oldName?{...a, package:updated.name}:a) : p.appointments,
+    }));
+    sb.upsert("packages", toDB.packages(updated)).catch(()=>{});
+    movedClients.forEach(c=>sb.upsert("clients", toDB.clients(c)).catch(()=>{}));
+    movedAppts.forEach(a=>sb.upsert("appointments", toDB.appointments(a)).catch(()=>{}));
     setEditPkg(null);
   };
 
   const deletePkg = (pkg) => {
+    const used = data.clients.filter(c=>c.package===pkg.name).length;
+    const msg = used>0
+      ? `"${pkg.name}" ${used} müşteride kullanılıyor. Yine de silinsin mi?`
+      : `"${pkg.name}" paketi silinsin mi?`;
+    if(!confirm(msg)) return;
     sb.delete("packages", pkg.id).catch(()=>{});
     setData(p=>({...p, packages:p.packages.filter(x=>x.id!==pkg.id)}));
   };
@@ -55,15 +70,15 @@ export const Paketler = ({ data, setData, role }) => {
                 <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                   <div style={{ ...NUM_FONT, fontSize:26, fontWeight:700, color:pkg.color }}>{fmt(pkg.price)}</div>
                   {isAdmin && (
-                    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                      <button onClick={()=>setEditPkg({...pkg, price:String(pkg.price), includes:[...(pkg.includes||[])]})}
+                    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                      <button aria-label="Düzenle" onClick={()=>setEditPkg({...pkg, price:String(pkg.price), includes:[...(pkg.includes||[])]})}
                         style={{ background:T.blue+"1A", border:`1px solid ${T.blue}33`, borderRadius:9,
-                          width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                          width:38, height:38, display:"flex", alignItems:"center", justifyContent:"center" }}>
                         <Ic n="edit" s={13} c={T.blueL}/>
                       </button>
-                      <button onClick={()=>deletePkg(pkg)}
+                      <button aria-label="Sil" onClick={()=>deletePkg(pkg)}
                         style={{ background:T.red+"1A", border:`1px solid ${T.red}33`, borderRadius:9,
-                          width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                          width:38, height:38, display:"flex", alignItems:"center", justifyContent:"center" }}>
                         <Ic n="trash" s={13} c={T.redL}/>
                       </button>
                     </div>
@@ -94,7 +109,7 @@ export const Paketler = ({ data, setData, role }) => {
         <BottomSheet title="Yeni Paket" onClose={()=>setShowAdd(false)}>
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
             <Field label="Paket Adı" value={form.name} onChange={f("name")} placeholder="Örn: Platin Paket" required/>
-            <Field label="Fiyat (₺)" type="number" value={form.price} onChange={f("price")} required/>
+            <Field label="Fiyat" type="number" value={form.price} onChange={f("price")} required/>
             <div>
               <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:8 }}>Renk</div>
               <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
@@ -113,7 +128,7 @@ export const Paketler = ({ data, setData, role }) => {
                     <Field value={inc} onChange={v=>setForm(p=>({...p,includes:p.includes.map((x,j)=>i===j?v:x)}))} placeholder={`İçerik ${i+1}`}/>
                   </div>
                   {form.includes.length>1 && (
-                    <button onClick={()=>setForm(p=>({...p,includes:p.includes.filter((_,j)=>j!==i)}))}
+                    <button aria-label="Sil" onClick={()=>setForm(p=>({...p,includes:p.includes.filter((_,j)=>j!==i)}))}
                       style={{ background:T.red+"1A", border:`1px solid ${T.red}33`, borderRadius:8,
                         width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                       <Ic n="trash" s={12} c={T.redL}/>
@@ -136,7 +151,7 @@ export const Paketler = ({ data, setData, role }) => {
         <BottomSheet title="Paketi Düzenle" onClose={()=>setEditPkg(null)}>
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
             <Field label="Paket Adı" value={editPkg.name} onChange={v=>setEditPkg(p=>({...p,name:v}))} placeholder="Paket adı" required/>
-            <Field label="Fiyat (₺)" type="number" value={editPkg.price} onChange={v=>setEditPkg(p=>({...p,price:v}))} required/>
+            <Field label="Fiyat" type="number" value={editPkg.price} onChange={v=>setEditPkg(p=>({...p,price:v}))} required/>
             <div>
               <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:8 }}>Renk</div>
               <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
@@ -155,7 +170,7 @@ export const Paketler = ({ data, setData, role }) => {
                     <Field value={inc} onChange={v=>setEditPkg(p=>({...p,includes:p.includes.map((x,j)=>i===j?v:x)}))} placeholder={`İçerik ${i+1}`}/>
                   </div>
                   {(editPkg.includes||[]).length>1 && (
-                    <button onClick={()=>setEditPkg(p=>({...p,includes:p.includes.filter((_,j)=>j!==i)}))}
+                    <button aria-label="Sil" onClick={()=>setEditPkg(p=>({...p,includes:p.includes.filter((_,j)=>j!==i)}))}
                       style={{ background:T.red+"1A", border:`1px solid ${T.red}33`, borderRadius:8,
                         width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                       <Ic n="trash" s={12} c={T.redL}/>

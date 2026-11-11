@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
-import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, LEGACY_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE, LEGACY_MASTER_CODE, isComplete } from "../../constants/templates";
+import { fmt, fmtTL, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS_HASHES, DEFAULT_PERSONEL_PASS_HASHES, isComplete } from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession, getAuthUser, saveAuthUser, generateVerificationCode, verifyEmailCode } from "../../services/storage";
+import { getPass, setPass, verifyPass, getSession, saveSession, clearSession, getAuthUser, saveAuthUser, verifyAuthUserPass, generateVerificationCode, verifyEmailCode, getStudioInfo } from "../../services/storage";
 import { resetTrial } from "../../services/plan";
 
 
@@ -39,19 +39,19 @@ export const HizliNot = ({ data, setData }) => {
   return (
     <>
       {/* Floating buton */}
-      <button onClick={()=>setOpen(true)}
-        style={{ position:"fixed", bottom:90, right:"max(16px, calc(50% - 200px))", zIndex:80,
+      <button onClick={()=>setOpen(true)} aria-label="Hızlı not"
+        style={{ position:"fixed", bottom:"var(--fab-bottom-1, calc(90px + env(safe-area-inset-bottom)))", right:"var(--fab-right, max(16px, calc(50% - 200px)))", zIndex:80,
           width:50, height:50, borderRadius:99,
-          background:`linear-gradient(135deg,${T.gold},${T.goldD})`,
-          border:"none", boxShadow:`0 4px 20px ${T.gold}50`,
-          display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>
-        📝
+          background: T.gold,
+          border:"none", boxShadow: T.flat ? "0 4px 14px rgba(0,0,0,0.4)" : `0 4px 20px ${T.gold}50`,
+          display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <Ic n="pen" s={20} c={T.onAccent || "#FFFFFF"}/>
       </button>
       {open && (
         <BottomSheet title="Hızlı Not" onClose={()=>setOpen(false)}>
           <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
             <div style={{ fontSize:13, color:T.text3 }}>
-              📓 Not Defteri'ne kaydedilecek
+              Not Defteri'ne kaydedilecek
             </div>
             {/* Etiket seçimi */}
             <div style={{ display:"flex", gap:8 }}>
@@ -99,13 +99,13 @@ export const HizliArama = ({ data, setActive }) => {
 
   return (
     <>
-      <button onClick={()=>setOpen(true)}
-        style={{ position:"fixed", bottom:148, right:"max(16px, calc(50% - 200px))", zIndex:80,
+      <button onClick={()=>setOpen(true)} aria-label="Hızlı arama"
+        style={{ position:"fixed", bottom:"var(--fab-bottom-2, calc(148px + env(safe-area-inset-bottom)))", right:"var(--fab-right, max(16px, calc(50% - 200px)))", zIndex:80,
           width:50, height:50, borderRadius:99,
           background:T.card2, border:`1px solid ${T.border}`,
-          boxShadow:`0 4px 16px rgba(0,0,0,0.3)`,
-          display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>
-        🔍
+          boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+          display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <Ic n="search" s={20} c={T.text}/>
       </button>
       {open && (
         <BottomSheet title="Hızlı Arama" onClose={()=>{ setOpen(false); setQuery(""); }}>
@@ -124,7 +124,7 @@ export const HizliArama = ({ data, setActive }) => {
               <button key={i} onClick={()=>{ r.action(); setOpen(false); setQuery(""); }}
                 style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:14,
                   padding:"12px 14px", display:"flex", gap:12, alignItems:"center", textAlign:"left" }}>
-                <div style={{ fontSize:22, flexShrink:0 }}>{r.icon}</div>
+                {!T.flat && <div style={{ fontSize:22, flexShrink:0 }}>{r.icon}</div>}
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontWeight:600, fontSize:14, color:T.text }}>{r.label}</div>
                   <div style={{ fontSize:11, color:T.text3, marginTop:2, overflow:"hidden",
@@ -163,11 +163,11 @@ export const GeceModu = ({ data, onClose }) => {
   const pendingPayments = data.clients.filter(c=>c.totalAmount>0&&c.paid<c.totalAmount&&!isComplete(c)).length;
 
   return (
-    <BottomSheet title="🌙 Gece Özeti" onClose={onClose}>
+    <BottomSheet title="Gece Özeti" onClose={onClose}>
       <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
         <div style={{ textAlign:"center", padding:"8px 0 4px" }}>
           <div style={{ fontFamily:"Playfair Display", fontSize:18, color:T.goldL, marginBottom:4 }}>
-            İyi Geceler 🌙
+            İyi Geceler
           </div>
           <div style={{ fontSize:12, color:T.text3 }}>Bugünün özeti</div>
         </div>
@@ -175,7 +175,6 @@ export const GeceModu = ({ data, onClose }) => {
         {/* Bugün alınan ödemeler */}
         <div style={{ background:T.green+"1A", border:`1px solid ${T.green}33`,
           borderRadius:14, padding:16, display:"flex", gap:14, alignItems:"center" }}>
-          <div style={{ fontSize:28 }}>💰</div>
           <div>
             <div style={{ fontSize:12, color:T.text3, marginBottom:2 }}>Bugün alınan ödemeler</div>
             <div style={{ fontSize:20, fontWeight:700, color:T.greenL }}>{fmt(todayTotal)}</div>
@@ -186,12 +185,12 @@ export const GeceModu = ({ data, onClose }) => {
         {/* Yarın çekimler */}
         <div style={{ background:T.blue+"1A", border:`1px solid ${T.blue}33`,
           borderRadius:14, padding:16 }}>
-          <div style={{ fontSize:12, color:T.text3, marginBottom:8 }}>📷 Yarın çekim</div>
+          <div style={{ fontSize:12, color:T.text3, marginBottom:8 }}>Yarın çekim</div>
           {tomorrowApts.length === 0 ? (
-            <div style={{ fontSize:13, color:T.text2 }}>Yarın çekim yok, dinlenebilirsin ✅</div>
+            <div style={{ fontSize:13, color:T.text2 }}>Yarın çekim yok, dinlenebilirsin</div>
           ) : tomorrowApts.map(a=>(
             <div key={a.id} style={{ fontSize:13, fontWeight:600, color:T.blueL, marginBottom:4 }}>
-              📸 {a.clientName} — {a.location||"Lokasyon belirtilmemiş"}
+              {a.clientName} — {a.location||"Lokasyon belirtilmemiş"}
             </div>
           ))}
         </div>
@@ -200,25 +199,25 @@ export const GeceModu = ({ data, onClose }) => {
         {(overdueDeliveries > 0 || pendingPayments > 0) && (
           <div style={{ background:T.orange+"1A", border:`1px solid ${T.orange}33`,
             borderRadius:14, padding:16 }}>
-            <div style={{ fontSize:12, color:T.text3, marginBottom:8 }}>⚠️ Dikkat</div>
+            <div style={{ fontSize:12, color:T.text3, marginBottom:8 }}>Dikkat</div>
             {overdueDeliveries > 0 && (
               <div style={{ fontSize:13, color:T.orangeL, marginBottom:4 }}>
-                🕐 {overdueDeliveries} müşteri teslimatı gecikiyor
+                {overdueDeliveries} müşteri teslimatı gecikiyor
               </div>
             )}
             {pendingPayments > 0 && (
               <div style={{ fontSize:13, color:T.orangeL }}>
-                💸 {pendingPayments} müşterinin ödemesi eksik
+                {pendingPayments} müşterinin ödemesi eksik
               </div>
             )}
           </div>
         )}
 
         <button onClick={onClose}
-          style={{ background:`linear-gradient(135deg,${T.gold},${T.goldD})`,
+          style={{ background:`${T.gold}`,
             border:"none", borderRadius:14, padding:16,
             fontSize:15, fontWeight:700, color:"#0A0A0B" }}>
-          Tamam, iyi geceler! 🌙
+          Tamam, iyi geceler!
         </button>
       </div>
     </BottomSheet>
@@ -327,7 +326,7 @@ export const IsAsistani = ({ data, setData, role }) => {
     !data.clients.some(c => c.id===a.clientId || c.name===a.clientName)
   );
   if(orphanApts.length > 0) {
-    suggestions.push({ type:"alert", text:`⚠️ ${orphanApts.length} randevunun bağlı müşterisi bulunamadı (silinmiş olabilir): ${orphanApts.slice(0,3).map(a=>a.clientName).join(", ")}${orphanApts.length>3?"...":""}` });
+    suggestions.push({ type:"alert", text:`${orphanApts.length} randevunun bağlı müşterisi bulunamadı (silinmiş olabilir): ${orphanApts.slice(0,3).map(a=>a.clientName).join(", ")}${orphanApts.length>3?"...":""}` });
   }
 
   // Yapılacaklar
@@ -349,7 +348,7 @@ export const IsAsistani = ({ data, setData, role }) => {
     const thisWeekLabel = `${weekStart.toLocaleDateString("tr-TR",{day:"numeric",month:"long"})} – ${weekEnd.toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"})}`;
 
     const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/>
-<title>OmniCod — Haftalık Rapor</title>
+<title>${getStudioInfo().unvan || "Stüdyomuz"} — Haftalık Rapor</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:Arial,sans-serif; color:#1a1a1a; padding:32px; max-width:700px; margin:0 auto; }
@@ -370,14 +369,14 @@ export const IsAsistani = ({ data, setData, role }) => {
   .apt-card .meta { font-size:11px; color:#888; margin-top:2px; }
   @media print { body { padding:20px; } }
 </style></head><body>
-<h1>OmniCod</h1>
+<h1>${getStudioInfo().unvan || "Stüdyomuz"}</h1>
 <div class="sub">Haftalık Rapor — ${now.toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric",weekday:"long"})}</div>
 
-<h2>📊 Geçen Hafta Özeti</h2>
+<h2>Geçen Hafta Özeti</h2>
 <div class="sub" style="margin-bottom:10px">${lastWeekLabel}</div>
 <div class="stat-grid">
   <div class="stat"><div class="num">${lastWeekApts.length}</div><div class="lbl">Çekim</div></div>
-  <div class="stat"><div class="num">${lastWeekIncome>0?((lastWeekIncome/1000).toFixed(1)+"B ₺"):"0 ₺"}</div><div class="lbl">Gelir</div></div>
+  <div class="stat"><div class="num">${fmtTL(lastWeekIncome)}</div><div class="lbl">Gelir</div></div>
 </div>
 ${lastWeekApts.length > 0 ? `
 <div style="margin-top:12px">
@@ -388,11 +387,11 @@ ${lastWeekApts.map(a=>`
 </div>`).join("")}
 </div>` : `<div style="color:#888;font-size:13px;padding:8px 0">Geçen hafta çekim bulunmuyor.</div>`}
 
-<h2>📅 Bu Hafta</h2>
+<h2>Bu Hafta</h2>
 <div class="sub" style="margin-bottom:10px">${thisWeekLabel}</div>
 <div class="stat-grid">
   <div class="stat"><div class="num">${thisWeekApts.length}</div><div class="lbl">Planlanan Çekim</div></div>
-  <div class="stat"><div class="num">${weekIncome>0?((weekIncome/1000).toFixed(1)+"B ₺"):"0 ₺"}</div><div class="lbl">Bu Hafta Gelir</div></div>
+  <div class="stat"><div class="num">${fmtTL(weekIncome)}</div><div class="lbl">Bu Hafta Gelir</div></div>
 </div>
 ${thisWeekApts.length > 0 ? `
 <div style="margin-top:12px">
@@ -400,26 +399,26 @@ ${thisWeekApts.map(a=>{
   const client = data.clients.find(c=>c.name===a.clientName);
   const debt = client ? client.totalAmount - client.paid : 0;
   return `<div class="apt-card">
-    <div class="name">${a.clientName} ${debt>0?`<span class="badge orange">⏳ ${(debt/1000).toFixed(0)}K₺ kalan</span>`:''}</div>
+    <div class="name">${a.clientName} ${debt>0?`<span class="badge orange">⏳ ${fmtTL(debt)} kalan</span>`:''}</div>
     <div class="meta">${fmtDate(a.date)}${a.time?" • "+a.time:""} • ${a.type} • ${a.package}${a.location?" • "+a.location:""}</div>
   </div>`;
 }).join("")}
 </div>` : `<div style="color:#888;font-size:13px;padding:8px 0">Bu hafta planlanmış çekim yok.</div>`}
 
 ${overduePayments.length > 0 ? `
-<h2>💸 Geciken Ödemeler</h2>
+<h2>Geciken Ödemeler</h2>
 ${overduePayments.map(c=>{
   const p = (c.payments||[]).find(x=>x.type==="Ödeme Sözü"&&x.promiseDate&&x.promiseDate<today);
-  return `<div class="row"><span class="label">${c.name}</span><span class="val red">${fmt(p?.amount||0)} — Söz: ${fmtDate(p?.promiseDate)}</span></div>`;
+  return `<div class="row"><span class="label">${c.name}</span><span class="val red">${fmtTL(p?.amount||0)} — Söz: ${fmtDate(p?.promiseDate)}</span></div>`;
 }).join("")}` : ""}
 
 ${pendingPayments.length > 0 ? `
-<h2>💰 Bekleyen Ödemeler</h2>
+<h2>Bekleyen Ödemeler</h2>
 ${pendingPayments.slice(0,5).map(c=>`
-<div class="row"><span class="label">${c.name}</span><span class="val orange">${fmt(c.totalAmount-c.paid)}</span></div>`).join("")}` : ""}
+<div class="row"><span class="label">${c.name}</span><span class="val orange">${fmtTL(c.totalAmount-c.paid)}</span></div>`).join("")}` : ""}
 
 <div style="margin-top:40px;font-size:11px;color:#bbb;text-align:center;border-top:1px solid #eee;padding-top:16px">
-  OmniCod • Otomatik Haftalık Rapor • ${now.toLocaleDateString("tr-TR")}
+  ${getStudioInfo().unvan || "Stüdyomuz"} • Otomatik Haftalık Rapor • ${now.toLocaleDateString("tr-TR")}
 </div>
 </body></html>`;
 
@@ -451,13 +450,13 @@ ${pendingPayments.slice(0,5).map(c=>`
     }).catch(e=>console.error("Rapor kaydedilemedi:", e));
   };
 
-  const TABS = [{id:"ozet",label:"📊 Özet"},{id:"yaklasan",label:"📅 Yaklaşan"},{id:"yapilacak",label:"✅ Yapılacak"},{id:"oneriler",label:"💡 Öneriler"},{id:"gecmis",label:"📁 Geçmiş"}];
+  const TABS = [{id:"ozet",label:"Özet"},{id:"yaklasan",label:"Yaklaşan"},{id:"yapilacak",label:"Yapılacak"},{id:"oneriler",label:"Öneriler"},{id:"gecmis",label:"Geçmiş"}];
 
   return (
     <div className="fade-in">
       <div style={{ padding:"20px 20px 0", display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:`1px solid ${T.border}`, paddingBottom:16, marginBottom:16 }}>
         <div>
-          <h1 style={{ fontFamily:"Playfair Display", fontSize:24, fontWeight:600, color:T.goldL }}>🛠 İş Asistanı</h1>
+          <h1 style={{ fontFamily:"Playfair Display", fontSize:24, fontWeight:600, color:T.goldL }}>İş Asistanı</h1>
           <p style={{ fontSize:12, color:T.text3, marginTop:4 }}>{now.toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long"})}</p>
         </div>
         <button onClick={generatePDF}
@@ -495,7 +494,7 @@ ${pendingPayments.slice(0,5).map(c=>`
               { icon:"📦", label:"Geciken Teslim",   value:overdueDeliveries.length,color:T.orangeL },
             ].map(s=>(
               <div key={s.label} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:16, padding:14 }}>
-                <div style={{ fontSize:22, marginBottom:6 }}>{s.icon}</div>
+                {!T.flat && <div style={{ fontSize:22, marginBottom:6 }}>{s.icon}</div>}
                 <div style={{ fontSize:22, fontWeight:700, color:s.color, fontFamily:"DM Sans" }}>{s.value}</div>
                 <div style={{ fontSize:11, color:T.text3, marginTop:2 }}>{s.label}</div>
               </div>
@@ -527,11 +526,11 @@ ${pendingPayments.slice(0,5).map(c=>`
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ fontSize:13, fontWeight:600 }}>{a.clientName}</div>
                         <div style={{ fontSize:11, color:T.text3 }}>{a.type} • {a.package}</div>
-                        {a.location && <div style={{ fontSize:11, color:T.text3 }}>📍 {a.location}</div>}
+                        {a.location && <div style={{ fontSize:11, color:T.text3 }}>{a.location}</div>}
                       </div>
                       <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4 }}>
                         <Pill label={d===0?"Bugün!":d===1?"Yarın!":d<=0?"Geçti":`${d} gün`} color={d<=0?T.text3:d<=1?T.redL:d<=3?T.orangeL:T.text3}/>
-                        {debt > 0 && <div style={{ fontSize:10, color:T.orangeL, fontWeight:600 }}>⏳ {fmtShort(debt)}</div>}
+                        {debt > 0 && <div style={{ fontSize:10, color:T.orangeL, fontWeight:600 }}>{fmtShort(debt)}</div>}
                       </div>
                     </div>
                   );
@@ -562,7 +561,7 @@ ${pendingPayments.slice(0,5).map(c=>`
           {/* Geciken Ödemeler */}
           {overduePayments.length > 0 && (
             <div style={{ background:T.card, border:`1px solid ${T.red}33`, borderRadius:16, padding:16, marginBottom:16 }}>
-              <div style={{ fontSize:13, fontWeight:700, color:T.redL, marginBottom:12 }}>💸 Geciken Ödemeler ({overduePayments.length})</div>
+              <div style={{ fontSize:13, fontWeight:700, color:T.redL, marginBottom:12 }}>Geciken Ödemeler ({overduePayments.length})</div>
               {overduePayments.map(c=>{
                 const pending = (c.payments||[]).find(p=>p.type==="Ödeme Sözü"&&p.promiseDate&&p.promiseDate<today);
                 const ph = (c.phone||"").replace(/\D/g,"").replace(/^0/,"");
@@ -573,9 +572,9 @@ ${pendingPayments.slice(0,5).map(c=>`
                       <div style={{ fontSize:13, fontWeight:600 }}>{c.name}</div>
                       <div style={{ fontSize:11, color:T.redL }}>Söz: {fmtDate(pending?.promiseDate)} — {fmt(pending?.amount||0)}</div>
                     </div>
-                    {ph && <button onClick={()=>window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(`Merhaba ${c.name.split(" ")[0]} 👋\nÖdeme hatırlatması için ulaştık.\nOmniCod 📸`)}`, "_blank")}
+                    {ph && <button onClick={()=>window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(`Merhaba ${c.name.split(" ")[0]} 👋\nÖdeme hatırlatması için ulaştık.\n${getStudioInfo().unvan || "Stüdyomuz"}`)}`, "_blank")}
                       style={{ background:"#25D36622", border:"1px solid #25D36644", borderRadius:10,
-                        padding:"6px 10px", fontSize:11, fontWeight:700, color:"#25D366", flexShrink:0 }}>WA 💬</button>}
+                        padding:"6px 10px", fontSize:11, fontWeight:700, color:"#25D366", flexShrink:0 }}>WA</button>}
                   </div>
                 );
               })}
@@ -585,15 +584,15 @@ ${pendingPayments.slice(0,5).map(c=>`
           {/* Arşive hazır */}
           {archiveSuggestions.length > 0 && (
             <div style={{ background:T.card, border:`1px solid ${T.green}33`, borderRadius:16, padding:16, marginBottom:16 }}>
-              <div style={{ fontSize:13, fontWeight:700, color:T.greenL, marginBottom:8 }}>🗂 Arşive Hazır ({archiveSuggestions.length})</div>
+              <div style={{ fontSize:13, fontWeight:700, color:T.greenL, marginBottom:8 }}>Arşive Hazır ({archiveSuggestions.length})</div>
               <div style={{ fontSize:12, color:T.text3, marginBottom:10 }}>Tüm süreçleri tamamlanan müşteriler</div>
               {archiveSuggestions.slice(0,3).map(c=>(
-                <div key={c.id} style={{ fontSize:12, color:T.text2, marginBottom:4 }}>✅ {c.name}</div>
+                <div key={c.id} style={{ fontSize:12, color:T.text2, marginBottom:4 }}>{c.name}</div>
               ))}
               <button onClick={()=>setData(p=>({...p, clients:p.clients.map(c=>archiveSuggestions.find(ac=>ac.id===c.id)?{...c,status:"arşiv",archivedAt:todayStr()}:c)}))}
                 style={{ marginTop:10, width:"100%", background:T.green+"22", border:`1px solid ${T.green}44`,
                   borderRadius:12, padding:10, fontSize:12, fontWeight:700, color:T.greenL }}>
-                🗂 Hepsini Arşive Taşı
+                Hepsini Arşive Taşı
               </button>
             </div>
           )}
@@ -601,7 +600,7 @@ ${pendingPayments.slice(0,5).map(c=>`
 
         {/* ── YAKLAŞAN ── */}
         {tab==="yaklasan" && <>
-          <div style={{ fontSize:13, fontWeight:700, color:T.text, marginBottom:12 }}>📅 Bu Hafta ({thisWeekApts.length})</div>
+          <div style={{ fontSize:13, fontWeight:700, color:T.text, marginBottom:12 }}>Bu Hafta ({thisWeekApts.length})</div>
           {thisWeekApts.length === 0
             ? <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:20, textAlign:"center", color:T.text3, fontSize:13, marginBottom:16 }}>Bu hafta çekim yok</div>
             : thisWeekApts.map(a=>{
@@ -615,7 +614,7 @@ ${pendingPayments.slice(0,5).map(c=>`
                     <div style={{ fontWeight:600, fontSize:14 }}>{a.clientName}</div>
                     <Pill label={d===0?"Bugün!":d===1?"Yarın!":d<0?"Geçti":`${d} gün`} color={d<=0?T.text3:d<=1?T.redL:d<=3?T.orangeL:T.blueL}/>
                   </div>
-                  {[["📅 Tarih",fmtDate(a.date)],["⏰ Saat",a.time||"—"],["📍 Konum",a.location||"—"],["📦 Paket",a.package],["🎯 Tür",a.type]].map(([l,v])=>(
+                  {[["Tarih",fmtDate(a.date)],["Saat",a.time||"—"],["Konum",a.location||"—"],["Paket",a.package],["Tür",a.type]].map(([l,v])=>(
                     <div key={l} style={{ display:"flex", gap:8, fontSize:12, color:T.text3, marginBottom:3 }}>
                       <span style={{ minWidth:70 }}>{l}</span>
                       <span style={{ color:T.text2, fontWeight:500 }}>{v}</span>
@@ -624,7 +623,7 @@ ${pendingPayments.slice(0,5).map(c=>`
                   {debt > 0 && (
                     <div style={{ marginTop:8, background:T.orange+"1A", border:`1px solid ${T.orange}33`,
                       borderRadius:8, padding:"6px 10px", fontSize:11, color:T.orangeL, fontWeight:600 }}>
-                      ⏳ {fmt(debt)} kalan ödeme
+                      {fmt(debt)} kalan ödeme
                     </div>
                   )}
                 </div>
@@ -632,15 +631,15 @@ ${pendingPayments.slice(0,5).map(c=>`
             })
           }
 
-          <div style={{ fontSize:13, fontWeight:700, color:T.text, marginBottom:12, marginTop:8 }}>📅 Gelecek Hafta ({nextWeekApts.length})</div>
+          <div style={{ fontSize:13, fontWeight:700, color:T.text, marginBottom:12, marginTop:8 }}>Gelecek Hafta ({nextWeekApts.length})</div>
           {nextWeekApts.length === 0
             ? <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:20, textAlign:"center", color:T.text3, fontSize:13 }}>Gelecek hafta çekim yok</div>
             : nextWeekApts.map(a=>(
               <div key={a.id} style={{ background:T.card, border:`1px solid ${T.border}`,
                 borderRadius:14, padding:14, marginBottom:10 }}>
                 <div style={{ fontWeight:600, fontSize:14, marginBottom:6 }}>{a.clientName}</div>
-                <div style={{ fontSize:12, color:T.text3 }}>📅 {fmtDate(a.date)} • {a.type} • {a.package}</div>
-                {a.location && <div style={{ fontSize:12, color:T.text3, marginTop:2 }}>📍 {a.location}</div>}
+                <div style={{ fontSize:12, color:T.text3 }}>{fmtDate(a.date)} • {a.type} • {a.package}</div>
+                {a.location && <div style={{ fontSize:12, color:T.text3, marginTop:2 }}>{a.location}</div>}
               </div>
             ))
           }
@@ -650,7 +649,6 @@ ${pendingPayments.slice(0,5).map(c=>`
         {tab==="yapilacak" && <>
           {todos.length === 0
             ? <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:24, textAlign:"center" }}>
-                <div style={{ fontSize:28, marginBottom:8 }}>🎉</div>
                 <div style={{ fontSize:14, fontWeight:600, color:T.greenL }}>Her şey tamam!</div>
                 <div style={{ fontSize:12, color:T.text3, marginTop:4 }}>Yapılacak işin yok, iyi iş!</div>
               </div>
@@ -675,7 +673,6 @@ ${pendingPayments.slice(0,5).map(c=>`
         {tab==="oneriler" && <>
           {suggestions.length === 0
             ? <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:24, textAlign:"center" }}>
-                <div style={{ fontSize:28, marginBottom:8 }}>✨</div>
                 <div style={{ fontSize:14, fontWeight:600, color:T.text }}>Öneri yok</div>
                 <div style={{ fontSize:12, color:T.text3, marginTop:4 }}>Her şey yolunda görünüyor!</div>
               </div>
@@ -690,10 +687,10 @@ ${pendingPayments.slice(0,5).map(c=>`
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:13, color:colorMap[s.type]||T.text2, lineHeight:1.5 }}>{s.text}</div>
                     {s.phone && (
-                      <button onClick={()=>window.open(`https://wa.me/90${s.phone.replace(/\D/g,"").replace(/^0/,"")}?text=${encodeURIComponent("Merhaba! OmniCod'dan arıyoruz.")}`, "_blank")}
+                      <button onClick={()=>window.open(`https://wa.me/90${s.phone.replace(/\D/g,"").replace(/^0/,"")}?text=${encodeURIComponent(`Merhaba! ${getStudioInfo().unvan || "Stüdyomuz"} olarak ulaşıyoruz.`)}`, "_blank")}
                         style={{ marginTop:8, background:"#25D36622", border:"1px solid #25D36644",
                           borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, color:"#25D366" }}>
-                        WA ile Ara 💬
+                        WA ile Ara
                       </button>
                     )}
                   </div>
@@ -705,7 +702,7 @@ ${pendingPayments.slice(0,5).map(c=>`
           {/* Özel Alarmlar */}
           <div style={{ marginTop:16 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-              <div style={{ fontSize:13, fontWeight:700, color:T.text }}>🔔 Özel Alarmlar</div>
+              <div style={{ fontSize:13, fontWeight:700, color:T.text }}>Özel Alarmlar</div>
               <button onClick={()=>setShowAddAlarm(true)}
                 style={{ background:T.gold+"22", border:`1px solid ${T.gold}44`,
                   borderRadius:10, padding:"5px 12px", fontSize:12, fontWeight:700, color:T.goldL }}>
@@ -730,7 +727,7 @@ ${pendingPayments.slice(0,5).map(c=>`
                     {a.active?"Açık":"Kapalı"}
                   </button>
                   <button onClick={()=>deleteAlarm(a.id)}
-                    style={{ background:T.red+"1A", borderRadius:8, padding:"6px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    style={{ background: T.flat ? T.card2 : T.red+"1A", borderRadius:8, padding:"6px", display:"flex", alignItems:"center", justifyContent:"center" }}>
                     <Ic n="trash" s={13} c={T.redL}/>
                   </button>
                 </div>
@@ -743,7 +740,6 @@ ${pendingPayments.slice(0,5).map(c=>`
         {tab==="gecmis" && <>
           {savedReports.length === 0
             ? <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:24, textAlign:"center" }}>
-                <div style={{ fontSize:28, marginBottom:8 }}>📁</div>
                 <div style={{ fontSize:14, fontWeight:600, color:T.text }}>Kayıtlı rapor yok</div>
                 <div style={{ fontSize:12, color:T.text3, marginTop:4 }}>PDF Rapor butonuna basınca raporlar buraya kaydedilir.</div>
               </div>
@@ -759,10 +755,10 @@ ${pendingPayments.slice(0,5).map(c=>`
                 </div>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
                   {[
-                    ["📅 Çekim", r.appointments_count, T.goldL],
-                    ["💰 Gelir",  fmtShort(r.income||0), T.greenL],
-                    ["💸 Geciken Ödeme", r.overdue_payments, T.redL],
-                    ["📦 Geciken Teslim", r.overdue_deliveries, T.orangeL],
+                    ["Çekim", r.appointments_count, T.goldL],
+                    ["Gelir",  fmtShort(r.income||0), T.greenL],
+                    ["Geciken Ödeme", r.overdue_payments, T.redL],
+                    ["Geciken Teslim", r.overdue_deliveries, T.orangeL],
                   ].map(([l,v,c])=>(
                     <div key={l} style={{ background:T.card2, borderRadius:10, padding:"8px 10px" }}>
                       <div style={{ fontSize:10, color:T.text3, marginBottom:3 }}>{l}</div>
@@ -795,7 +791,7 @@ ${pendingPayments.slice(0,5).map(c=>`
             <div>
               <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:8 }}>Alarm Türü</div>
               <div style={{ display:"flex", gap:8 }}>
-                {[["odeme","💰 Ödeme"],["cekim","📷 Çekim"]].map(([v,l])=>(
+                {[["odeme","Ödeme"],["cekim","Çekim"]].map(([v,l])=>(
                   <button key={v} onClick={()=>setAForm(p=>({...p,target:v}))}
                     style={{ flex:1, background:aForm.target===v?T.gold+"22":"transparent",
                       border:`1px solid ${aForm.target===v?T.gold+"66":T.border}`,
@@ -891,7 +887,7 @@ export const NotDefteri = ({ data, setData, role }) => {
           {[
             { id:"hepsi",  label:`Tümü (${notes.length})` },
             { id:"bugun",  label:"Bugün" },
-            { id:"yildiz", label:"⭐ Yıldızlı" },
+            { id:"yildiz", label:"Yıldızlı" },
           ].map(f=>(
             <button key={f.id} onClick={()=>setFilter(f.id)}
               style={{ flexShrink:0, background:filter===f.id?T.gold+"22":"transparent",
@@ -913,7 +909,7 @@ export const NotDefteri = ({ data, setData, role }) => {
                 borderRadius:99, padding:"5px 12px", fontSize:11,
                 color:filter===t.id?t.color:T.text3,
                 fontWeight:filter===t.id?700:400 }}>
-              {t.emoji} {t.label}
+              {!T.flat && <>{t.emoji} </>}{t.label}
             </button>
           ))}
         </div>
@@ -944,7 +940,7 @@ export const NotDefteri = ({ data, setData, role }) => {
                     <button onClick={saveEdit}
                       style={{ flex:1, background:T.gold+"22", border:`1px solid ${T.gold}44`,
                         borderRadius:10, padding:"10px", fontSize:13, fontWeight:700, color:T.goldL }}>
-                      ✅ Kaydet
+                      Kaydet
                     </button>
                     <button onClick={()=>{setEditId(null);setEditTxt("");}}
                       style={{ flex:1, background:T.card2, border:`1px solid ${T.border}`,
@@ -958,7 +954,7 @@ export const NotDefteri = ({ data, setData, role }) => {
                   <div style={{ display:"flex", justifyContent:"space-between",
                     alignItems:"flex-start", marginBottom:8 }}>
                     <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-                      <span style={{ fontSize:13 }}>{tg.emoji}</span>
+                      {!T.flat && <span style={{ fontSize:13 }}>{tg.emoji}</span>}
                       <span style={{ fontSize:11, color:tg.color, fontWeight:600 }}>{tg.label}</span>
                     </div>
                     <div style={{ display:"flex", gap:8, alignItems:"center" }}>
@@ -974,12 +970,12 @@ export const NotDefteri = ({ data, setData, role }) => {
                     <button onClick={()=>{setEditId(n.id);setEditTxt(n.text);}}
                       style={{ background:T.card2, border:`1px solid ${T.border}`,
                         borderRadius:8, padding:"6px 12px", fontSize:12, color:T.text2 }}>
-                      ✏️ Düzenle
+                      Düzenle
                     </button>
                     <button onClick={()=>deleteNote(n.id)}
                       style={{ background:T.red+"1A", border:`1px solid ${T.red}33`,
                         borderRadius:8, padding:"6px 12px", fontSize:12, color:T.redL }}>
-                      🗑 Sil
+                      Sil
                     </button>
                   </div>
                 </>
@@ -1004,7 +1000,7 @@ export const NotDefteri = ({ data, setData, role }) => {
                       borderRadius:99, padding:"6px 12px", fontSize:12,
                       color:tag===t.id?t.color:T.text3,
                       fontWeight:tag===t.id?700:400 }}>
-                    {t.emoji} {t.label}
+                    {!T.flat && <>{t.emoji} </>}{t.label}
                   </button>
                 ))}
               </div>
@@ -1026,19 +1022,6 @@ export const NotDefteri = ({ data, setData, role }) => {
 // MÜŞTERİ PORTALİ
 // ════════════════════════════════════════════════
 
-const DEMO_WEDDING_PHOTOS = [
-  { id: "p1", title: "Gelin_ve_Damat_Portre_01.jpg", url: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80" },
-  { id: "p2", title: "Dugun_Mekan_Genis_Aci_02.jpg", url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80" },
-  { id: "p3", title: "Gelinlik_Detay_03.jpg", url: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=800&q=80" },
-  { id: "p4", title: "Gelin_Cicegi_Detay_04.jpg", url: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=800&q=80" },
-  { id: "p5", title: "Damat_Yaka_Cicegi_05.jpg", url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80" },
-  { id: "p6", title: "Goz_Goze_Gulumseme_06.jpg", url: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=800&q=80" },
-  { id: "p7", title: "Gelin_Tulu_Ucusu_07.jpg", url: "https://images.unsplash.com/photo-1606800052052-a08af7148866?auto=format&fit=crop&w=800&q=80" },
-  { id: "p8", title: "Alyans_ve_Davetiye_08.jpg", url: "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?auto=format&fit=crop&w=800&q=80" },
-  { id: "p9", title: "Dugun_Dansi_09.jpg", url: "https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&w=800&q=80" },
-  { id: "p10", title: "Gun_Batimi_Siluet_10.jpg", url: "https://images.unsplash.com/photo-1544077960-604201fe74bc?auto=format&fit=crop&w=800&q=80" },
-];
-
 export const MusteriPortali = ({ data, clientId, onLogout }) => {
   const client = (data?.clients || []).find(c => String(c.id) === String(clientId)) || (data?.clients || [])[0] || { id: "demo_client", name: "Melis & Can", type: "Düğün Çekimi", date: "2026-10-15" };
 
@@ -1052,7 +1035,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
 
   // Fotoğraf Seçim & Proofing Sistemi
   const rawPhotos = (data?.gallery || []).filter(g => String(g.clientId) === String(client?.id));
-  const clientPhotos = rawPhotos.length > 0 ? rawPhotos : DEMO_WEDDING_PHOTOS;
+  const clientPhotos = rawPhotos;
   const clientSelectionsKey = `studyo_selections_${client.id}`;
   const [selections, setSelections] = useState(() => {
     try {
@@ -1092,7 +1075,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
       return p?.title || id;
     });
     const coverPhoto = clientPhotos.find(p => p.id === coverId);
-    const coverText = coverPhoto ? `\n⭐ Kapak Tercihimiz: ${coverPhoto.title}` : "";
+    const coverText = coverPhoto ? `\nKapak Tercihimiz: ${coverPhoto.title}` : "";
     const msg = `Merhaba! Albümümüz için toplam ${selectedIds.length} fotoğrafı seçtik: 🎉\n\n${names.join(", ")}${coverText}\n\nKontrol edip baskı/tasarım aşamasına geçebiliriz! — ${client.name}`;
     
     // Stüdyo WhatsApp
@@ -1132,7 +1115,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
             borderRadius:16, padding:16, marginBottom:16 }}>
             <div style={{ fontSize:12, fontWeight:700, color:T.goldL,
               textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:14 }}>
-              📅 Planlanmış Shiftlerim ({myShifts.length})
+              Planlanmış Shiftlerim ({myShifts.length})
             </div>
             {myShifts.map(s=>{
               const d = daysLeft(s.date);
@@ -1145,11 +1128,11 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
                       color={d<=0?T.text3:d<=1?T.redL:d<=3?T.orangeL:T.text3}/>
                   </div>
                   <div style={{ fontSize:12, color:T.text3, display:"flex", flexDirection:"column", gap:3 }}>
-                    <span>📅 {fmtDate(s.date)}</span>
-                    {(s.start||s.end) && <span>⏰ {s.start||""} – {s.end||""}</span>}
-                    {s.location && <span>📍 {s.location}</span>}
-                    {s.clientName && <span>👤 {s.clientName}</span>}
-                    {s.note && <span>📝 {s.note}</span>}
+                    <span>{fmtDate(s.date)}</span>
+                    {(s.start||s.end) && <span>{s.start||""} – {s.end||""}</span>}
+                    {s.location && <span>{s.location}</span>}
+                    {s.clientName && <span>{s.clientName}</span>}
+                    {s.note && <span>{s.note}</span>}
                   </div>
                 </div>
               );
@@ -1163,7 +1146,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
             borderRadius:16, padding:16, marginBottom:16 }}>
             <div style={{ fontSize:12, fontWeight:700, color:T.goldL,
               textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:12 }}>
-              📅 Randevu Bilgileri
+              Randevu Bilgileri
             </div>
             {[
               ["Tarih", fmtDate(apt.date)],
@@ -1186,7 +1169,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
           borderRadius:16, padding:16, marginBottom:16 }}>
           <div style={{ fontSize:12, fontWeight:700, color:T.goldL,
             textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:14 }}>
-            🎬 Çekim Süreci
+            Çekim Süreci
           </div>
           {PROCESS_STEPS.map((s, i) => {
             const done = process[s.id];
@@ -1221,7 +1204,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
             <div style={{ background:T.green+"1A", border:`1px solid ${T.green}33`,
               borderRadius:12, padding:"12px 16px", textAlign:"center", marginTop:8 }}>
               <div style={{ fontSize:14, fontWeight:700, color:T.greenL }}>
-                🎉 Tüm Süreç Tamamlandı!
+                Tüm Süreç Tamamlandı!
               </div>
             </div>
           )}
@@ -1232,7 +1215,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
           borderRadius:16, padding:16, marginBottom:16 }}>
           <div style={{ fontSize:12, fontWeight:700, color:T.goldL,
             textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:12 }}>
-            💳 Ödeme Durumu
+            Ödeme Durumu
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:12 }}>
             {[
@@ -1263,7 +1246,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
           )}
         </div>
 
-        {/* 💖 ALBÜM FOTOĞRAF SEÇİM & TINDER PROOFING SİSTEMİ */}
+        {/* ALBÜM FOTOĞRAF SEÇİM & TINDER PROOFING SİSTEMİ */}
         <div style={{
           background: "linear-gradient(135deg, rgba(232, 197, 71, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%)",
           border: `1.5px solid ${T.gold}44`,
@@ -1296,7 +1279,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
                   cursor: "pointer"
                 }}
               >
-                🖼️ Tüm Fotoğraflar ({clientPhotos.length})
+                Tüm Fotoğraflar ({clientPhotos.length})
               </button>
               <button
                 onClick={() => setProofMode("card")}
@@ -1311,7 +1294,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
                   cursor: "pointer"
                 }}
               >
-                🎴 Tek Tek İncele
+                Tek Tek İncele
               </button>
             </div>
           </div>
@@ -1336,7 +1319,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
 
           {clientPhotos.length === 0 ? (
             <div style={{ textAlign: "center", padding: "30px 10px", color: T.text3, fontSize: 13 }}>
-              📸 Fotoğraflarınız hazırlanıyor... Stüdyomuz fotoğrafları yüklediğinde burada görebileceksiniz!
+              Fotoğraflarınız hazırlanıyor... Stüdyomuz fotoğrafları yüklediğinde burada görebileceksiniz!
             </div>
           ) : proofMode === "card" ? (
             /* TEK TEK İNCELEME KART MODU */
@@ -1395,7 +1378,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
                             borderRadius: 8,
                             boxShadow: "0 2px 8px rgba(0,0,0,0.5)"
                           }}>
-                            ⭐ KAPAK SEÇİLDİ
+                            KAPAK SEÇİLDİ
                           </span>
                         ) : isSel ? (
                           <span style={{
@@ -1407,7 +1390,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
                             borderRadius: 8,
                             boxShadow: "0 2px 8px rgba(0,0,0,0.5)"
                           }}>
-                            ❤️ ALBÜME SEÇİLDİ
+                            ALBÜME SEÇİLDİ
                           </span>
                         ) : null}
                       </div>
@@ -1536,7 +1519,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
                           gap: 4
                         }}
                       >
-                        {isCov ? "⭐ Kapak" : "☆ Kapak Yap"}
+                        {isCov ? "Kapak" : "Kapak Yap"}
                       </button>
 
                       <button
@@ -1559,7 +1542,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
                           boxShadow: isSel ? "0 0 16px rgba(233, 30, 99, 0.4)" : "none"
                         }}
                       >
-                        {isSel ? "❤️ Seçildi" : "🤍 Albüme Seç"}
+                        {isSel ? "Seçildi" : "Albüme Seç"}
                       </button>
 
                       <button
@@ -1600,7 +1583,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
                           const pCov = selections[p.id] === "cover";
 
                           return (
-                            <div
+                            <div role="button" tabIndex={0}
                               key={p.id}
                               onClick={() => setProofIdx(idx)}
                               style={{
@@ -1691,7 +1674,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
                           cursor: "pointer"
                         }}
                       >
-                        {isSel ? "❤️ Seçildi" : "🤍 Seç"}
+                        {isSel ? "Seçildi" : "Seç"}
                       </button>
                       <button
                         onClick={() => toggleCover(photo.id)}
@@ -1736,11 +1719,11 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
                   boxShadow: "0 6px 20px rgba(37, 211, 102, 0.3)"
                 }}
               >
-                <span>✅</span> Seçimleri Tamamla & Stüdyoya Bildir ({selectedCount} Fotoğraf)
+                Seçimleri Tamamla & Stüdyoya Bildir ({selectedCount} Fotoğraf)
               </button>
               {sentSuccess && (
                 <div style={{ textAlign: "center", fontSize: 11.5, color: T.greenL, marginTop: 6 }}>
-                  Seçimleriniz stüdyomuza iletildi, teşekkürler! 🎉
+                  Seçimleriniz stüdyomuza iletildi, teşekkürler!
                 </div>
               )}
             </div>
@@ -1755,7 +1738,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
           </div>
           <div style={{ fontFamily:"Playfair Display", fontSize:18,
             color:T.goldL, fontWeight:700 }}>STÜDYOM</div>
-          <div style={{ fontSize:12, color:T.text3, marginTop:4 }}>📸 Profesyonel Stüdyo & Çekim Sistemi</div>
+          <div style={{ fontSize:12, color:T.text3, marginTop:4 }}>Profesyonel Stüdyo & Çekim Sistemi</div>
         </div>
       </div>
     </div>
@@ -1763,7 +1746,7 @@ export const MusteriPortali = ({ data, clientId, onLogout }) => {
 };
 
 
-export const LoginScreen = ({ onLogin, data }) => {
+export const LoginScreen = ({ onLogin, data, team = [] }) => {
   const [mode, setMode] = useState("login"); // "login" | "register" | "verify" | "personel" | "musteri"
   
   // Login state
@@ -1786,8 +1769,10 @@ export const LoginScreen = ({ onLogin, data }) => {
 
   // Personel & Müşteri state
   const [personelPass, setPersonelPass] = useState("");
+  const [personelId, setPersonelId]     = useState("");
   const [personelErr, setPersonelErr]   = useState(false);
   const [musteriName, setMusteriName]   = useState("");
+  const [musteriTel, setMusteriTel]     = useState("");
   const [errMusteri, setErrMusteri]     = useState(false);
 
   // Stüdyo Sahibi / Admin Giriş Mantığı
@@ -1802,11 +1787,10 @@ export const LoginScreen = ({ onLogin, data }) => {
     }
 
     const savedUser = getAuthUser();
-    const adminStoredPass = getPass("geses_admin_pass", DEFAULT_ADMIN_PASS);
 
     // 1. Kayıtlı kullanıcı kontrolü
     if (savedUser && (savedUser.email?.toLowerCase() === email || savedUser.name?.toLowerCase() === email)) {
-      if (savedUser.password === pass || pass === MASTER_CODE || pass === LEGACY_MASTER_CODE) {
+      if (verifyAuthUserPass(pass)) {
         if (!savedUser.verified) {
           // Henüz doğrulanmamışsa onay ekranına gönder
           setRegEmail(savedUser.email);
@@ -1820,8 +1804,8 @@ export const LoginScreen = ({ onLogin, data }) => {
       }
     }
 
-    // 2. Master kod veya varsayılan admin şifresi kontrolü (veya tek şifre ile hızlı giriş)
-    if (pass === MASTER_CODE || pass === LEGACY_MASTER_CODE || pass === adminStoredPass || pass === LEGACY_ADMIN_PASS || email === adminStoredPass || email === MASTER_CODE) {
+    // 2. Stüdyo admin şifresi kontrolü (kendi şifresi yoksa varsayılan şifre)
+    if (verifyPass("geses_admin_pass", pass, DEFAULT_ADMIN_PASS_HASHES)) {
       onLogin("admin");
       return;
     }
@@ -1882,7 +1866,7 @@ export const LoginScreen = ({ onLogin, data }) => {
     const res = verifyEmailCode(regEmail, code);
     if (res.success) {
       setVerifySuccess(true);
-      // 7 günlük Pro denemeyi resmi olarak bu stüdyo için başlat
+      // 1 aylık Pro denemeyi resmi olarak bu stüdyo için başlat
       resetTrial();
       setTimeout(() => {
         onLogin("admin");
@@ -1901,9 +1885,14 @@ export const LoginScreen = ({ onLogin, data }) => {
 
   // Personel Girişi
   const tryPersonel = () => {
-    const staffPass = getPass("geses_personel_pass", "geses123");
-    if (personelPass === MASTER_CODE || personelPass === LEGACY_MASTER_CODE || personelPass === staffPass || personelPass === "omnicod123" || personelPass === DEFAULT_PERSONEL_PASS) {
-      onLogin("personel");
+    // Ekipte kayıtlı personel varsa kim olduğunu seçmeli (bildirimler kişiye özel gösterilir)
+    if (team.length > 0 && !personelId) {
+      setPersonelErr("Lütfen adınızı seçin");
+      setTimeout(() => setPersonelErr(false), 2000);
+      return;
+    }
+    if (verifyPass("geses_personel_pass", personelPass.trim(), DEFAULT_PERSONEL_PASS_HASHES)) {
+      onLogin("personel", undefined, personelId || undefined);
       return;
     }
     setPersonelErr(true);
@@ -1913,8 +1902,13 @@ export const LoginScreen = ({ onLogin, data }) => {
   // Müşteri Girişi
   const tryMusteri = () => {
     const name = musteriName.trim().toLowerCase();
-    if (!name) return;
-    const found = (data || []).find(c => c.name.toLowerCase() === name);
+    const tel4 = musteriTel.replace(/\D/g, "");
+    if (!name || tel4.length !== 4) return;
+    // İsim tek başına yeterli değil: kayıtlı telefonun son 4 hanesi de eşleşmeli
+    const found = (data || []).find(c => {
+      const phone = String(c.phone || "").replace(/\D/g, "");
+      return (c.name || "").toLowerCase() === name && phone.length >= 4 && phone.slice(-4) === tel4;
+    });
     if (found) {
       onLogin("musteri", found.id);
     } else {
@@ -2076,7 +2070,7 @@ export const LoginScreen = ({ onLogin, data }) => {
         }
       `}</style>
 
-      {/* ─── LOGO & BAŞLIK (StudyoApp & Kamera Diyaframı) ─── */}
+      {/* ─── LOGO & BAŞLIK (STÜDYOM & Kamera Diyaframı) ─── */}
       <div style={{ position: "relative", zIndex: 1, textAlign: "center", marginBottom: 26 }}>
         {/* Çok Katmanlı Altın Lens Diyaframı */}
         <div style={{
@@ -2102,7 +2096,7 @@ export const LoginScreen = ({ onLogin, data }) => {
           }} />
 
           {/* Diyafram Kanatları & Mercek SVG */}
-          <svg width="56" height="56" viewBox="0 0 100 100" style={{ position: "relative", zIndex: 2, overflow: "visible" }}>
+          <svg aria-hidden="true" focusable="false" width="56" height="56" viewBox="0 0 100 100" style={{ position: "relative", zIndex: 2, overflow: "visible" }}>
             <defs>
               <radialGradient id="studyoLensCoreGrad" cx="42%" cy="40%" r="58%">
                 <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.95" />
@@ -2178,7 +2172,7 @@ export const LoginScreen = ({ onLogin, data }) => {
             fontFamily: "'Plus Jakarta Sans', sans-serif",
             fontSize: 34,
             fontWeight: 900,
-            background: `linear-gradient(135deg, ${T.goldL} 0%, ${T.gold} 60%, ${T.goldD} 100%)`,
+            background: `${T.gold}`,
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             letterSpacing: "1px",
@@ -2208,7 +2202,7 @@ export const LoginScreen = ({ onLogin, data }) => {
           {/* ─── 1. STÜDYO SAHİBİ GİRİŞ EKRANI ─── */}
           {mode === "login" && (
             <>
-              {/* Sekmeler: Giriş Yap / 7 Gün Pro */}
+              {/* Sekmeler: Giriş Yap / 1 Ay Pro */}
               <div style={{
                 display: "flex",
                 background: "rgba(255,255,255,0.04)",
@@ -2248,20 +2242,20 @@ export const LoginScreen = ({ onLogin, data }) => {
                     cursor: "pointer"
                   }}
                 >
-                  👑 7 Gün Ücretsiz
+                  1 Ay Ücretsiz
                 </button>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div>
                   <div style={{ fontSize: 12, color: T.text3, marginBottom: 6, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
-                    <span>✉️</span> E-posta veya Stüdyo Şifresi
+                    E-posta veya Stüdyo Adı
                   </div>
                   <input
                     value={loginEmail}
                     onChange={e => setLoginEmail(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleOwnerLogin()}
-                    placeholder="ornek@gmail.com veya şifreniz"
+                    placeholder="ornek@gmail.com"
                     autoFocus
                     style={{
                       background: "rgba(255,255,255,0.04)",
@@ -2280,7 +2274,7 @@ export const LoginScreen = ({ onLogin, data }) => {
 
                 <div>
                   <div style={{ fontSize: 12, color: T.text3, marginBottom: 6, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
-                    <span>🔒</span> Şifre
+                    Şifre
                   </div>
                   <input
                     type="password"
@@ -2313,7 +2307,7 @@ export const LoginScreen = ({ onLogin, data }) => {
                     padding: "9px 12px",
                     textAlign: "center"
                   }}>
-                    ⚠️ {loginErr}
+                    {loginErr}
                   </div>
                 )}
 
@@ -2321,13 +2315,13 @@ export const LoginScreen = ({ onLogin, data }) => {
                   onClick={handleOwnerLogin}
                   style={{
                     width: "100%",
-                    background: `linear-gradient(135deg, ${T.goldL} 0%, ${T.gold} 50%, ${T.goldD} 100%)`,
+                    background: `${T.gold}`,
                     border: "none",
                     borderRadius: 14,
                     padding: "14px",
                     fontSize: 14.5,
                     fontWeight: 800,
-                    color: "#FFFFFF",
+                    color: T.onAccent || "#FFFFFF",
                     cursor: "pointer",
                     boxShadow: `0 8px 24px ${T.gold}45`,
                     marginTop: 4,
@@ -2338,7 +2332,7 @@ export const LoginScreen = ({ onLogin, data }) => {
                     gap: 8
                   }}
                 >
-                  <span>📸</span> Stüdyoya Giriş Yap
+                  Stüdyoya Giriş Yap
                 </button>
               </div>
 
@@ -2357,7 +2351,7 @@ export const LoginScreen = ({ onLogin, data }) => {
                     cursor: "pointer"
                   }}
                 >
-                  7 Gün Ücretsiz Başla
+                  1 Ay Ücretsiz Başla
                 </button>
               </div>
             </>
@@ -2375,14 +2369,14 @@ export const LoginScreen = ({ onLogin, data }) => {
                 </button>
                 <button onClick={()=>{ setMode("register"); setRegErr(null); }}
                   style={{ flex:1.2, padding:"9px 0", borderRadius:10, fontSize:12, fontWeight:700,
-                    background:`linear-gradient(135deg,${T.gold},${T.goldD})`, color:"#0A0A0B",
+                    background:`${T.gold}`, color:"#0A0A0B",
                     boxShadow:`0 2px 10px ${T.gold}30` }}>
-                  👑 7 Gün Ücretsiz
+                  1 Ay Ücretsiz
                 </button>
               </div>
 
               <div style={{ background:T.gold+"15", border:`1px solid ${T.gold}30`, borderRadius:12, padding:"10px 12px", marginBottom:14, textAlign:"center" }}>
-                <div style={{ fontSize:12, fontWeight:700, color:T.goldL }}>🎉 7 Gün Boyunca Tüm Pro Özellikler Açık!</div>
+                <div style={{ fontSize:12, fontWeight:700, color:T.goldL }}>1 Ay Boyunca Tüm Pro Özellikler Açık</div>
                 <div style={{ fontSize:11, color:T.text3, marginTop:2 }}>Kredi kartı gerekmez • Anında başlayın</div>
               </div>
 
@@ -2422,15 +2416,15 @@ export const LoginScreen = ({ onLogin, data }) => {
                 {regErr && (
                   <div style={{ fontSize:12, color:T.redL, background:T.red+"18",
                     border:`1px solid ${T.red}33`, borderRadius:10, padding:"8px 12px", textAlign:"center" }}>
-                    ⚠️ {regErr}
+                    {regErr}
                   </div>
                 )}
 
                 <button onClick={handleRegisterSubmit}
-                  style={{ width:"100%", background:`linear-gradient(135deg,${T.gold},${T.goldD})`,
+                  style={{ width:"100%", background:`${T.gold}`,
                     border:"none", borderRadius:12, padding:"14px", fontSize:14, fontWeight:700,
                     color:"#0A0A0B", cursor:"pointer", boxShadow:`0 6px 20px ${T.gold}35`, marginTop:4 }}>
-                  Doğrulama Kodu Gönder ✉️
+                  Doğrulama Kodu Gönder
                 </button>
               </div>
             </>
@@ -2443,7 +2437,7 @@ export const LoginScreen = ({ onLogin, data }) => {
                 style={{ background:"transparent", border:"none", color:T.text3,
                   fontSize:12, cursor:"pointer", padding:"0 0 14px 0",
                   display:"flex", alignItems:"center", gap:6 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none">
                   <path d="M15 18l-6-6 6-6" stroke={T.text3} strokeWidth="2.2" strokeLinecap="round"/>
                 </svg>
                 Bilgileri Düzenle
@@ -2463,10 +2457,10 @@ export const LoginScreen = ({ onLogin, data }) => {
 
               {/* Hızlı Test / Simülasyon Kodu Kolaylığı */}
               {simCode && (
-                <div onClick={()=>setVerifyCode(simCode)}
+                <div role="button" tabIndex={0} onClick={()=>setVerifyCode(simCode)}
                   style={{ background:T.card2, border:`1px dashed ${T.gold}60`, borderRadius:12,
                     padding:"10px 12px", marginBottom:14, textAlign:"center", cursor:"pointer" }}>
-                  <div style={{ fontSize:11, color:T.text3 }}>📬 Test / Simülasyon Kodu:</div>
+                  <div style={{ fontSize:11, color:T.text3 }}>Test / Simülasyon Kodu:</div>
                   <div style={{ fontSize:18, fontWeight:800, color:T.goldL, letterSpacing:4, marginTop:2 }}>
                     {simCode}
                   </div>
@@ -2488,22 +2482,22 @@ export const LoginScreen = ({ onLogin, data }) => {
               {verifyErr && (
                 <div style={{ fontSize:12, color:T.redL, background:T.red+"18",
                   border:`1px solid ${T.red}33`, borderRadius:10, padding:"8px 12px", textAlign:"center", marginBottom:12 }}>
-                  ⚠️ {verifyErr}
+                  {verifyErr}
                 </div>
               )}
 
               {verifySuccess && (
                 <div style={{ fontSize:13, color:T.greenL, background:T.green+"18",
                   border:`1px solid ${T.green}33`, borderRadius:10, padding:"10px 12px", textAlign:"center", marginBottom:12, fontWeight:700 }}>
-                  🎉 Doğrulandı! Pro Deneme Başlatılıyor...
+                  Doğrulandı! Pro Deneme Başlatılıyor...
                 </div>
               )}
 
               <button onClick={handleVerifySubmit} disabled={verifySuccess}
-                style={{ width:"100%", background:`linear-gradient(135deg,${T.gold},${T.goldD})`,
+                style={{ width:"100%", background:`${T.gold}`,
                   border:"none", borderRadius:12, padding:"14px", fontSize:14, fontWeight:700,
                   color:"#0A0A0B", cursor:"pointer", boxShadow:`0 6px 20px ${T.gold}35`, marginBottom:10 }}>
-                Hesabı Onayla ve 7 Gün Pro Başlat 🚀
+                Hesabı Onayla ve 1 Ay Pro Başlat
               </button>
 
               <div style={{ textAlign:"center" }}>
@@ -2521,7 +2515,7 @@ export const LoginScreen = ({ onLogin, data }) => {
                 style={{ background:"transparent", border:"none", color:T.text3,
                   fontSize:12, cursor:"pointer", padding:"0 0 14px 0",
                   display:"flex", alignItems:"center", gap:6 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none">
                   <path d="M15 18l-6-6 6-6" stroke={T.text3} strokeWidth="2.2" strokeLinecap="round"/>
                 </svg>
                 Stüdyo Girişine Dön
@@ -2534,8 +2528,22 @@ export const LoginScreen = ({ onLogin, data }) => {
                   👤
                 </div>
                 <div style={{ fontSize:16, fontWeight:700, color:"#E2E8F0" }}>Personel Girişi</div>
-                <div style={{ fontSize:12, color:T.text3, marginTop:3 }}>Personel şifrenizi girin</div>
+                <div style={{ fontSize:12, color:T.text3, marginTop:3 }}>{team.length > 0 ? "Adınızı seçin ve personel şifrenizi girin" : "Personel şifrenizi girin"}</div>
               </div>
+
+              {team.length > 0 && (
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center", marginBottom:12 }}>
+                  {team.map(m => (
+                    <button key={m.id} type="button" onClick={() => setPersonelId(m.id)}
+                      style={{ background: personelId===m.id ? "rgba(59,130,246,0.22)" : "rgba(255,255,255,0.05)",
+                        border: `1.5px solid ${personelId===m.id ? "rgba(59,130,246,0.8)" : "rgba(255,255,255,0.12)"}`,
+                        color: personelId===m.id ? "#93C5FD" : "#CBD5E1", borderRadius:99, padding:"7px 14px",
+                        fontSize:13, fontWeight: personelId===m.id ? 700 : 500, cursor:"pointer" }}>
+                      {m.name}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <input type="password" value={personelPass} onChange={e=>setPersonelPass(e.target.value)}
                 onKeyDown={e=>e.key==="Enter"&&tryPersonel()}
@@ -2544,13 +2552,13 @@ export const LoginScreen = ({ onLogin, data }) => {
                 style={{ background:"rgba(255,255,255,0.05)",
                   border:`1.5px solid ${personelErr ? T.red+"80" : "rgba(59,130,246,0.3)"}`,
                   borderRadius:12, padding:"13px 14px",
-                  color:T.text, fontSize:18, outline:"none", width:"100%",
+                  color:"#E2E8F0", fontSize:18, outline:"none", width:"100%",
                   letterSpacing:"4px", textAlign:"center", boxSizing:"border-box", marginBottom:12 }}/>
 
               {personelErr && (
                 <div style={{ fontSize:12, color:T.redL, textAlign:"center",
-                  background:T.red+"15", borderRadius:10, padding:"8px 0", marginBottom:12 }}>
-                  ❌ Hatalı personel şifresi
+                  background: T.flat ? T.card2 : T.red+"15", borderRadius:10, padding:"8px 0", marginBottom:12 }}>
+                  {typeof personelErr === "string" ? personelErr : "Hatalı personel şifresi"}
                 </div>
               )}
 
@@ -2571,7 +2579,7 @@ export const LoginScreen = ({ onLogin, data }) => {
                 style={{ background:"transparent", border:"none", color:T.text3,
                   fontSize:12, cursor:"pointer", padding:"0 0 14px 0",
                   display:"flex", alignItems:"center", gap:6 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none">
                   <path d="M15 18l-6-6 6-6" stroke={T.text3} strokeWidth="2.2" strokeLinecap="round"/>
                 </svg>
                 Stüdyo Girişine Dön
@@ -2597,15 +2605,25 @@ export const LoginScreen = ({ onLogin, data }) => {
                   color:T.text, fontSize:14, outline:"none", width:"100%",
                   marginBottom:12, boxSizing:"border-box" }}/>
 
+              <input value={musteriTel} onChange={e=>setMusteriTel(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                onKeyDown={e=>e.key==="Enter"&&tryMusteri()}
+                placeholder="Telefonunuzun son 4 hanesi"
+                inputMode="numeric" maxLength={4}
+                style={{ background:"rgba(255,255,255,0.05)",
+                  border:`1.5px solid ${errMusteri ? T.red+"80" : T.gold+"30"}`,
+                  borderRadius:12, padding:"13px 14px",
+                  color:T.text, fontSize:14, outline:"none", width:"100%",
+                  marginBottom:12, boxSizing:"border-box" }}/>
+
               {errMusteri && (
                 <div style={{ fontSize:12, color:T.redL, textAlign:"center",
-                  background:T.red+"15", borderRadius:10, padding:"8px 0", marginBottom:12 }}>
-                  ❌ Kayıtlı müşteri bulunamadı
+                  background: T.flat ? T.card2 : T.red+"15", borderRadius:10, padding:"8px 0", marginBottom:12 }}>
+                  Bilgiler eşleşmedi — stüdyonuzdan giriş linki isteyebilirsiniz
                 </div>
               )}
 
               <button onClick={tryMusteri}
-                style={{ width:"100%", background:`linear-gradient(135deg,${T.gold},${T.goldD})`,
+                style={{ width:"100%", background:`${T.gold}`,
                   border:"none", borderRadius:12, padding:"14px",
                   fontSize:14, fontWeight:700, color:"#0A0A0B", cursor:"pointer",
                   boxShadow:`0 6px 20px ${T.gold}35` }}>
@@ -2621,12 +2639,12 @@ export const LoginScreen = ({ onLogin, data }) => {
               <button onClick={()=>{ setMode("personel"); setPersonelPass(""); setPersonelErr(false); }}
                 style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:T.text3,
                   background:"rgba(255,255,255,0.03)", border:`1px solid ${T.border}`, borderRadius:10, padding:"8px 12px" }}>
-                <span>👤</span> Personel Girişi
+                Personel Girişi
               </button>
               <button onClick={()=>{ setMode("musteri"); setMusteriName(""); setErrMusteri(false); }}
                 style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:T.text3,
                   background:"rgba(255,255,255,0.03)", border:`1px solid ${T.border}`, borderRadius:10, padding:"8px 12px" }}>
-                <span>📸</span> Müşteri Portali
+                Müşteri Portali
               </button>
             </div>
           )}

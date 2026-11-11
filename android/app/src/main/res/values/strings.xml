@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">StudyoApp</string>
-    <string name="title_activity_main">StudyoApp</string>
-    <string name="package_name">com.omnicod.app</string>
-    <string name="custom_url_scheme">com.omnicod.app</string>
+    <string name="app_name">STÜDYOM</string>
+    <string name="title_activity_main">STÜDYOM</string>
+    <string name="package_name">com.gesblabs.studyom</string>
+    <string name="custom_url_scheme">com.gesblabs.studyom</string>
 </resources>

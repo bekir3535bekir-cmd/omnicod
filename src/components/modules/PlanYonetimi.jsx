@@ -1,315 +1,186 @@
 import React, { useState } from "react";
 import { T } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
-import { fmt, fmtDate } from "../../utils/helpers";
-import { Card, Pill, GoldButton, Field, BottomSheet, PageHeader } from "../common";
-import { PLANS, getPlan, activatePro, deactivatePro, getUsageSummary, getPlanExpiry, getTrialInfo, resetTrial, expireTrial } from "../../services/plan";
+import { fmtDate } from "../../utils/helpers";
+import { Card, GoldButton, BottomSheet, PageHeader } from "../common";
+import { PlanBadge } from "../common/ProGate";
+import {
+  PLANS, PLAN_ORDER, FEATURES, planHasFeature, getUsageSummary, getPlanExpiry, getTrialInfo,
+  activatePro, resetTrial, expireTrial, getPlan, isNativeApp,
+} from "../../services/plan";
+import { IS_CLOUD } from "../../services/supabase";
 
-export const PlanYonetimi = ({ data, plan, setPlanState, setActive }) => {
-  const [licenseKey, setLicenseKey] = useState("");
-  const [msg, setMsg] = useState(null);
-  const [showActivate, setShowActivate] = useState(false);
+const fmtPrice = (n) => new Intl.NumberFormat("tr-TR").format(n) + " ₺";
+// Satış iletişimi (WhatsApp numarası veya e-posta) — .env içinde VITE_SALES_CONTACT
+const SALES_CONTACT = (import.meta.env.VITE_SALES_CONTACT || "").trim();
 
-  const isPro = plan === "pro";
-  const isTrial = plan === "trial";
+export const PlanYonetimi = ({ data, plan, setPlanState }) => {
+  const native = isNativeApp();
   const trial = getTrialInfo();
   const usage = getUsageSummary(data);
   const expiry = getPlanExpiry();
+  const [upgradeTo, setUpgradeTo] = useState(null);
+  const [licenseKey, setLicenseKey] = useState("");
+  const [msg, setMsg] = useState(null);
+  const [showLicense, setShowLicense] = useState(false);
 
-  const handleActivate = () => {
-    const result = activatePro(licenseKey);
-    setMsg(result);
-    if (result.success) {
-      setPlanState("pro");
-      setLicenseKey("");
-      setTimeout(() => setShowActivate(false), 1500);
-    }
+  // Deneme sırasında tüm özellikler açık (Pro gibi)
+  const effective = plan === "trial" ? "pro" : plan;
+  const colorOf = (p) => p === "pro" ? { c: T.gold, l: T.goldL } : p === "standart" ? { c: T.blue, l: T.blueL } : { c: T.text3, l: T.text2 };
+  const featureIds = Object.keys(FEATURES);
+  const countOf = (p) => featureIds.filter(f => planHasFeature(p, f)).length;
+
+  const limitText = (p, key, unit) => {
+    const v = PLANS[p].limits[key];
+    return v === Infinity ? `Sınırsız ${unit}` : v === 0 ? `${unit[0].toUpperCase() + unit.slice(1)} yok` : `${v} ${unit}`;
   };
-
-  const handleDeactivate = () => {
-    if (confirm("Pro planı iptal etmek istediğinize emin misiniz?")) {
-      deactivatePro();
-      setPlanState("basic");
-      setMsg({ success: true, message: "Plan Basic'e düşürüldü." });
-    }
-  };
-
-  const handleResetTrial = () => {
-    resetTrial();
-    setPlanState(getPlan());
-    setMsg({ success: true, message: "7 günlük Pro deneme süresi sıfırlandı! 🎉" });
-  };
-
-  const handleExpireTrial = () => {
-    expireTrial();
-    setPlanState(getPlan());
-    setMsg({ success: true, message: "Deneme süresi sona erdirildi, Basic plan aktif edildi." });
-  };
-
-  const features = [
-    { label: "Randevu Ekleme",          basic: "20 adet",    pro: "Sınırsız",  icon: "calendar" },
-    { label: "Müşteri Ekleme",          basic: "20 adet",    pro: "Sınırsız",  icon: "users" },
-    { label: "Ekip Üyesi",             basic: "2 kişi",     pro: "Sınırsız",  icon: "team" },
-    { label: "Hatırlatıcılar",          basic: "20 adet",    pro: "Sınırsız",  icon: "bell" },
-    { label: "Not Defteri",             basic: "50 not",     pro: "Sınırsız",  icon: "notebook" },
-    { label: "Sözleşme PDF",            basic: "—",          pro: "✅",         icon: "doc" },
-    { label: "Fiyat Teklifi",           basic: "—",          pro: "✅",         icon: "doc" },
-    { label: "Detaylı Raporlar",        basic: "—",          pro: "✅",         icon: "chart" },
-    { label: "Portföy Galerisi",        basic: "—",          pro: "✅",         icon: "camera" },
-    { label: "Müşteri Portali",         basic: "—",          pro: "✅",         icon: "eye" },
-    { label: "İş Asistanı",            basic: "—",          pro: "✅",         icon: "warn" },
-    { label: "Tema Değiştirme",         basic: "—",          pro: "✅",         icon: "settings" },
-    { label: "Paket Düzenleme",         basic: "—",          pro: "✅",         icon: "box" },
-  ];
 
   return (
     <div className="fade-in">
-      <PageHeader title="Plan Yönetimi" sub={isPro ? "👑 Pro Plan Aktif" : isTrial ? `⏳ Pro Deneme (${trial.daysLeft} Gün Kaldı)` : "🆓 Basic Plan"} />
-      <div style={{ padding: "0 20px" }}>
+      <PageHeader title="Planlar" sub="Planınızı ve hangi özelliklerin açık olduğunu görün"/>
+      <div style={{ padding: "0 20px 40px" }}>
 
-        {/* Mevcut Plan Kartı */}
-        {isTrial ? (
-          <Card glow style={{ padding: 22, marginBottom: 20, textAlign: "center", background: `linear-gradient(135deg, ${T.blue}15, ${T.gold}15)` }}>
-            <div style={{ fontSize: 44, marginBottom: 10 }}>⏳</div>
-            <div style={{ fontFamily: "Playfair Display", fontSize: 24, fontWeight: 700, color: T.goldL, marginBottom: 6 }}>
-              7 Günlük Ücretsiz Pro Deneme Aktif!
+        {/* Mevcut plan */}
+        <Card style={{ padding: 18, marginBottom: 18, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontSize: 12, color: T.text3, marginBottom: 4 }}>Mevcut planınız</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 20, fontWeight: 800, color: T.text }}>{PLANS[plan]?.label}</span>
+              <PlanBadge plan={plan}/>
             </div>
-            <div style={{ fontSize: 13, color: T.text2, lineHeight: 1.6, marginBottom: 12 }}>
-              İlk 7 gün boyunca tüm Pro özellikleri (Sözleşmeler, Raporlar, Teklif, Galeri) ve sınırsız çekim hakkını ücretsiz deneyimliyorsunuz.
+            <div style={{ fontSize: 12.5, color: T.text3, marginTop: 6, lineHeight: 1.5 }}>
+              {plan === "trial"
+                ? <>Tüm özellikler açık. Deneme bitişine <b style={{ color: T.blueL }}>{trial.daysLeft} gün</b> kaldı ({fmtDate(trial.endDate?.slice(0, 10))}). Sonrasında Basic plana geçilir.</>
+                : <>{countOf(effective)} / {featureIds.length} özellik açık{expiry ? <> · Bitiş: {fmtDate(expiry.slice(0, 10))}</> : null}</>}
             </div>
-            <div style={{ display: "inline-block", background: T.blue + "22", border: `1px solid ${T.blue}55`, borderRadius: 12, padding: "8px 18px", fontSize: 13, fontWeight: 700, color: T.blueL }}>
-              ⏱️ Kalan Deneme Süresi: {trial.daysLeft} Gün
-            </div>
-            <div style={{ fontSize: 11, color: T.text3, marginTop: 10 }}>
-              Deneme süresi bitince ödeme yapmazsanız uygulama otomatik olarak 20 limitli Basic planda kalır.
-            </div>
-          </Card>
-        ) : (
-          <Card glow={isPro} style={{ padding: 24, marginBottom: 20, textAlign: "center" }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>{isPro ? "👑" : "🆓"}</div>
-            <div style={{
-              fontFamily: "Playfair Display",
-              fontSize: 28,
-              fontWeight: 700,
-              color: isPro ? T.goldL : T.text,
-              marginBottom: 8,
-            }}>
-              {isPro ? "Pro Plan" : "Basic Plan"}
-            </div>
-            {isPro ? (
-              <>
-                <div style={{ fontSize: 14, color: T.greenL, fontWeight: 600, marginBottom: 4 }}>
-                  ✅ Tüm özellikler aktif
-                </div>
-                {expiry && (
-                  <div style={{ fontSize: 12, color: T.text3, marginTop: 8 }}>
-                    Bitiş: {fmtDate(expiry.split("T")[0])}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div style={{ fontSize: 14, color: T.text3, lineHeight: 1.6 }}>
-                7 günlük ücretsiz deneme süresi sona erdi.
-                <br />Şu anda 20 randevu ve müşteri limitli Basic plandasınız.
-              </div>
-            )}
-          </Card>
-        )}
-
-        {/* Kullanım Durumu — Sadece Basic */}
-        {!isPro && (
-          <Card style={{ padding: 18, marginBottom: 20 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 14 }}>
-              📊 Kullanım Durumunuz
-            </div>
-            {Object.entries(usage.usage).map(([key, u]) => {
-              const labels = { appointments: "Randevu", clients: "Müşteri", team: "Ekip", reminders: "Hatırlatıcı", notes: "Not" };
-              const pct = u.limit === Infinity ? 0 : Math.round((u.current / u.limit) * 100);
-              const color = pct >= 100 ? T.redL : pct >= 80 ? T.orangeL : T.greenL;
+          </div>
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+            {[["clients", "Müşteri"], ["appointments", "Randevu"], ["team", "Personel"]].map(([k, l]) => {
+              const u = usage.usage[k];
               return (
-                <div key={key} style={{ marginBottom: 12 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, color: T.text2 }}>{labels[key] || key}</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color }}>
-                      {u.current}/{u.limit === Infinity ? "∞" : u.limit}
-                    </span>
-                  </div>
-                  <div style={{ height: 6, background: T.card2, borderRadius: 99, overflow: "hidden" }}>
-                    <div style={{
-                      width: `${Math.min(pct, 100)}%`,
-                      height: "100%",
-                      background: color,
-                      borderRadius: 99,
-                      transition: "width 0.3s ease",
-                    }} />
-                  </div>
+                <div key={k} style={{ textAlign: "center", background: T.card2, border: `1px solid ${T.border}`, borderRadius: 12, padding: "8px 12px", minWidth: 86 }}>
+                  <div style={{ fontSize: 11, color: T.text3 }}>{l}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: T.text }}>{u.current}{u.limit === Infinity ? "" : ` / ${u.limit}`}</div>
                 </div>
               );
             })}
-          </Card>
-        )}
-
-        {/* Fiyatlandırma */}
-        {!isPro && (
-          <Card glow style={{ padding: 24, marginBottom: 20, textAlign: "center",
-            background: `linear-gradient(135deg, ${T.gold}08, ${T.gold}15)` }}>
-            <div style={{ fontSize: 14, color: T.text3, textTransform: "uppercase", letterSpacing: 1, fontWeight: 600, marginBottom: 8 }}>
-              Pro'ya Yükselt
-            </div>
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 4, marginBottom: 4 }}>
-              <span style={{ fontFamily: "Playfair Display", fontSize: 42, fontWeight: 700, color: T.goldL }}>₺{PLANS.pro.price}</span>
-              <span style={{ fontSize: 16, color: T.text3 }}>/ay</span>
-            </div>
-            <div style={{ fontSize: 12, color: T.text3, marginBottom: 16 }}>
-              veya ₺{PLANS.pro.priceYearly}/yıl ile %17 tasarruf
-            </div>
-            <GoldButton
-              label="👑 Lisans Kodu ile Aktive Et"
-              icon="check"
-              full
-              onClick={() => setShowActivate(true)}
-            />
-          </Card>
-        )}
-
-        {/* Karşılaştırma Tablosu */}
-        <Card style={{ padding: 18, marginBottom: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 14 }}>
-            ⚡ Özellik Karşılaştırması
-          </div>
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "1fr auto auto",
-            gap: "0",
-            fontSize: 12,
-          }}>
-            {/* Header */}
-            <div style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontWeight: 700, color: T.text3 }}>Özellik</div>
-            <div style={{ padding: "8px 12px", borderBottom: `1px solid ${T.border}`, fontWeight: 700, color: T.text3, textAlign: "center" }}>Basic</div>
-            <div style={{ padding: "8px 12px", borderBottom: `1px solid ${T.border}`, fontWeight: 700, color: T.goldL, textAlign: "center" }}>👑 Pro</div>
-            {/* Rows */}
-            {features.map((f, i) => (
-              <React.Fragment key={i}>
-                <div style={{ padding: "10px 0", borderBottom: `1px solid ${T.border}22`, color: T.text2, display: "flex", alignItems: "center", gap: 6 }}>
-                  <Ic n={f.icon} s={13} c={T.text3} />
-                  {f.label}
-                </div>
-                <div style={{ padding: "10px 12px", borderBottom: `1px solid ${T.border}22`, textAlign: "center", color: f.basic === "—" ? T.redL : T.text2 }}>
-                  {f.basic === "—" ? "🔒" : f.basic}
-                </div>
-                <div style={{ padding: "10px 12px", borderBottom: `1px solid ${T.border}22`, textAlign: "center", color: T.greenL, fontWeight: 600 }}>
-                  {f.pro}
-                </div>
-              </React.Fragment>
-            ))}
           </div>
         </Card>
 
-        {/* Pro iptal */}
-        {isPro && (
-          <button
-            onClick={handleDeactivate}
-            style={{
-              width: "100%",
-              background: "transparent",
-              border: `1px solid ${T.red}44`,
-              borderRadius: 14,
-              padding: "14px",
-              fontSize: 13,
-              color: T.redL,
-              cursor: "pointer",
-              marginBottom: 20,
-            }}
-          >
-            Pro Planı İptal Et
+        {/* Plan kartları */}
+        <div className="plan-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 12, marginBottom: 20 }}>
+          {PLAN_ORDER.map(p => {
+            const { c, l } = colorOf(p);
+            const isCurrent = effective === p && plan !== "trial";
+            const higher = PLANS[p].level > PLANS[effective].level || plan === "trial";
+            return (
+              <div key={p} style={{ background: isCurrent ? c + "14" : T.card, border: `1.5px solid ${isCurrent ? c : T.border}`, borderRadius: 18, padding: 18, display: "flex", flexDirection: "column" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: l }}>{p === "pro" ? "" : p === "standart" ? "" : ""}{PLANS[p].label}</div>
+                  {isCurrent && <span style={{ fontSize: 10.5, fontWeight: 800, color: c, background: T.flat ? T.card2 : c + "22", borderRadius: 6, padding: "3px 7px" }}>MEVCUT</span>}
+                </div>
+                {!native && (
+                  <div style={{ marginTop: 8 }}>
+                    <span style={{ fontSize: 26, fontWeight: 800, color: T.text }}>{PLANS[p].price ? fmtPrice(PLANS[p].price) : "Ücretsiz"}</span>
+                    {PLANS[p].price ? <span style={{ fontSize: 12, color: T.text3 }}> / ay</span> : null}
+                  </div>
+                )}
+                <div style={{ fontSize: 12.5, color: T.text3, marginTop: 6, lineHeight: 1.5, minHeight: 36 }}>{PLANS[p].desc}</div>
+                <div style={{ fontSize: 12, color: T.text2, marginTop: 10, lineHeight: 1.7 }}>
+                  {countOf(p)} / {featureIds.length} özellik<br/>
+                  {limitText(p, "clients", "müşteri")}, {limitText(p, "appointments", "randevu").toLowerCase()}<br/>
+                  {limitText(p, "team", "personel")}
+                </div>
+                <div style={{ flex: 1 }}/>
+                {!native && p !== "basic" && higher && !isCurrent && (
+                  <button onClick={() => setUpgradeTo(p)} style={{ marginTop: 14, background: c, color: "#fff", border: "none", borderRadius: 12, padding: "11px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+                    {PLANS[p].label}'a Geç
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {native && (
+          <Card style={{ padding: 14, marginBottom: 18, fontSize: 12.5, color: T.text3, lineHeight: 1.6 }}>
+            Planınızı STÜDYOM masaüstü programından veya web sitemizden yükseltebilirsiniz. Yükseltme yapıldığında bu cihazda da otomatik açılır.
+          </Card>
+        )}
+
+        {/* Özellik karşılaştırma tablosu */}
+        <Card style={{ padding: 0, overflow: "hidden", marginBottom: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr repeat(3, 72px)", padding: "12px 14px", borderBottom: `1px solid ${T.border}`, fontSize: 12, fontWeight: 800, color: T.text2 }}>
+            <span>Özellik</span>
+            {PLAN_ORDER.map(p => <span key={p} style={{ textAlign: "center", color: colorOf(p).l }}>{PLANS[p].short}</span>)}
+          </div>
+          {featureIds.map((f, i) => {
+            const mine = planHasFeature(effective, f);
+            return (
+              <div key={f} style={{ display: "grid", gridTemplateColumns: "1fr repeat(3, 72px)", alignItems: "center", padding: "10px 14px",
+                borderBottom: i < featureIds.length - 1 ? `1px solid ${T.border}` : "none", background: mine ? "transparent" : T.card2 }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: mine ? T.text : T.text2 }}>{!mine && ""}{FEATURES[f].label}</div>
+                  <div style={{ fontSize: 11, color: T.text3, marginTop: 2 }}>{FEATURES[f].desc}</div>
+                </div>
+                {PLAN_ORDER.map(p => (
+                  <span key={p} style={{ textAlign: "center", fontSize: 15, color: planHasFeature(p, f) ? T.greenL : T.text3 }}>
+                    {planHasFeature(p, f) ? "✓" : "—"}
+                  </span>
+                ))}
+              </div>
+            );
+          })}
+        </Card>
+
+        {/* Yerel mod: lisans kodu */}
+        {!IS_CLOUD && !native && (
+          <button onClick={() => setShowLicense(true)} style={{ background: "none", border: "none", color: T.text3, fontSize: 12, textDecoration: "underline", cursor: "pointer", marginBottom: 16 }}>
+            Lisans kodum var
           </button>
         )}
 
-        {/* Test & Simülasyon Araçları */}
-        <Card style={{ padding: 16, marginBottom: 20, background: T.card2, border: `1px dashed ${T.border}` }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 6 }}>
-            🧪 SaaS Deneme Test Araçları
-          </div>
-          <div style={{ fontSize: 11, color: T.text3, marginBottom: 12, lineHeight: 1.5 }}>
-            7 günlük deneme ve sonrasındaki Basic geçişini test etmek için kullanabilirsiniz:
-          </div>
-          <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
-            <button
-              onClick={handleResetTrial}
-              style={{
-                background: T.blue + "1A",
-                border: `1px solid ${T.blue}44`,
-                color: T.blueL,
-                borderRadius: 10,
-                padding: "10px 14px",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-                textAlign: "left"
-              }}
-            >
-              ⏳ 7 Günlük Denemeyi Yeniden Başlat (İlk Geliş Simülasyonu)
-            </button>
-            <button
-              onClick={handleExpireTrial}
-              style={{
-                background: T.orange + "1A",
-                border: `1px solid ${T.orange}44`,
-                color: T.orangeL,
-                borderRadius: 10,
-                padding: "10px 14px",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-                textAlign: "left"
-              }}
-            >
-              🔒 Deneme Süresini Bitir (Basic Plan & Teklif Simülasyonu)
-            </button>
-          </div>
-        </Card>
-
-        {/* Destek */}
-        <Card style={{ padding: 16, marginBottom: 30, textAlign: "center" }}>
-          <div style={{ fontSize: 12, color: T.text3, lineHeight: 1.6 }}>
-            Sorularınız mı var? 📧 destek@omnicod.com
-            <br />WhatsApp: 0532 000 00 00
-          </div>
-        </Card>
+        {/* Test araçları — yalnızca geliştirme sunucusunda */}
+        {import.meta.env.DEV && (
+          <Card style={{ padding: 14, background: T.card2, border: `1px dashed ${T.border}` }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: T.text, marginBottom: 8 }}>Test araçları (yalnızca geliştirme)</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button onClick={() => { resetTrial(); setPlanState(getPlan()); }} style={{ fontSize: 12, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.card, color: T.text2 }}>Denemeyi başlat</button>
+              <button onClick={() => { expireTrial(); setPlanState(getPlan()); }} style={{ fontSize: 12, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.card, color: T.text2 }}>Basic yap</button>
+              {["standart", "pro"].map(p => (
+                <button key={p} onClick={() => { try { localStorage.setItem((import.meta.env.VITE_DEV_MODE === "false" ? "geses_" : "geses_dev_") + "plan", p); } catch (e) {} setPlanState(getPlan()); }}
+                  style={{ fontSize: 12, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.card, color: T.text2 }}>{PLANS[p].label} yap</button>
+              ))}
+            </div>
+          </Card>
+        )}
       </div>
 
-      {/* Aktivasyon Modal */}
-      {showActivate && (
-        <BottomSheet title="Pro Aktivasyon" onClose={() => { setShowActivate(false); setMsg(null); }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Yükseltme penceresi (masaüstü / web) */}
+      {upgradeTo && (
+        <BottomSheet title={`${PLANS[upgradeTo].label} Plan`} onClose={() => setUpgradeTo(null)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: T.text }}>{fmtPrice(PLANS[upgradeTo].price)} <span style={{ fontSize: 13, color: T.text3, fontWeight: 500 }}>/ ay</span></div>
             <div style={{ fontSize: 13, color: T.text2, lineHeight: 1.6 }}>
-              Pro lisans kodunuzu girin. Kod satın almak için web sitemizi ziyaret edin
-              veya WhatsApp ile iletişime geçin.
+              {PLANS[upgradeTo].label} planı stüdyo hesabınıza tanımlanır; masaüstü programında ve tüm telefonlarda (personel dahil) aynı anda açılır.
             </div>
-            <Field
-              label="Lisans Kodu"
-              value={licenseKey}
-              onChange={setLicenseKey}
-              placeholder="OMNICOD-PRO-XXXX"
-            />
-            {msg && (
-              <div style={{
-                background: msg.success ? T.green + "1A" : T.red + "1A",
-                border: `1px solid ${msg.success ? T.green : T.red}33`,
-                borderRadius: 12,
-                padding: "12px 14px",
-                fontSize: 13,
-                color: msg.success ? T.greenL : T.redL,
-              }}>
-                {msg.message}
-              </div>
-            )}
-            <GoldButton
-              label="Aktive Et"
-              icon="check"
-              full
-              onClick={handleActivate}
-            />
+            <div style={{ background: T.card2, border: `1px solid ${T.border}`, borderRadius: 12, padding: 14, fontSize: 13, color: T.text2, lineHeight: 1.6 }}>
+              Online ödeme çok yakında. Şimdilik planınızı yükseltmek için bizimle iletişime geçin
+              {SALES_CONTACT ? <>: <b style={{ color: T.text }}>{SALES_CONTACT}</b></> : "."}
+              {" "}Ödemeniz onaylandığında planınız birkaç dakika içinde açılır.
+            </div>
+            <GoldButton label="Tamam" full onClick={() => setUpgradeTo(null)}/>
+          </div>
+        </BottomSheet>
+      )}
+
+      {showLicense && (
+        <BottomSheet title="Lisans Kodu" onClose={() => { setShowLicense(false); setMsg(null); }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <input value={licenseKey} onChange={e => setLicenseKey(e.target.value)} placeholder="Lisans kodunuz"
+              style={{ background: T.card2, border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px 14px", color: T.text, fontSize: 14, outline: "none" }}/>
+            {msg && <div style={{ fontSize: 12.5, color: msg.success ? T.greenL : T.redL }}>{msg.message}</div>}
+            <GoldButton label="Etkinleştir" full onClick={() => { const r = activatePro(licenseKey); setMsg(r); if (r.success) { setPlanState(getPlan()); setLicenseKey(""); } }}/>
           </div>
         </BottomSheet>
       )}

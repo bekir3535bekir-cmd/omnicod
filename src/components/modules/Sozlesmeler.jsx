@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
-import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
+import { fmt, fmtTL, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
+import { getPass, setPass, getSession, saveSession, clearSession, getStudioInfo } from "../../services/storage";
 
 export const Sozlesmeler = ({ data, setData, role }) => {
   const isAdmin = role === "admin";
@@ -33,16 +33,16 @@ export const Sozlesmeler = ({ data, setData, role }) => {
 
   const printContract = (c) => {
     const pkg = data.packages.find(p=>p.name===c.package) || {};
+    const S = getStudioInfo();
     const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8"/>
   <title>Sözleşme — ${c.clientName}</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap');
-    body { font-family: 'Inter', sans-serif; color: #1a1a1a; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; }
+    body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; color: #1a1a1a; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; }
     .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #B8953F; padding-bottom: 20px; margin-bottom: 30px; }
-    .title { font-family: 'Playfair Display', serif; font-size: 24px; color: #B8953F; margin: 0; }
+    .title { font-family: 'Playfair Display', Georgia, serif; font-size: 24px; color: #B8953F; margin: 0; }
     .badge { background: #fdf6e7; border: 1px solid #B8953F; color: #8A6E2E; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; }
     table { width: 100%; border-collapse: collapse; margin: 20px 0; }
     th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
@@ -54,24 +54,24 @@ export const Sozlesmeler = ({ data, setData, role }) => {
   </style>
 </head>
 <body>
-  <div class="header">
+  <header class="header">
     <div>
-      <h1 class="title">${SIRKET?.unvan || "OMNICOD"}</h1>
+      <h1 class="title">${S.unvan || "Fotoğraf Stüdyosu"}</h1>
       <div style="font-size: 12px; color: #666; margin-top: 4px;">Fotoğrafçılık & Prodüksiyon Hizmet Sözleşmesi</div>
     </div>
     <div>
       <span class="badge">DURUM: ${(c.status||"taslak").toUpperCase()}</span>
     </div>
-  </div>
+  </header>
 
   <table>
     <tr><th style="width:30%">Müşteri Adı</th><td><strong>${c.clientName}</strong></td></tr>
     <tr><th>Seçilen Paket</th><td>${c.package}</td></tr>
     <tr><th>Etkinlik Tarihi</th><td>${fmtDate(c.eventDate)}</td></tr>
     <tr><th>İmza Tarihi</th><td>${fmtDate(c.signDate)}</td></tr>
-    <tr><th>Toplam Hizmet Bedeli</th><td><strong>${fmt(c.total)}</strong></td></tr>
-    <tr><th>Alınan Kapora</th><td>${fmt(c.deposit)}</td></tr>
-    <tr><th>Kalan Bakiye</th><td><strong style="color:#c53030">${fmt(Math.max(0, (c.total||0) - (c.deposit||0)))}</strong></td></tr>
+    <tr><th>Toplam Hizmet Bedeli</th><td><strong>${fmtTL(c.total)}</strong></td></tr>
+    <tr><th>Alınan Kapora</th><td>${fmtTL(c.deposit)}</td></tr>
+    <tr><th>Kalan Bakiye</th><td><strong style="color:#c53030">${fmtTL(Math.max(0, (c.total||0) - (c.deposit||0)))}</strong></td></tr>
   </table>
 
   ${pkg.includes && pkg.includes.length > 0 ? `
@@ -90,7 +90,7 @@ export const Sozlesmeler = ({ data, setData, role }) => {
   <div class="signs">
     <div class="sign-box">
       <strong>Hizmet Veren (Stüdyo)</strong><br/>
-      ${SIRKET?.ad || "Stüdyo Yetkilisi"}<br/>
+      ${S.ad || "Stüdyo Yetkilisi"}<br/>
       İmza / Kaşe
     </div>
     <div class="sign-box">
@@ -150,7 +150,7 @@ export const Sozlesmeler = ({ data, setData, role }) => {
           
           {/* Yazdır / PDF İndir */}
           <div style={{ marginTop:16 }}>
-            <GoldButton label="📄 Sözleşmeyi Yazdır / PDF" icon="doc" variant="outline" full onClick={()=>printContract(detail)}/>
+            <GoldButton label="Sözleşmeyi Yazdır / PDF" icon="doc" variant="outline" full onClick={()=>printContract(detail)}/>
           </div>
 
           <div style={{ marginTop:16 }}>
@@ -181,8 +181,8 @@ export const Sozlesmeler = ({ data, setData, role }) => {
               <DatePicker label="Etkinlik Tarihi" value={form.eventDate} onChange={f("eventDate")}/>
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-              <Field label="Toplam (₺)" type="number" value={form.total} onChange={f("total")}/>
-              <Field label="Kapora (₺)" type="number" value={form.deposit} onChange={f("deposit")}/>
+              <Field label="Toplam" type="number" value={form.total} onChange={f("total")}/>
+              <Field label="Kapora" type="number" value={form.deposit} onChange={f("deposit")}/>
             </div>
             <Field label="Sözleşme Şartları" value={form.terms} onChange={f("terms")} textarea rows={4}/>
             <GoldButton label="Sözleşmeyi Kaydet" icon="check" onClick={save} full/>

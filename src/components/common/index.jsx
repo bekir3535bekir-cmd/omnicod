@@ -3,11 +3,25 @@ import { T } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmt, fmtDate, uid, MN, daysLeft } from "../../utils/helpers";
 import { CEKIM_CHECKLIST } from "../../constants/templates";
+import { TIPS, isTipSeen, markTipSeen } from "../../constants/tips";
+import { haptic } from "../../services/native";
 
 // ─── BASE COMPONENTS ─────────────────────────────────────────────────────────
-const Card = ({ children, style={}, onClick, glow }) => (
-  <div onClick={onClick}
-    style={{
+// Tıklanabilir kart klavyeyle de seçilebilir (Tab ile gelinir, Enter/Boşluk ile açılır)
+const keyActivate = (fn) => (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(e); } };
+const Card = ({ children, style={}, onClick, glow, className }) => (
+  <div onClick={onClick} className={className} {...(onClick ? { role: "button", tabIndex: 0, onKeyDown: keyActivate(onClick) } : {})}
+    style={T.flat ? {
+      // Düz tema: tek renk yüzey, ince çizgi; gölge ve parlama yok
+      background: T.card,
+      border: `1px solid ${glow ? T.borderL : T.border}`,
+      borderRadius: T.radius,
+      boxShadow: T.cardShadow || "none",
+      padding: 18,
+      cursor: onClick ? "pointer" : "default",
+      transition: "border-color 0.15s ease",
+      ...style
+    } : {
       background: glow
         ? `linear-gradient(135deg, ${T.gold}18 0%, rgba(255,255,255,0.02) 100%)`
         : (T.glassCard || T.card),
@@ -55,15 +69,16 @@ const GoldButton = ({ label, icon, onClick, full, sm, variant="primary", disable
       background: disabled
         ? "rgba(255, 255, 255, 0.08)"
         : isPrimary
-        ? `linear-gradient(135deg, ${T.goldL} 0%, ${T.gold} 50%, ${T.goldD} 100%)`
+        ? T.gold
         : isDanger ? "rgba(255, 69, 58, 0.14)"
         : isGhost ? "transparent"
         : "rgba(255, 255, 255, 0.04)",
-      color: disabled ? T.text3 : isPrimary ? "#FFFFFF" : isDanger ? T.redL : isGhost ? T.text2 : T.goldL,
-      border: disabled ? `1px solid ${T.border}` : isOutline ? `1.5px solid ${T.gold}` : isDanger ? `1px solid ${T.red}44` : isPrimary ? "1px solid rgba(255,255,255,0.3)" : `1px solid ${T.border}`,
-      boxShadow: disabled ? "none" : isPrimary ? `0 8px 24px -4px ${T.gold}50, inset 0 1px 1px rgba(255,255,255,0.6)` : isOutline ? `inset 0 1px 1px rgba(255,255,255,0.1)` : "none",
-      borderRadius: 16,
+      color: disabled ? T.text3 : isPrimary ? (T.onAccent || "#FFFFFF") : isDanger ? T.redL : isGhost ? T.text2 : T.goldL,
+      border: disabled ? `1px solid ${T.border}` : isOutline ? `1.5px solid ${T.gold}` : isDanger ? `1px solid ${T.red}44` : isPrimary ? "1px solid transparent" : `1px solid ${T.border}`,
+      boxShadow: disabled ? "none" : isPrimary ? "none" : isOutline ? `inset 0 1px 1px rgba(255,255,255,0.1)` : "none",
+      borderRadius: T.flat ? (T.btnRadius || 8) : 16,
       padding: sm ? "10px 18px" : "14px 22px",
+      minHeight: T.flat ? 44 : undefined,
       fontSize: sm ? 13 : 15,
       fontWeight: 600,
       letterSpacing: "0.2px",
@@ -74,7 +89,7 @@ const GoldButton = ({ label, icon, onClick, full, sm, variant="primary", disable
       transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
       ...style
     }}>
-      {icon && <Ic n={icon} s={sm?15:17} c={disabled ? T.text3 : isPrimary?"#FFFFFF":isDanger?T.redL:isGhost?T.text2:T.goldL}/>}
+      {icon && <Ic n={icon} s={sm?15:17} c={disabled ? T.text3 : isPrimary?(T.onAccent || "#FFFFFF"):isDanger?T.redL:isGhost?T.text2:T.goldL}/>}
       {label}
     </button>
   );
@@ -153,12 +168,12 @@ export const CustomSelect = ({ value, onChange, options, placeholder="Seçiniz..
           left: 0,
           right: 0,
           zIndex: 9999,
-          background: "linear-gradient(145deg, rgba(26, 26, 34, 0.98) 0%, rgba(16, 16, 22, 0.98) 100%)",
+          background: T.isDark === false ? "#FFFFFF" : "linear-gradient(145deg, rgba(26, 26, 34, 0.98) 0%, rgba(16, 16, 22, 0.98) 100%)",
           backdropFilter: "blur(32px) saturate(190%)",
           WebkitBackdropFilter: "blur(32px) saturate(190%)",
           border: `1.5px solid ${T.gold}44`,
           borderRadius: 16,
-          boxShadow: "0 16px 40px rgba(0,0,0,0.9), 0 0 20px rgba(232, 197, 71, 0.15)",
+          boxShadow: T.isDark === false ? "0 16px 40px rgba(15,23,42,0.18)" : "0 16px 40px rgba(0,0,0,0.9), 0 0 20px rgba(232, 197, 71, 0.15)",
           padding: "6px",
           maxHeight: 240,
           overflowY: "auto"
@@ -170,7 +185,7 @@ export const CustomSelect = ({ value, onChange, options, placeholder="Seçiniz..
             const isEmptyChoice = !val && !lbl;
 
             return (
-              <div
+              <div role="button" tabIndex={0}
                 key={idx}
                 onClick={() => {
                   onChange(val);
@@ -323,27 +338,49 @@ const DatePicker = ({ label, value, onChange, required }) => {
   );
 };
 
-const BottomSheet = ({ title, onClose, footer, children }) => (
-  <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+const BottomSheet = ({ title, onClose, footer, children }) => {
+  // Açık temada pencere de açık renkli olmalı (koyu zemin + koyu yazı okunmuyordu)
+  const light = T.isDark === false;
+  // HIG (sheets): telefonda aşağı çekerek kapatma; masaüstünde Esc
+  const [drag, setDrag] = useState(0);
+  const startY = useRef(null);
+  const titleId = useRef("bs-" + Math.random().toString(36).slice(2, 8)).current;
+  useEffect(() => {
+    const onKey = e => { if (e.key === "Escape") onClose && onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const onTouchStart = e => { startY.current = e.touches[0].clientY; };
+  const onTouchMove = e => { if (startY.current == null) return; setDrag(Math.max(0, e.touches[0].clientY - startY.current)); };
+  const onTouchEnd = () => { if (drag > 110) onClose && onClose(); setDrag(0); startY.current = null; };
+  const flat = !!T.flat;
+  return (
+  <div className="bs-wrap" style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:"max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))" }}>
     {/* Backdrop */}
-    <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.8)", backdropFilter:"blur(16px)", WebkitBackdropFilter:"blur(16px)" }}/>
+    <div onClick={onClose} role="presentation" aria-hidden="true" style={{ position:"absolute", inset:0, background: light ? "rgba(15,23,42,0.45)" : "rgba(0,0,0,0.8)", backdropFilter:"blur(16px)", WebkitBackdropFilter:"blur(16px)" }}/>
     {/* Modal Box */}
-    <div className="modal-pop" style={{
+    <div className="modal-pop bs-box" role="dialog" aria-modal="true" aria-labelledby={titleId} style={{
       position:"relative", zIndex:1,
-      background:"linear-gradient(145deg, rgba(22, 22, 28, 0.96) 0%, rgba(14, 14, 18, 0.98) 100%)",
-      backdropFilter:"blur(36px) saturate(200%)",
-      WebkitBackdropFilter:"blur(36px) saturate(200%)",
-      borderRadius:28,
-      border:"1px solid rgba(255, 255, 255, 0.12)",
-      boxShadow:"0 32px 80px rgba(0,0,0,0.95), inset 0 1px 1px rgba(255,255,255,0.22)",
+      transform: drag ? `translateY(${drag}px)` : undefined, transition: drag ? "none" : "transform 0.25s ease",
+      background: flat ? T.card : light ? "linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 100%)" : "linear-gradient(145deg, rgba(22, 22, 28, 0.96) 0%, rgba(14, 14, 18, 0.98) 100%)",
+      backdropFilter: flat ? "none" : "blur(36px) saturate(200%)",
+      WebkitBackdropFilter: flat ? "none" : "blur(36px) saturate(200%)",
+      borderRadius: flat ? 20 : 28,
+      border: light || flat ? `1px solid ${T.border}` : "1px solid rgba(255, 255, 255, 0.12)",
+      boxShadow: flat ? "0 20px 50px rgba(0,0,0,0.35)" : light ? "0 24px 60px rgba(15,23,42,0.25)" : "0 32px 80px rgba(0,0,0,0.95), inset 0 1px 1px rgba(255,255,255,0.22)",
       maxWidth:440, width:"100%",
       maxHeight:"90vh",
       display:"flex", flexDirection:"column",
       overflow: "hidden"
     }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 20px 14px", borderBottom:`1px solid ${T.border}`, background:"rgba(22, 22, 28, 0.8)", backdropFilter:"blur(20px)", zIndex:10 }}>
-        <span style={{ fontFamily:"Playfair Display", fontSize:19, fontWeight:700, color:T.goldL }}>{title}</span>
-        <button onClick={onClose} style={{ background:"rgba(255,255,255,0.06)", border:`1px solid ${T.border}`,
+      {/* Tutma çubuğu: yalnızca telefonda görünür (CSS .bs-grab) */}
+      <div className="bs-grab" aria-hidden="true" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+        style={{ padding:"8px 0 2px", display:"none", justifyContent:"center", touchAction:"none" }}>
+        <span style={{ width:36, height:5, borderRadius:3, background:T.borderL }}/>
+      </div>
+      <div onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 20px 14px", borderBottom:`1px solid ${T.border}`, background: flat ? T.card : light ? "rgba(255,255,255,0.92)" : "rgba(22, 22, 28, 0.8)", backdropFilter:"blur(20px)", zIndex:10 }}>
+        <span id={titleId} style={{ fontFamily:"Playfair Display", fontSize:19, fontWeight:700, color: flat ? T.text : T.goldL }}>{title}</span>
+        <button onClick={onClose} aria-label="Kapat" style={{ background: light ? T.card2 : "rgba(255,255,255,0.06)", border:`1px solid ${T.border}`,
           borderRadius:99, width:34, height:34, display:"flex", alignItems:"center", justifyContent:"center" }}>
           <Ic n="close" s={15} c={T.text2}/>
         </button>
@@ -357,9 +394,9 @@ const BottomSheet = ({ title, onClose, footer, children }) => (
         <div style={{
           padding:"14px 20px 18px",
           borderTop:`1px solid ${T.border}`,
-          background:"rgba(18, 18, 22, 0.95)",
-          backdropFilter:"blur(24px)",
-          WebkitBackdropFilter:"blur(24px)",
+          background: flat ? T.card : light ? "rgba(255,255,255,0.95)" : "rgba(18, 18, 22, 0.95)",
+          backdropFilter: flat ? "none" : "blur(24px)",
+          WebkitBackdropFilter: flat ? "none" : "blur(24px)",
           zIndex:10
         }}>
           {footer}
@@ -367,7 +404,8 @@ const BottomSheet = ({ title, onClose, footer, children }) => (
       )}
     </div>
   </div>
-);
+  );
+};
 
 const EmptyState = ({ icon, title, sub, action, onAction }) => (
   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"56px 24px", gap:16 }}>
@@ -402,16 +440,20 @@ const Divider = ({label}) => (
 );
 
 // ─── LOGO ────────────────────────────────────────────────────────────────────
-const Logo = ({ compact, showText = true }) => (
+const Logo = ({ compact, showText = true }) => {
+  // Düz temada parlamasız rozet; logo renkleri markaya ait, temayla değişmez
+  const flat = !!T.flat;
+  const cal = "#00B594";
+  return (
   <div style={{ display:"flex", alignItems:"center", gap:compact ? 8 : 10 }}>
     {/* Kullanıcının Resmi Kamera & Ajanda Logosu */}
     <div style={{
       width: compact ? 32 : 38,
       height: compact ? 32 : 38,
       borderRadius: compact ? 10 : 12,
-      background: "linear-gradient(145deg, #0E1626, #060911)",
-      border: "1.2px solid rgba(59, 130, 246, 0.4)",
-      boxShadow: "0 4px 14px rgba(0,0,0,0.5), 0 0 10px rgba(59, 130, 246, 0.2)",
+      background: flat ? T.card2 : "linear-gradient(145deg, #0E1626, #060911)",
+      border: flat ? `1px solid ${T.borderL}` : "1.2px solid rgba(59, 130, 246, 0.4)",
+      boxShadow: flat ? "none" : "0 4px 14px rgba(0,0,0,0.5), 0 0 10px rgba(59, 130, 246, 0.2)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -419,11 +461,17 @@ const Logo = ({ compact, showText = true }) => (
       position: "relative",
       padding: compact ? 2 : 3
     }}>
-      <svg width="100%" height="100%" viewBox="0 0 100 100" fill="none">
+      <svg role="img" aria-label="STÜDYOM" width="100%" height="100%" viewBox="0 0 100 100" fill="none">
         {/* Arkadaki Ajanda / Takvim (Zümrüt / Turkuaz #00B594) */}
-        <rect x="44" y="16" width="6" height="10" rx="3" fill="#00B594"/>
-        <rect x="68" y="16" width="6" height="10" rx="3" fill="#00B594"/>
-        <path d="M 37 32 H 74 C 77.5 32 80 34.5 80 38 V 74 C 80 75 79 76 78 76 H 75 C 74 76 74 75 74 74 V 39 C 74 38 73 37 72 37 H 42 C 39 37 37 39 37 42 V 46 H 31 V 38 C 31 34.5 33.5 32 37 32 Z" fill="#00B594"/>
+        {/* Makinenin biraz üstünde durur ki ajanda belli olsun */}
+        <rect x="38" y="15" width="46" height="44" rx="7" fill={cal}/>
+        <rect x="42" y="25" width="38" height="30" rx="3.5" fill="#0B1220"/>
+        <rect x="48" y="9" width="5" height="11" rx="2.5" fill={cal} stroke="#0B1220" strokeWidth="1.5"/>
+        <rect x="69" y="9" width="5" height="11" rx="2.5" fill={cal} stroke="#0B1220" strokeWidth="1.5"/>
+        <circle cx="62" cy="31" r="2.6" fill={cal}/>
+        <circle cx="70" cy="31" r="2.6" fill={cal}/>
+        <circle cx="70" cy="39" r="2.6" fill={cal}/>
+        <circle cx="62" cy="39" r="2.6" fill={cal} opacity="0.55"/>
         
         {/* Öndeki Kamera Gövdesi (Kraliyet Mavisi #3B5AF6) */}
         <path d="M 35 44 L 40 37 C 41 35.5 42.5 35 44 35 H 56 C 57.5 35 59 35.5 60 37 L 65 44 H 71 C 74.5 44 77 46.5 77 50 V 78 C 77 81.5 74.5 84 71 84 H 29 C 25.5 84 23 81.5 23 78 V 50 C 23 46.5 25.5 44 29 44 Z" fill="#3B5AF6"/>
@@ -433,21 +481,23 @@ const Logo = ({ compact, showText = true }) => (
       </svg>
     </div>
     {showText && (
-      <div style={{ display:"flex", flexDirection:"column", gap:1 }}>
-        <div style={{ display:"flex", alignItems:"baseline", gap:compact?1:2 }}>
-          <span style={{ fontFamily:"'Plus Jakarta Sans', sans-serif", fontSize:compact?19:23, fontWeight:800,
-            color:T.text, letterSpacing:compact?1.2:1.8, lineHeight:1 }}>STÜDYO</span>
-          <span style={{ fontFamily:"'Plus Jakarta Sans', sans-serif", fontSize:compact?19:23, fontWeight:900,
-            color:"#3B5AF6", letterSpacing:compact?1:1.5, lineHeight:1 }}>M</span>
-        </div>
-        <div style={{ height:1.5, background:"linear-gradient(90deg, #3B5AF6, #00B594, transparent)", width:"90%" }}/>
+      <div style={{ display:"flex", alignItems:"center", gap:compact ? 3 : 4,
+        fontFamily:"'Plus Jakarta Sans', sans-serif", fontSize:compact ? 18 : 22, fontWeight:800, lineHeight:1 }}>
+        <span style={{ color:T.text, letterSpacing:"0.06em", marginRight:"-0.03em" }}>STÜDYO</span>
+        {/* M: ikondaki kamera mavisiyle rozet */}
+        <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center",
+          height:"1.1em", minWidth:"1.1em", padding:"0 0.16em", borderRadius:"0.26em",
+          background:"#3B5AF6", color:"#FFFFFF" }}>M</span>
       </div>
     )}
   </div>
-);
+  );
+};
 
 // ─── TOAST NOTIFICATION ──────────────────────────────────────────────────
 const Toast = ({ message, type="success", onClose }) => {
+  // HIG: önemli bir işlemin sonucunu dokunsal olarak da bildir
+  useEffect(() => { if (message) (type === "success" ? haptic.success : haptic.error)(); }, [message, type]);
   if (!message) return null;
   return (
     <div style={{
@@ -575,15 +625,15 @@ const WeatherCard = ({ date, location="" }) => {
           </div>
         </div>
         {warn && (
-          <div style={{ background:T.orange+"22", borderRadius:8, padding:"4px 8px",
+          <div style={{ background: T.flat ? T.card2 : T.orange+"22", borderRadius:8, padding:"4px 8px",
             fontSize:10, fontWeight:700, color:T.orangeL, flexShrink:0 }}>
-            {isBad?"🌧 DİKKAT":""}{isWind?"💨 RÜZGAR":""}
+            {isBad?"DİKKAT":""}{isWind?"RÜZGAR":""}
           </div>
         )}
       </div>
       {warn && (
         <div style={{ marginTop:8, fontSize:11, color:T.orangeL, fontWeight:500 }}>
-          ⚠️ {isBad?"Yağmur riski yüksek — dış çekim için yedek plan hazırlayın!":""}
+          {isBad?"Yağmur riski yüksek — dış çekim için yedek plan hazırlayın!":""}
           {isWind?" Kuvvetli rüzgar — ekipman güvenliğine dikkat!":""}
         </div>
       )}
@@ -641,7 +691,7 @@ const CekimGunuModu = ({ apt, data, onClose, onComplete }) => {
         </button>
         <div style={{ flex:1 }}>
           <div style={{ fontFamily:"Playfair Display", fontSize:18, fontWeight:600, color:T.goldL }}>
-            📸 Çekim Günü Modu
+            Çekim Günü Modu
           </div>
           <div style={{ fontSize:12, color:T.text3, marginTop:2 }}>{apt?.clientName} — {fmtDate(apt?.date)}</div>
         </div>
@@ -650,7 +700,7 @@ const CekimGunuModu = ({ apt, data, onClose, onComplete }) => {
 
       {/* Tabs */}
       <div style={{ display:"flex", background:T.surface, borderBottom:`1px solid ${T.border}` }}>
-        {[["hazirlik","✅ Hazırlık"],["kronometre","⏱ Süre"],["notlar","📝 Notlar"]].map(([id,l])=>(
+        {[["hazirlik","Hazırlık"],["kronometre","Süre"],["notlar","Notlar"]].map(([id,l])=>(
           <button key={id} onClick={()=>setTab(id)} style={{ flex:1, padding:"12px 4px",
             fontSize:12, fontWeight:tab===id?700:400,
             color:tab===id?T.goldL:T.text3,
@@ -697,16 +747,16 @@ const CekimGunuModu = ({ apt, data, onClose, onComplete }) => {
           {client && (
             <div style={{ marginTop:16, background:T.card, border:`1px solid ${T.border}`,
               borderRadius:14, padding:14 }}>
-              <div style={{ fontSize:12, color:T.text3, marginBottom:10 }}>📞 Müşteri Bilgileri</div>
+              <div style={{ fontSize:12, color:T.text3, marginBottom:10 }}>Müşteri Bilgileri</div>
               <div style={{ fontSize:14, fontWeight:600, marginBottom:4 }}>{client.name}</div>
               {client.phone && (
                 <button onClick={()=>window.open(`tel:${client.phone}`)}
                   style={{ background:T.blue+"1A", border:`1px solid ${T.blue}33`,
                     borderRadius:10, padding:"8px 14px", fontSize:13, color:T.blueL, fontWeight:600 }}>
-                  📞 {client.phone}
+                  {client.phone}
                 </button>
               )}
-              {apt?.location && <div style={{ fontSize:12, color:T.text3, marginTop:8 }}>📍 {apt.location}</div>}
+              {apt?.location && <div style={{ fontSize:12, color:T.text3, marginTop:8 }}>{apt.location}</div>}
             </div>
           )}
         </>}
@@ -720,11 +770,11 @@ const CekimGunuModu = ({ apt, data, onClose, onComplete }) => {
               {formatTime(elapsed)}
             </div>
             <div style={{ fontSize:13, color:T.text3, marginBottom:40 }}>
-              {running ? "⏱ Çekim devam ediyor..." : elapsed>0 ? "⏸ Duraklatıldı" : "Kronometreyi başlat"}
+              {running ? "Çekim devam ediyor..." : elapsed>0 ? "Duraklatıldı" : "Kronometreyi başlat"}
             </div>
             <div style={{ display:"flex", gap:16 }}>
               <button onClick={()=>setRunning(r=>!r)}
-                style={{ background:running?T.orange+"22":`linear-gradient(135deg,${T.goldL},${T.goldD})`,
+                style={{ background:running?T.orange+"22":`${T.gold}`,
                   border:`1.5px solid ${running?T.orange:T.gold}`,
                   borderRadius:99, width:80, height:80, fontSize:28,
                   display:"flex", alignItems:"center", justifyContent:"center",
@@ -776,11 +826,49 @@ const CekimGunuModu = ({ apt, data, onClose, onComplete }) => {
             fontSize:16, fontWeight:700, color:"#fff",
             display:"flex", alignItems:"center", justifyContent:"center", gap:10,
             boxShadow:`0 8px 24px ${T.green}44` }}>
-          ✅ Çekim Tamamlandı
+          Çekim Tamamlandı
         </button>
       </div>
     </div>
   );
 };
 
-export { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo, Toast, WeatherCard, CekimGunuModu };
+// ─── İLK ZİYARET İPUCU: ekran ilk kez açıldığında üstte kısa tanıtım kartı ───
+const FirstVisitTip = ({ id }) => {
+  const tip = TIPS[id];
+  const [open, setOpen] = useState(() => !!tip && !isTipSeen(id));
+  useEffect(() => { setOpen(!!TIPS[id] && !isTipSeen(id)); }, [id]);
+  if (!tip || !open) return null;
+  const close = () => { markTipSeen(id); setOpen(false); };
+  return (
+    <div className="fade-in" role="note" aria-label={`${tip.title} hakkında bilgi`}
+      style={{ margin: "4px 20px 16px", padding: "16px 16px 14px", borderRadius: T.radius || 14, background: T.card,
+        border: `1px solid ${T.gold}55`, boxShadow: T.cardShadow || "none", display: "flex", gap: 12, alignItems: "flex-start" }}>
+      <div style={{ width: 32, height: 32, borderRadius: 10, background: T.gold + "1F", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Ic n="info" s={17} c={T.goldL}/>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{tip.title}</div>
+        <div style={{ fontSize: 13.5, color: T.text2, marginTop: 3, lineHeight: 1.5 }}>{tip.text}</div>
+        {tip.points.length > 0 && (
+          <ul style={{ margin: "10px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
+            {tip.points.map(pt => (
+              <li key={pt} style={{ display: "flex", gap: 8, fontSize: 13.5, color: T.text, lineHeight: 1.45 }}>
+                <span style={{ marginTop: 2, flexShrink: 0 }}><Ic n="check" s={14} c={T.goldL}/></span>{pt}
+              </li>
+            ))}
+          </ul>
+        )}
+        <button onClick={close} style={{ marginTop: 12, minHeight: 36, padding: "0 14px", borderRadius: T.btnRadius || 10, border: "none",
+          background: T.gold, color: T.onAccent || "#FFFFFF", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Anladım</button>
+      </div>
+      <button onClick={close} aria-label="Bilgiyi kapat"
+        style={{ width: 32, height: 32, margin: "-6px -6px 0 0", borderRadius: 8, border: "none", background: "transparent",
+          display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+        <Ic n="close" s={16} c={T.text3}/>
+      </button>
+    </div>
+  );
+};
+
+export { FirstVisitTip, Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo, Toast, WeatherCard, CekimGunuModu };

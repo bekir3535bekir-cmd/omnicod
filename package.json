@@ -1,5 +1,5 @@
 {
-  "name": "photoapp-dev",
+  "name": "studyom",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -10,20 +10,77 @@
     "mobile:sync": "vite build && cap sync",
     "mobile:open": "cap open android",
     "android:open": "cap open android",
-    "ios:open": "cap open ios"
+    "ios:open": "cap open ios",
+    "desktop": "vite build && electron .",
+    "desktop:build": "vite build && electron-builder --win"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.1",
     "@capacitor/cli": "^8.5.1",
     "@capacitor/core": "^8.5.1",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/haptics": "^8.0.2",
     "@capacitor/ios": "^8.5.1",
+    "@capacitor/local-notifications": "^8.3.1",
+    "@capacitor/share": "^8.0.3",
+    "@capacitor/status-bar": "^8.0.4",
+    "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/playfair-display": "^5.3.0",
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
     "@supabase/supabase-js": "^2.112.4",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "write-excel-file": "^4.1.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^44.10.1",
+    "electron-builder": "^26.18.0",
     "vite": "^8.2.2"
+  },
+  "productName": "STÜDYOM",
+  "description": "STÜDYOM — Fotoğrafçılık & Stüdyo Yönetim Sistemi",
+  "author": {
+    "name": "GesbLabs",
+    "url": "https://gesblabs.com"
+  },
+  "homepage": "https://studyom.gesblabs.com",
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "com.gesblabs.studyom",
+    "productName": "STÜDYOM",
+    "copyright": "© 2026 GesbLabs",
+    "executableName": "Studyom",
+    "directories": {
+      "output": "release",
+      "buildResources": "resources"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "resources/icon.png",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "resources/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "STÜDYOM",
+      "artifactName": "Studyom-Kurulum-${version}.${ext}"
+    }
   }
 }

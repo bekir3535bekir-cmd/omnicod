@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
+import { getModules } from "../../constants/modules";
 import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE, isComplete } from "../../constants/templates";
+import { MSG_TEMPLATES, PROCESS_STEPS, SIRKET, isComplete } from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { PlanBadge, UsageBadge } from "../common/ProGate";
 import { canAddAppointment, getTrialInfo } from "../../services/plan";
 import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession, getAuthUser } from "../../services/storage";
+import { getPass, setPass, getSession, saveSession, clearSession, getAuthUser, getStudioInfo, getStaffId } from "../../services/storage";
 
 // ─── GÜNÜN FOTOĞRAF ÇEKİM TEKNİKLERİ KOLEKSİYONU ────────────────────────
 export const PHOTO_TECHNIQUES = [
@@ -281,7 +282,7 @@ const PreparationCard = ({ apt, isTmr, storageKey, onGoAltinSaat, onGoPoz, onMar
         {PREP_ITEMS.map(it => {
           const checked = !!checkedMap[it.id] || !!apt.equipmentReady;
           return (
-            <div
+            <div role="button" tabIndex={0}
               key={it.id}
               onClick={() => toggle(it.id)}
               style={{
@@ -312,7 +313,7 @@ const PreparationCard = ({ apt, isTmr, storageKey, onGoAltinSaat, onGoPoz, onMar
               }}>
                 {checked ? "✓" : ""}
               </div>
-              <span style={{ fontSize: 15 }}>{it.icon}</span>
+              {!T.flat && <span style={{ fontSize: 15 }}>{it.icon}</span>}
               <span style={{
                 fontSize: 12,
                 color: checked ? T.text3 : T.text,
@@ -333,7 +334,7 @@ const PreparationCard = ({ apt, isTmr, storageKey, onGoAltinSaat, onGoPoz, onMar
           marginTop: 14,
           padding: "12px",
           borderRadius: 12,
-          background: isAllDone ? "linear-gradient(135deg, #16a34a, #15803d)" : `linear-gradient(135deg, ${T.gold}, ${T.goldD})`,
+          background: isAllDone ? "linear-gradient(135deg, #16a34a, #15803d)" : `${T.gold}`,
           border: "none",
           color: isAllDone ? "#ffffff" : "#0A0A0B",
           fontSize: 13,
@@ -351,7 +352,7 @@ const PreparationCard = ({ apt, isTmr, storageKey, onGoAltinSaat, onGoPoz, onMar
       </button>
 
       {/* Hızlı butonlar */}
-      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+      {(onGoAltinSaat || onGoPoz) && <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
         <button
           onClick={onGoAltinSaat}
           style={{
@@ -366,7 +367,7 @@ const PreparationCard = ({ apt, isTmr, storageKey, onGoAltinSaat, onGoPoz, onMar
             cursor: "pointer"
           }}
         >
-          🌅 Altın Saat
+          Altın Saat
         </button>
         <button
           onClick={onGoPoz}
@@ -382,20 +383,25 @@ const PreparationCard = ({ apt, isTmr, storageKey, onGoAltinSaat, onGoPoz, onMar
             cursor: "pointer"
           }}
         >
-          📸 Poz Rehberi
+          Poz Rehberi
         </button>
-      </div>
+      </div>}
     </div>
   );
 };
 
-export const Dashboard = ({ data, setData, setActive, role, plan }) => {
+// Kart etiketi: düz temada normal yazımlı küçük başlık, diğerlerinde büyük harfli
+const EDGE_BASE = { fontSize: 10.5, color: T.text3, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 6 };
+const edge = () => T.flat ? { fontSize: 13, color: T.text2, fontWeight: 500, marginBottom: 8 } : EDGE_BASE;
+
+export const Dashboard = ({ data, setData, setActive, role, plan, staffId }) => {
   const isAdmin = role === "admin";
   const now     = new Date();
 
   // Karşılama ve kullanıcı bilgisi
   const authUser = getAuthUser();
-  const userName = authUser?.name || authUser?.studio || (isAdmin ? (SIRKET?.ad || "Stüdyo Yöneticisi") : "Personel");
+  const staffMember = !isAdmin ? (data.team||[]).find(m => String(m.id) === String(staffId || getStaffId())) : null;
+  const userName = isAdmin ? (getStudioInfo().ad || authUser?.name || "Stüdyo Yöneticisi") : (staffMember?.name || "Personel");
   const greeting = getGreetingInfo(now.getHours());
 
   // Günün Çekim Tekniği (Sayfanın en altında stüdyo rehberi olarak gösterilir)
@@ -425,7 +431,16 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
       const fullMap = PREP_ITEMS.reduce((acc, it) => ({ ...acc, [it.id]: true }), {});
       localStorage.setItem(storageKey, JSON.stringify(fullMap));
     } catch(e) {}
-    sb.upsert("appointments", toDB.appointments(updatedApt)).catch(()=>{});
+    if (isAdmin) {
+      sb.upsert("appointments", toDB.appointments(updatedApt)).catch(()=>{});
+    } else {
+      const n = { id: uid(), teamId: "admin", memberName: readyBy, appointmentId: apt.id,
+        title: `Ekipman hazır: ${apt.clientName} — ${apt.type || "Çekim"}`,
+        body: `${readyBy} ekipmanları hazırladı • ${readyAt}`,
+        createdAt: new Date().toISOString(), date: todayStr(), read: false };
+      setData && setData(p => ({ ...p, notifications: [...(p.notifications || []), n] }));
+      sb.upsert("notifications", toDB.notifications(n)).catch(()=>{});
+    }
   };
 
   // Müşteri ödemelerinden eksik incomes'ları birleştir
@@ -460,27 +475,33 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
         padding: "18px 20px 16px",
         borderBottom: `1px solid ${T.border}`,
         marginBottom: 18,
-        background: "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%)"
+        background: T.flat ? "transparent" : "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%)"
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 20 }}>{greeting.icon}</span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: T.text, letterSpacing: "-0.2px" }}>
-                {greeting.text}, <span style={{ color: T.goldL }}>{userName}</span>
-              </span>
+              {!T.flat && <span style={{ fontSize: 20 }}>{greeting.icon}</span>}
+              {T.flat ? (
+                <span style={{ fontSize: 22, fontWeight: 600, color: T.text, letterSpacing: "-0.02em" }}>
+                  {greeting.text}, {String(userName).split(" ")[0].toLocaleLowerCase("tr-TR").replace(/^./, c => c.toLocaleUpperCase("tr-TR"))}
+                </span>
+              ) : (
+                <span style={{ fontSize: 18, fontWeight: 700, color: T.text, letterSpacing: "-0.2px" }}>
+                  {greeting.text}, <span style={{ color: T.goldL }}>{userName}</span>
+                </span>
+              )}
             </div>
-            <div style={{ fontSize: 12, color: T.text3, marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ fontSize: 12, color: T.text3, marginTop: T.flat ? 6 : 4, display: "flex", alignItems: "center", gap: 6, ...(T.flat ? { fontSize: 13 } : {}) }}>
               <span>{now.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>
             </div>
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
             {plan === "pro" && (
-              <div onClick={() => setActive("planyonetimi")} style={{ cursor: "pointer" }}>
+              <div role="button" tabIndex={0} onClick={() => setActive("planyonetimi")} style={{ cursor: "pointer" }}>
                 <PlanBadge plan={plan}/>
               </div>
             )}
-            <Pill label={isAdmin ? "Stüdyo Yönetimi" : "Ekip / Fotoğrafçı"} color={isAdmin ? T.goldL : T.blueL}/>
+            {!T.flat && <Pill label={isAdmin ? "Stüdyo Yönetimi" : "Ekip / Fotoğrafçı"} color={isAdmin ? T.goldL : T.blueL}/>}
           </div>
         </div>
       </div>
@@ -496,8 +517,8 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
                 apt={upcomingShooting} 
                 isTmr={isTmr} 
                 storageKey={storageKey}
-                onGoAltinSaat={() => setActive("altinsaat")}
-                onGoPoz={() => setActive("pozrehberi")}
+                onGoAltinSaat={null}
+                onGoPoz={null}
                 onMarkReady={handleMarkEquipmentReady}
               />
             ) : (
@@ -608,10 +629,8 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
         {isAdmin && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
             <Card glow style={{ padding: 14 }}>
-              <div style={{ fontSize: 10.5, color: T.text3, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 6 }}>
-                Bu Ay Ciro
-              </div>
-              <div style={{ ...NUM_FONT, fontSize: 22, fontWeight: 700, color: T.greenL }}>
+              <div style={edge()}>Bu Ay Ciro</div>
+              <div style={{ ...NUM_FONT, fontSize: T.flat ? 26 : 22, fontWeight: T.flat ? 600 : 700, letterSpacing: T.flat ? "-0.02em" : 0, color: T.greenL }}>
                 {fmtShort(mIncome)}
               </div>
               <div style={{ fontSize: 11, color: T.text3, marginTop: 3 }}>
@@ -620,10 +639,8 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
             </Card>
 
             <Card style={{ padding: 14 }}>
-              <div style={{ fontSize: 10.5, color: T.text3, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 6 }}>
-                Bekleyen Tahsilat
-              </div>
-              <div style={{ ...NUM_FONT, fontSize: 22, fontWeight: 700, color: totalDebt > 0 ? T.orangeL : T.text3 }}>
+              <div style={edge()}>Bekleyen Tahsilat</div>
+              <div style={{ ...NUM_FONT, fontSize: T.flat ? 26 : 22, fontWeight: T.flat ? 600 : 700, letterSpacing: T.flat ? "-0.02em" : 0, color: totalDebt > 0 ? T.orangeL : T.text3 }}>
                 {fmtShort(totalDebt)}
               </div>
               <div style={{ fontSize: 11, color: T.text3, marginTop: 3 }}>
@@ -632,10 +649,8 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
             </Card>
 
             <Card onClick={() => setActive("musteriler")} style={{ padding: 14, cursor: "pointer" }}>
-              <div style={{ fontSize: 10.5, color: T.text3, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>
-                Bekleyen Teslim
-              </div>
-              <div style={{ ...NUM_FONT, fontSize: 22, fontWeight: 700, color: T.blueL }}>
+              <div style={edge()}>Bekleyen Teslim</div>
+              <div style={{ ...NUM_FONT, fontSize: T.flat ? 26 : 22, fontWeight: T.flat ? 600 : 700, letterSpacing: T.flat ? "-0.02em" : 0, color: T.blueL }}>
                 {pendingDelivery.length}
               </div>
               <div style={{ fontSize: 11, color: T.text3, marginTop: 3 }}>
@@ -644,10 +659,8 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
             </Card>
 
             <Card onClick={() => setActive("ajanda")} style={{ padding: 14, cursor: "pointer" }}>
-              <div style={{ fontSize: 10.5, color: T.text3, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>
-                Yaklaşan Çekim
-              </div>
-              <div style={{ ...NUM_FONT, fontSize: 22, fontWeight: 700, color: T.goldL }}>
+              <div style={edge()}>Yaklaşan Çekim</div>
+              <div style={{ ...NUM_FONT, fontSize: T.flat ? 26 : 22, fontWeight: T.flat ? 600 : 700, letterSpacing: T.flat ? "-0.02em" : 0, color: T.goldL }}>
                 {upcoming.length}
               </div>
               <div style={{ fontSize: 11, color: T.text3, marginTop: 3 }}>
@@ -658,36 +671,47 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
         )}
 
         {/* ─── HIZLI STÜDYO ARAÇLARI (Sade ve Doğal) ─── */}
-        <div style={{
+        {isAdmin && <div style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr 1fr 1fr",
           gap: 8,
           marginBottom: 20
         }}>
           {[
-            { id: "altinsaat", icon: "🌅", label: "Altın Saat" },
-            { id: "pozrehberi", icon: "📸", label: "Poz Rehberi" },
-            { id: "kartvizit", icon: "📇", label: "QR Kart" },
-            { id: "sesliasistan", icon: "🎙️", label: "Sesli Not" },
-          ].map(tool => (
-            <div
+            { id: "altinsaat", label: "Altın Saat" },
+            { id: "pozrehberi", label: "Poz Rehberi" },
+            { id: "kartvizit", label: "QR Kart" },
+            { id: "sesliasistan", label: "Sesli Not" },
+          ].map(tool => ({ ...tool, ...getModules()[tool.id], label: tool.label })).map(tool => (
+            <button
+              type="button"
               key={tool.id}
               onClick={() => setActive(tool.id)}
               style={{
-                borderRadius: 14,
-                padding: "12px 4px",
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.08)",
+                width: "100%", font: "inherit", color: "inherit",
+                borderRadius: T.flat ? T.radius : 14,
+                padding: T.flat ? "14px" : "12px 4px",
+                background: T.flat ? T.card : "rgba(255,255,255,0.03)",
+                border: T.flat ? `1px solid ${T.border}` : "1px solid rgba(255,255,255,0.08)",
+                display: T.flat ? "flex" : "block", flexDirection: "column", alignItems: "flex-start",
                 textAlign: "center",
                 cursor: "pointer",
                 transition: "all 0.15s ease"
               }}
             >
-              <div style={{ fontSize: 20, marginBottom: 4 }}>{tool.icon}</div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: T.text }}>{tool.label}</div>
-            </div>
+              {T.flat ? (<>
+                <Ic n={tool.icon} s={18} c={T.text2} style={{ marginBottom: 10 }}/>
+                <div style={{ fontSize: 13, fontWeight: 500, color: T.text, textAlign: "left" }}>{tool.label}</div>
+              </>) : (<>
+                <div style={{ width: 34, height: 34, margin: "0 auto 6px", borderRadius: 10, background: tool.color + "1A",
+                  display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Ic n={tool.icon} s={18} c={tool.color}/>
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: T.text }}>{tool.label}</div>
+              </>)}
+            </button>
           ))}
-        </div>
+        </div>}
 
         {/* ─── YAKLAŞAN ÇEKİMLER AKIŞI ─── */}
         <div style={{ marginBottom: 22 }}>
@@ -695,7 +719,7 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
             <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>Yaklaşan Çekimler</span>
             <button
               onClick={() => setActive("ajanda")}
-              style={{ fontSize: 12, color: T.goldL, fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}
+              style={{ fontSize: 12, color: T.goldL, fontWeight: 600, background: "none", border: "none", cursor: "pointer", minHeight: 44, padding: "0 4px" }}
             >
               Ajandaya Git →
             </button>
@@ -748,13 +772,13 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
                     {a.type || "Çekim"} • {a.time || "14:00"}
                   </div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", fontSize: 11, color: T.text3 }}>
-                    {a.location && <span>📍 {a.location}</span>}
+                    {a.location && <span>{a.location}</span>}
                     {a.staffName && (
                       <span style={{ color: T.goldL, fontWeight: 600 }}>
-                        👤 {a.staffName}
+                        {a.staffName}
                       </span>
                     )}
-                    {a.equipmentReady && <span style={{ color: "#4ade80", fontWeight: 700 }}>• Ekipman Hazır ✅</span>}
+                    {a.equipmentReady && <span style={{ color: "#4ade80", fontWeight: 700 }}>• Ekipman Hazır</span>}
                   </div>
                 </div>
 
@@ -780,7 +804,7 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
             </div>
             {activeRem.map(r => (
               <Card key={r.id} style={{ marginBottom: 8, display: "flex", gap: 12, alignItems: "center", padding: 12 }}>
-                <div style={{ background: T.orange + "1A", borderRadius: 10, padding: 8 }}>
+                <div style={{ background: T.flat ? T.card2 : T.orange + "1A", borderRadius: 10, padding: 8 }}>
                   <Ic n="bell" s={16} c={T.orangeL}/>
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -796,20 +820,30 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
         {/* ─── HIZLI İŞLEMLER ─── */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 12 }}>Hızlı İşlemler</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-            {[
-              { l: "Yeni Randevu", i: "calendar", s: "ajanda",   c: T.gold,    adminOnly: false },
-              { l: "Takvim",      i: "calendar", s: "takvim",   c: T.blue,    adminOnly: false },
-              { l: "Gelir / Gider", i: "money",  s: "muhasebe", c: T.green,   adminOnly: true },
-              { l: "Sözleşmeler",  i: "doc",     s: "sozlesmeler", c: T.orange, adminOnly: false },
-              { l: "Hatırlatıcı",  i: "bell",    s: "hatirlatici", c: T.redL,   adminOnly: false },
-              { l: "Raporlar",     i: "chart",   s: "raporlar",  c: T.text2,  adminOnly: true },
-            ].filter(q => !q.adminOnly || isAdmin).map(q => (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
+            {(isAdmin ? [
+              { l: "Yeni Randevu", i: "calendar", s: "ajanda",   c: T.gold },
+              { l: "Takvim",      i: "calendar", s: "takvim",   c: T.blue },
+              { l: "Gelir / Gider", i: "money",  s: "muhasebe", c: T.green },
+              { l: "Sözleşmeler",  i: "pen",     s: "sozlesmeler", c: T.orange },
+              { l: "Hatırlatıcı",  i: "bell",    s: "hatirlatici", c: T.redL },
+              { l: "Raporlar",     i: "chart",   s: "raporlar",  c: T.text2 },
+            ] : [
+              { l: "Randevu Talebi", i: "calendar", s: "ajanda",     c: T.gold },
+              { l: "Müşteriler",     i: "users",    s: "musteriler", c: T.goldL },
+              { l: "Mesajlar",       i: "msg",      s: "mesajlar",   c: T.blueL },
+            ]).map(q => (
               <Card key={q.l} onClick={() => setActive(q.s)} style={{ padding: "14px 10px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                <div style={{ background: q.c + "1A", borderRadius: 12, padding: 10 }}>
-                  <Ic n={q.i} s={18} c={q.c}/>
-                </div>
-                <span style={{ fontSize: 12, fontWeight: 600, color: T.text, lineHeight: 1.2 }}>{q.l}</span>
+                {T.flat ? (
+                  <span style={{ width: "100%", minWidth: 0, display: "flex", alignItems: "center", gap: 10, fontSize: 13.5, fontWeight: 500, color: T.text, textAlign: "left", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <Ic n={q.i} s={17} c={T.text2}/>{q.l}
+                  </span>
+                ) : (<>
+                  <div style={{ background: T.flat ? T.card2 : q.c + "1A", borderRadius: 12, padding: 10 }}>
+                    <Ic n={q.i} s={18} c={q.c}/>
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: T.text, lineHeight: 1.2 }}>{q.l}</span>
+                </>)}
               </Card>
             ))}
           </div>
@@ -826,7 +860,7 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 16 }}>{currentTip.icon}</span>
+              {!T.flat && <span style={{ fontSize: 16 }}>{currentTip.icon}</span>}
               <span style={{ fontSize: 12, fontWeight: 700, color: T.goldL, textTransform: "uppercase", letterSpacing: "0.5px" }}>
                 Çekim İpucu & Teknik
               </span>
@@ -837,7 +871,7 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
 
             <button
               onClick={() => setTipOffset(prev => prev + 1)}
-              style={{
+              style={{ minHeight: 44,
                 background: "rgba(255,255,255,0.06)",
                 border: "1px solid rgba(255,255,255,0.12)",
                 color: T.text2,
@@ -851,7 +885,6 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
               }}
             >
               <span>Başka İpucu</span>
-              <span>🎲</span>
             </button>
           </div>
 
@@ -872,7 +905,7 @@ export const Dashboard = ({ data, setData, setActive, role, plan }) => {
             fontSize: 10.5,
             color: T.text3
           }}>
-            <span>💡 Profesyonel Çekim Rehberi</span>
+            <span>Profesyonel Çekim Rehberi</span>
             <span>{currentTipIdx + 1} / {PHOTO_TECHNIQUES.length}</span>
           </div>
         </div>

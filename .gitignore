@@ -40,3 +40,12 @@ ios/App/Pods/
 ios/App/App/public/
 *.ipa
 
+
+# Ortam değişkenleri (anahtarlar repoya girmesin)
+.env
+.env.*
+!.env.example
+
+# Masaüstü kurulum çıktıları
+release/
+!.env.production
