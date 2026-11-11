@@ -213,7 +213,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                         borderRadius:10, padding:"9px", fontSize:12, fontWeight:600, color:accounts[String(m.id)]?T.greenL:T.text2 }}>
                       {accounts[String(m.id)] ? `Uygulama girişi açık · 0${accounts[String(m.id)]}` : "Uygulama Girişi Oluştur"}
                     </button>}
-                    {isAdmin && <button onClick={()=>setConfirmDel(m.id)}
+                    {isAdmin && <button aria-label="Sil" onClick={()=>setConfirmDel(m.id)}
                       style={{ background:T.red+"1A", border:`1px solid ${T.red}33`,
                         borderRadius:10, padding:"9px 12px", fontSize:12, fontWeight:600, color:T.redL }}>
                       <Ic n="trash" s={15} c={T.redL}/>
@@ -266,7 +266,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
               return (
                 <Card style={{ marginBottom:16 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-                    <button onClick={()=>setWeekOffset(w=>w-1)}
+                    <button aria-label="Önceki hafta" onClick={()=>setWeekOffset(w=>w-1)}
                       style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:99,
                         width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center" }}>
                       <Ic n="back" s={14} c={T.text}/>
@@ -275,7 +275,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                       <div style={{ fontSize:13, fontWeight:600, color:T.goldL }}>{startLabel} – {endLabel}</div>
                       {weekOffset===0 && <div style={{ fontSize:10, color:T.text3 }}>Bu Hafta</div>}
                     </div>
-                    <button onClick={()=>setWeekOffset(w=>w+1)}
+                    <button aria-label="Sonraki hafta" onClick={()=>setWeekOffset(w=>w+1)}
                       style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:99,
                         width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center" }}>
                       <Ic n="back" s={14} c={T.text} style={{transform:"rotate(180deg)"}}/>

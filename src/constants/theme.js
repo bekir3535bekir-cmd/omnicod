@@ -107,6 +107,12 @@ select option { background-color: ${theme.isDark ? "#111827" : "#FFFFFF"} !impor
 button { cursor:pointer; border:none; background:transparent; }
 .num { font-family:'DM Sans',-apple-system,sans-serif; font-variant-numeric:tabular-nums; }
 @media (max-width: 860px) { input, textarea, select { font-size: 16px !important; } }
+/* HIG: dokunma alanı en az 44x44 — görünüş değişmez, yalnızca dokunulabilir alan genişler.
+   Yalnızca içinde başka düğme olmayan <button>'larda (iç düğmelerin üstünü kapatmasın diye) */
+@media (max-width: 860px) {
+  button:not(:has(button)) { position: relative; }
+  button:not(:has(button))::after { content: ""; position: absolute; top: 50%; left: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
+}
 @media (max-width: 860px) {
   .bs-wrap { align-items: flex-end !important; padding: 0 !important; }
   .bs-box { max-width: none !important; border-radius: 20px 20px 0 0 !important; max-height: 92vh !important; padding-bottom: env(safe-area-inset-bottom); animation: slideUp 0.35s cubic-bezier(.16,1,.3,1) !important; }

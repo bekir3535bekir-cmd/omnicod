@@ -250,7 +250,7 @@ export const SesliAsistan = ({ data, setData, setActive }) => {
         overflow: "hidden"
       }}>
         {/* Pulsing Mic Button */}
-        <button
+        <button aria-label={listening ? "Dinleniyor" : "Konuşmaya başla"}
           onClick={startListening}
           disabled={listening}
           style={{
@@ -270,7 +270,7 @@ export const SesliAsistan = ({ data, setData, setActive }) => {
             animation: listening ? "pulse 1s infinite alternate" : "none"
           }}
         >
-          {listening ? "🎙️" : "🎤"}
+          <Ic n="mic" s={34} c="#FFFFFF"/>
         </button>
 
         <div style={{ fontSize: 16, fontWeight: 700, color: listening ? T.redL : T.text, marginTop: 16 }}>

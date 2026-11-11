@@ -222,7 +222,7 @@ export const AltinSaat = ({ appointments = [], onSelectAppointment }) => {
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 22 }}>🌅</span>
+            <Ic n="sun" s={22} c={T.goldL}/>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1px", color: T.goldL, textTransform: "uppercase" }}>
                 GÜN BATIMI & EN İYİ IŞIK

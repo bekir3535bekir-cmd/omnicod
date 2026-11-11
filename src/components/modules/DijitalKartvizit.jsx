@@ -241,7 +241,7 @@ END:VCARD`;
             justifyContent: "center",
             fontSize: 22
           }}>
-            📸
+            <Ic n="camera" s={22} c="#FFFFFF"/>
           </div>
         </div>
 
@@ -316,7 +316,7 @@ END:VCARD`;
             padding: "9px 12px",
             borderRadius: 12
           }}>
-            <span style={{ fontSize: 16 }}>📞</span>
+            <Ic n="phone" s={16} c={T.text2}/>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 10, color: T.text3 }}>TELEFON</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{profile.phone}</div>
@@ -332,7 +332,7 @@ END:VCARD`;
             padding: "9px 12px",
             borderRadius: 12
           }}>
-            <span style={{ fontSize: 16 }}>✉️</span>
+            <Ic n="mail" s={16} c={T.text2}/>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 10, color: T.text3 }}>E-POSTA</div>
               <div style={{ fontSize: 12.5, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -351,7 +351,7 @@ END:VCARD`;
               padding: "9px 12px",
               borderRadius: 12
             }}>
-              <span style={{ fontSize: 16 }}>📍</span>
+              <Ic n="pin" s={16} c={T.text2}/>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 10, color: T.text3 }}>ADRES & BÖLGE</div>
                 <div style={{ fontSize: 12, color: T.text2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

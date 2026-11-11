@@ -70,15 +70,15 @@ export const Paketler = ({ data, setData, role }) => {
                 <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                   <div style={{ ...NUM_FONT, fontSize:26, fontWeight:700, color:pkg.color }}>{fmt(pkg.price)}</div>
                   {isAdmin && (
-                    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                      <button onClick={()=>setEditPkg({...pkg, price:String(pkg.price), includes:[...(pkg.includes||[])]})}
+                    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                      <button aria-label="Düzenle" onClick={()=>setEditPkg({...pkg, price:String(pkg.price), includes:[...(pkg.includes||[])]})}
                         style={{ background:T.blue+"1A", border:`1px solid ${T.blue}33`, borderRadius:9,
-                          width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                          width:38, height:38, display:"flex", alignItems:"center", justifyContent:"center" }}>
                         <Ic n="edit" s={13} c={T.blueL}/>
                       </button>
-                      <button onClick={()=>deletePkg(pkg)}
+                      <button aria-label="Sil" onClick={()=>deletePkg(pkg)}
                         style={{ background:T.red+"1A", border:`1px solid ${T.red}33`, borderRadius:9,
-                          width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                          width:38, height:38, display:"flex", alignItems:"center", justifyContent:"center" }}>
                         <Ic n="trash" s={13} c={T.redL}/>
                       </button>
                     </div>
@@ -128,7 +128,7 @@ export const Paketler = ({ data, setData, role }) => {
                     <Field value={inc} onChange={v=>setForm(p=>({...p,includes:p.includes.map((x,j)=>i===j?v:x)}))} placeholder={`İçerik ${i+1}`}/>
                   </div>
                   {form.includes.length>1 && (
-                    <button onClick={()=>setForm(p=>({...p,includes:p.includes.filter((_,j)=>j!==i)}))}
+                    <button aria-label="Sil" onClick={()=>setForm(p=>({...p,includes:p.includes.filter((_,j)=>j!==i)}))}
                       style={{ background:T.red+"1A", border:`1px solid ${T.red}33`, borderRadius:8,
                         width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                       <Ic n="trash" s={12} c={T.redL}/>
@@ -170,7 +170,7 @@ export const Paketler = ({ data, setData, role }) => {
                     <Field value={inc} onChange={v=>setEditPkg(p=>({...p,includes:p.includes.map((x,j)=>i===j?v:x)}))} placeholder={`İçerik ${i+1}`}/>
                   </div>
                   {(editPkg.includes||[]).length>1 && (
-                    <button onClick={()=>setEditPkg(p=>({...p,includes:p.includes.filter((_,j)=>j!==i)}))}
+                    <button aria-label="Sil" onClick={()=>setEditPkg(p=>({...p,includes:p.includes.filter((_,j)=>j!==i)}))}
                       style={{ background:T.red+"1A", border:`1px solid ${T.red}33`, borderRadius:8,
                         width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                       <Ic n="trash" s={12} c={T.redL}/>

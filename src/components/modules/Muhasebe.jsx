@@ -283,14 +283,14 @@ ${format==="detayli" ? `
           </div>
           {(period==="aylik"||period==="yillik") && (
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <button onClick={()=>{ if(period==="aylik"){ if(selMonth===0){setSelMonth(11);setSelYear(y=>y-1);}else setSelMonth(m=>m-1); } else setSelYear(y=>y-1); }}
+              <button aria-label="Önceki dönem" onClick={()=>{ if(period==="aylik"){ if(selMonth===0){setSelMonth(11);setSelYear(y=>y-1);}else setSelMonth(m=>m-1); } else setSelYear(y=>y-1); }}
                 style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                 <Ic n="back" s={15} c={T.text2}/>
               </button>
               <div style={{ flex:1, textAlign:"center", fontSize:14, fontWeight:700, color:T.goldL }}>
                 {period==="aylik"?`${MN[selMonth]} ${selYear}`:String(selYear)}
               </div>
-              <button onClick={()=>{ if(period==="aylik"){ if(selMonth===11){setSelMonth(0);setSelYear(y=>y+1);}else setSelMonth(m=>m+1); } else setSelYear(y=>y+1); }}
+              <button aria-label="Sonraki dönem" onClick={()=>{ if(period==="aylik"){ if(selMonth===11){setSelMonth(0);setSelYear(y=>y+1);}else setSelMonth(m=>m+1); } else setSelYear(y=>y+1); }}
                 style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                 <Ic n="back" s={15} c={T.text2} style={{transform:"rotate(180deg)"}}/>
               </button>
@@ -319,7 +319,8 @@ ${format==="detayli" ? `
           </div>
           {/* En çok kazandıran paketler */}
           {pkgs.map(pkg=>{
-            const pkgInc = allIncomes.filter(i=>{ const c=data.clients.find(x=>x.name===i.clientName); return c?.package===pkg.name; }).reduce((s,i)=>s+Number(i.amount||0),0);
+            // Seçili dönemin gelirinden (fInc) hesaplanır; toplamla aynı dönem olmalı, yoksa çubuk %100'ü aşıp taşar
+            const pkgInc = fInc.filter(i=>{ const c=data.clients.find(x=>x.name===i.clientName); return c?.package===pkg.name; }).reduce((s,i)=>s+Number(i.amount||0),0);
             if(pkgInc===0) return null;
             const pct = totalInc > 0 ? pkgInc/totalInc*100 : 0;
             return (
@@ -329,7 +330,7 @@ ${format==="detayli" ? `
                   <span style={{ ...NUM_FONT, fontSize:13, fontWeight:700, color:pkg.color }}>{fmt(pkgInc)}</span>
                 </div>
                 <div style={{ background:T.card2, borderRadius:99, height:6 }}>
-                  <div style={{ background:pkg.color, borderRadius:99, height:"100%", width:`${pct}%`, transition:"width 0.4s" }}/>
+                  <div style={{ background:pkg.color, borderRadius:99, height:"100%", width:`${Math.min(100, pct)}%`, transition:"width 0.4s" }}/>
                 </div>
               </div>
             );
@@ -434,11 +435,11 @@ ${format==="detayli" ? `
         {tab==="vergi" && <>
           {/* Yıl seçici */}
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
-            <button onClick={()=>setSelYear(y=>y-1)} style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <button aria-label="Önceki dönem" onClick={()=>setSelYear(y=>y-1)} style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center" }}>
               <Ic n="back" s={15} c={T.text2}/>
             </button>
             <div style={{ flex:1, textAlign:"center", fontSize:15, fontWeight:700, color:T.goldL }}>{selYear} Vergi Özeti</div>
-            <button onClick={()=>setSelYear(y=>y+1)} style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <button aria-label="Sonraki dönem" onClick={()=>setSelYear(y=>y+1)} style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center" }}>
               <Ic n="back" s={15} c={T.text2} style={{transform:"rotate(180deg)"}}/>
             </button>
           </div>

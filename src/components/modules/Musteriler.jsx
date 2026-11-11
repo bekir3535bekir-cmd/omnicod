@@ -546,7 +546,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
           <p style={{ fontSize:13, color:T.text3, marginTop:5 }}>{data.clients.length} kayıtlı müşteri</p>
         </div>
         <div style={{ display:"flex", gap:8 }}>
-          <button onClick={()=>{setSearchOpen(s=>!s);setSearch("");}}
+          <button aria-label="Ara" onClick={()=>{setSearchOpen(s=>!s);setSearch("");}}
             style={{ background:searchOpen?T.gold:T.card2, border:`1px solid ${searchOpen?T.gold:T.border}`,
               borderRadius:99, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center" }}>
             <Ic n="eye" s={16} c={searchOpen?T.bg:T.text2}/>
@@ -607,7 +607,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
           {[
             {id:"isim",      label:"A-Z"},
             {id:"tarih",     label:"Tarih"},
-            ...(isAdmin ? [{id:"fiyat_cok", label:"💰 ↓"}, {id:"fiyat_az",  label:"💰 ↑"}, {id:"kalan",     label:"Borç"}] : []),
+            ...(isAdmin ? [{id:"fiyat_cok", label:"Fiyat ↓"}, {id:"fiyat_az",  label:"Fiyat ↑"}, {id:"kalan",     label:"Borç"}] : []),
             {id:"tur",       label:"Tür"},
             {id:"paket",     label:"Paket"},
           ].map(s=>(
@@ -650,7 +650,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
                 </div>
                 <div style={{ display:"flex", flexDirection:"column", gap:5, alignItems:"flex-end" }}>
                   <Pill label={c.package} color={pkgColor}/>
-                  <Pill label={c.status} color={STATUS_COLORS[c.status]||T.text3}/>
+                  {c.status && <Pill label={c.status} color={STATUS_COLORS[c.status]||T.text3}/>}
                 </div>
               </div>
 {isAdmin && (
@@ -895,12 +895,12 @@ ${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Si
                     <div style={{ fontSize:10, color:T.text3, marginTop:2 }}>Kayıt: {fmtDate(p.date)}</div>
                   </div>
                   {isAdmin && <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                    <button onClick={()=>setEditPayment({...p})}
+                    <button aria-label="Düzenle" onClick={()=>setEditPayment({...p})}
                       style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:8,
                         width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center" }}>
                       <Ic n="edit" s={13} c={T.text2}/>
                     </button>
-                    <button onClick={()=>deletePayment(p)}
+                    <button aria-label="Sil" onClick={()=>deletePayment(p)}
                       style={{ background:T.red+"1A", border:`1px solid ${T.red}33`, borderRadius:8,
                         width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center" }}>
                       <Ic n="trash" s={13} c={T.redL}/>

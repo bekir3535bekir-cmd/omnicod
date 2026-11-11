@@ -62,7 +62,7 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
 
         {/* Ay + Yıl navigasyonu */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-          <button onClick={prevMonth}
+          <button aria-label="Önceki ay" onClick={prevMonth}
             style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:99, width:40, height:40,
               display:"flex", alignItems:"center", justifyContent:"center" }}>
             <Ic n="back" s={18} c={T.text}/>
@@ -71,7 +71,7 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
             <div style={{ fontFamily:"Playfair Display", fontSize:24, fontWeight:600, color:T.goldL }}>{MN[curMonth]}</div>
             <div style={{ fontSize:13, color:T.text3, fontWeight:500 }}>{curYear}</div>
           </div>
-          <button onClick={nextMonth}
+          <button aria-label="Sonraki ay" onClick={nextMonth}
             style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:99, width:40, height:40,
               display:"flex", alignItems:"center", justifyContent:"center" }}>
             <Ic n="back" s={18} c={T.text} style={{ transform:"rotate(180deg)" }}/>

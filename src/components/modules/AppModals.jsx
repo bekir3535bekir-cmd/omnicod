@@ -909,7 +909,7 @@ export const NotDefteri = ({ data, setData, role }) => {
                 borderRadius:99, padding:"5px 12px", fontSize:11,
                 color:filter===t.id?t.color:T.text3,
                 fontWeight:filter===t.id?700:400 }}>
-              {t.emoji} {t.label}
+              {!T.flat && <>{t.emoji} </>}{t.label}
             </button>
           ))}
         </div>
@@ -954,7 +954,7 @@ export const NotDefteri = ({ data, setData, role }) => {
                   <div style={{ display:"flex", justifyContent:"space-between",
                     alignItems:"flex-start", marginBottom:8 }}>
                     <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-                      <span style={{ fontSize:13 }}>{tg.emoji}</span>
+                      {!T.flat && <span style={{ fontSize:13 }}>{tg.emoji}</span>}
                       <span style={{ fontSize:11, color:tg.color, fontWeight:600 }}>{tg.label}</span>
                     </div>
                     <div style={{ display:"flex", gap:8, alignItems:"center" }}>
@@ -1000,7 +1000,7 @@ export const NotDefteri = ({ data, setData, role }) => {
                       borderRadius:99, padding:"6px 12px", fontSize:12,
                       color:tag===t.id?t.color:T.text3,
                       fontWeight:tag===t.id?700:400 }}>
-                    {t.emoji} {t.label}
+                    {!T.flat && <>{t.emoji} </>}{t.label}
                   </button>
                 ))}
               </div>
