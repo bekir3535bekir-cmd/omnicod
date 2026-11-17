@@ -8,13 +8,6 @@ const fmtPrice = (n) => new Intl.NumberFormat("tr-TR").format(n) + " ₺";
 // Plan rengi: Standart mavi, Pro altın
 const planColor = (planId) => planId === "pro" ? { c: T.gold, l: T.goldL } : planId === "standart" ? { c: T.blue, l: T.blueL } : { c: T.text3, l: T.text3 };
 
-// Telefon uygulamalarında (mağaza kuralı) fiyat/satın alma yerine bu yönlendirme gösterilir
-const NativeUpgradeNote = () => (
-  <div style={{ fontSize: 12.5, color: T.text3, lineHeight: 1.6, marginTop: 4 }}>
-    Planınızı STÜDYOM masaüstü programından veya web sitemizden yükseltebilirsiniz.
-    Yükseltme yapıldığında bu cihazda da otomatik açılır.
-  </div>
-);
 
 // Düz tema: SaaS yükseltme kartı — ikon ve başlık, tikli özellik listesi, altta fiyat ve buton
 const FlatGate = ({ icon, badge, title, desc, children, price, current, cta, onUpgrade, native }) => (
@@ -51,7 +44,6 @@ const FlatGate = ({ icon, badge, title, desc, children, price, current, cta, onU
           {cta}
         </button>
       </div>
-      {native && <div style={{ padding: "0 22px 16px" }}><NativeUpgradeNote/></div>}
     </div>
   </div>
 );
@@ -121,7 +113,6 @@ export const ProGate = ({ feature, check, featureLabel, onUpgrade, children, pro
             borderRadius: 14, padding: "13px 28px", fontSize: 14.5, fontWeight: 700, cursor: "pointer", boxShadow: `0 4px 20px ${c}40` }}>
             Planları Karşılaştır
           </button>
-          {native && <NativeUpgradeNote/>}
         </div>
       </div>
     );
@@ -173,7 +164,6 @@ export const ProGate = ({ feature, check, featureLabel, onUpgrade, children, pro
           borderRadius: 14, padding: "13px 28px", fontSize: 14.5, fontWeight: 700, cursor: "pointer", boxShadow: `0 4px 20px ${c}40` }}>
           Planları Karşılaştır
         </button>
-        {native && <NativeUpgradeNote/>}
       </div>
     );
   }

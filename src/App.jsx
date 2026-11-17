@@ -32,6 +32,7 @@ import { Teklif } from "./components/modules/Teklif";
 import { Portal } from "./components/modules/Portal";
 import { Raporlar } from "./components/modules/Raporlar";
 import { PlanYonetimi } from "./components/modules/PlanYonetimi";
+import { iapAvailable, syncIapPlan, resetIap } from "./services/iap";
 import { AltinSaat } from "./components/modules/AltinSaat";
 import { PozRehberi } from "./components/modules/PozRehberi";
 import { DijitalKartvizit } from "./components/modules/DijitalKartvizit";
@@ -180,6 +181,8 @@ export default function App() {
     setRole(s.role);
     setStaffId(s.team_id || null);
     setPlanState(getPlan());
+    // Telefon uygulamasında yöneticinin mağaza aboneliğini kontrol et (arka planda)
+    if (s.role === "admin" && iapAvailable()) syncIapPlan(s.studio_id).then(p => { if (p) setPlanState(getPlan()); });
     if (cloudPhase !== "ready") {
       // İlk açılış: önce bu stüdyonun önbelleği gösterilir, ardından sunucudan güncel veri yüklenir
       setData(getLocalData() || EMPTY_CLOUD);
@@ -189,6 +192,7 @@ export default function App() {
   };
   const goSignedOut = () => {
     clearCloudSession();
+    resetIap();
     setRole(null); setStaffId(null); setSkipStaffPick(false);
     setData(EMPTY_CLOUD); setDbReady(false);
     setCloudPhase("signedOut");

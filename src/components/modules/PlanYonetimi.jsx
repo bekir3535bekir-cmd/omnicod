@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { T } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmtDate } from "../../utils/helpers";
@@ -6,9 +6,11 @@ import { Card, GoldButton, BottomSheet, PageHeader } from "../common";
 import { PlanBadge } from "../common/ProGate";
 import {
   PLANS, PLAN_ORDER, FEATURES, planHasFeature, getUsageSummary, getPlanExpiry, getTrialInfo,
-  activatePro, resetTrial, expireTrial, getPlan, isNativeApp,
+  activatePro, resetTrial, expireTrial, getPlan, isNativeApp, planTo,
 } from "../../services/plan";
 import { IS_CLOUD } from "../../services/supabase";
+import { getCurrentStudio } from "../../services/storage";
+import { iapAvailable, initIap, loadIapPlans, buyPlan, restorePurchases, manageSubscriptionUrl, TERMS_URL, PRIVACY_URL } from "../../services/iap";
 
 const fmtPrice = (n) => new Intl.NumberFormat("tr-TR").format(n) + " ₺";
 // Satış iletişimi (WhatsApp numarası veya e-posta) — .env içinde VITE_SALES_CONTACT
@@ -23,6 +25,38 @@ export const PlanYonetimi = ({ data, plan, setPlanState }) => {
   const [licenseKey, setLicenseKey] = useState("");
   const [msg, setMsg] = useState(null);
   const [showLicense, setShowLicense] = useState(false);
+
+  // Telefon uygulaması: mağaza abonelikleri (App Store / Google Play)
+  const iap = iapAvailable();
+  const [storePlans, setStorePlans] = useState(null);   // { standart: {...}, pro: {...} }
+  const [storeErr, setStoreErr] = useState(null);
+  const [busy, setBusy] = useState(null);               // "standart" | "pro" | "restore"
+  const [storeMsg, setStoreMsg] = useState(null);       // { ok, text }
+  const loadStore = () => {
+    setStoreErr(null);
+    initIap(getCurrentStudio()?.studio_id)
+      .then(ok => ok ? loadIapPlans() : Promise.reject())
+      .then(pl => { setStorePlans(pl); if (!Object.keys(pl).length) setStoreErr("Abonelik seçenekleri şu an yüklenemedi."); })
+      .catch(() => setStoreErr("Abonelik seçenekleri yüklenemedi. İnternet bağlantınızı kontrol edin."));
+  };
+  useEffect(() => { if (iap) loadStore(); }, []);
+  const subscribe = async (p) => {
+    if (!storePlans?.[p] || busy) return;
+    setBusy(p); setStoreMsg(null);
+    const r = await buyPlan(storePlans[p]);
+    setBusy(null);
+    if (r.ok) { setPlanState(getPlan()); setStoreMsg({ ok: true, text: `${PLANS[r.plan].label} planınız açıldı. Teşekkürler!` }); }
+    else if (!r.cancelled) setStoreMsg({ ok: false, text: r.message });
+  };
+  const restore = async () => {
+    if (busy) return;
+    setBusy("restore"); setStoreMsg(null);
+    const r = await restorePurchases();
+    setBusy(null);
+    if (r.ok) setPlanState(getPlan());
+    setStoreMsg({ ok: r.ok, text: r.message });
+  };
+  const manage = async () => window.open(await manageSubscriptionUrl(), "_blank");
 
   // Deneme sırasında tüm özellikler açık (Pro gibi)
   const effective = plan === "trial" ? "pro" : plan;
@@ -79,10 +113,12 @@ export const PlanYonetimi = ({ data, plan, setPlanState }) => {
                   <div style={{ fontSize: 18, fontWeight: 800, color: l }}>{p === "pro" ? "" : p === "standart" ? "" : ""}{PLANS[p].label}</div>
                   {isCurrent && <span style={{ fontSize: 10.5, fontWeight: 800, color: c, background: T.flat ? T.card2 : c + "22", borderRadius: 6, padding: "3px 7px" }}>MEVCUT</span>}
                 </div>
-                {!native && (
+                {(!native || p === "basic" || storePlans?.[p]) && (
                   <div style={{ marginTop: 8 }}>
-                    <span style={{ fontSize: 26, fontWeight: 800, color: T.text }}>{PLANS[p].price ? fmtPrice(PLANS[p].price) : "Ücretsiz"}</span>
-                    {PLANS[p].price ? <span style={{ fontSize: 12, color: T.text3 }}> / ay</span> : null}
+                    <span style={{ fontSize: 26, fontWeight: 800, color: T.text }}>
+                      {p === "basic" ? "Ücretsiz" : native ? storePlans[p].price : fmtPrice(PLANS[p].price)}
+                    </span>
+                    {p !== "basic" ? <span style={{ fontSize: 12, color: T.text3 }}> / ay</span> : null}
                   </div>
                 )}
                 <div style={{ fontSize: 12.5, color: T.text3, marginTop: 6, lineHeight: 1.5, minHeight: 36 }}>{PLANS[p].desc}</div>
@@ -94,7 +130,13 @@ export const PlanYonetimi = ({ data, plan, setPlanState }) => {
                 <div style={{ flex: 1 }}/>
                 {!native && p !== "basic" && higher && !isCurrent && (
                   <button onClick={() => setUpgradeTo(p)} style={{ marginTop: 14, background: c, color: "#fff", border: "none", borderRadius: 12, padding: "11px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
-                    {PLANS[p].label}'a Geç
+                    {planTo(p)} geç
+                  </button>
+                )}
+                {native && iap && p !== "basic" && higher && !isCurrent && storePlans?.[p] && (
+                  <button onClick={() => subscribe(p)} disabled={!!busy} style={{ marginTop: 14, minHeight: 44, background: c, color: "#fff", border: "none", borderRadius: 12,
+                    padding: "11px", fontSize: 13.5, fontWeight: 700, cursor: busy ? "default" : "pointer", opacity: busy && busy !== p ? 0.5 : 1 }}>
+                    {busy === p ? "İşleniyor…" : `${planTo(p)} abone ol`}
                   </button>
                 )}
               </div>
@@ -102,9 +144,31 @@ export const PlanYonetimi = ({ data, plan, setPlanState }) => {
           })}
         </div>
 
-        {native && (
-          <Card style={{ padding: 14, marginBottom: 18, fontSize: 12.5, color: T.text3, lineHeight: 1.6 }}>
-            Planınızı STÜDYOM masaüstü programından veya web sitemizden yükseltebilirsiniz. Yükseltme yapıldığında bu cihazda da otomatik açılır.
+        {native && iap && (
+          <Card style={{ padding: 16, marginBottom: 18, fontSize: 12.5, color: T.text3, lineHeight: 1.6 }}>
+            {storeMsg && (
+              <div role="status" style={{ fontSize: 13, fontWeight: 600, color: storeMsg.ok ? T.greenL : T.redL, marginBottom: 10 }}>{storeMsg.text}</div>
+            )}
+            {storeErr && (
+              <div style={{ marginBottom: 10 }}>
+                {storeErr}{" "}
+                <button onClick={loadStore} style={{ background: "none", border: "none", color: T.text, textDecoration: "underline", fontSize: 12.5, padding: 0, cursor: "pointer" }}>Tekrar dene</button>
+              </div>
+            )}
+            {!storePlans && !storeErr && <div style={{ marginBottom: 10 }}>Abonelik seçenekleri yükleniyor…</div>}
+            Abonelikler aylıktır ve stüdyo hesabınıza tanımlanır; masaüstü programında ve personel telefonlarında da açılır.
+            Ödeme, satın alma onayıyla {window.Capacitor?.getPlatform?.() === "ios" ? "Apple Kimliği" : "Google Play"} hesabınızdan alınır.
+            Abonelik, dönem bitiminden en az 24 saat önce iptal edilmezse aynı ücretle otomatik yenilenir.
+            İptal ve yönetim mağaza hesap ayarlarından yapılır.
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", marginTop: 12 }}>
+              {[["Satın alımları geri yükle", restore], ["Aboneliği yönet", manage],
+                ["Kullanım Koşulları", () => window.open(TERMS_URL, "_blank")], ["Gizlilik Politikası", () => window.open(PRIVACY_URL, "_blank")]].map(([l, fn]) => (
+                <button key={l} onClick={fn} disabled={busy === "restore" && fn === restore}
+                  style={{ background: "none", border: "none", color: T.text, textDecoration: "underline", fontSize: 13, padding: "10px 0", minHeight: 44, cursor: "pointer" }}>
+                  {busy === "restore" && fn === restore ? "Geri yükleniyor…" : l}
+                </button>
+              ))}
+            </div>
           </Card>
         )}
 

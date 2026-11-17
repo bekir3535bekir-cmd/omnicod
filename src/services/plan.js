@@ -71,6 +71,9 @@ export const isNativeApp = () => {
   catch (e) { return false; }
 };
 
+// Türkçe yönelme eki: "Standart'a", "Pro'ya"
+export const planTo = (planId) => PLANS[planId].label + (/[aeıioöuü]$/i.test(PLANS[planId].label) ? "'ya" : "'a");
+
 const levelOf = (planId) => (PLANS[planId] || PLANS.basic).level;
 
 // Bu plan bu özelliği kullanabiliyor mu?

@@ -3,12 +3,10 @@
 Bu belge mağaza yayını için gereken her şeyi tek yerde toplar: anahtar kurulumu, derleme, mağaza
 metinleri ve gizlilik formlarının cevapları. Uygulama kimliği her iki mağazada: `com.gesblabs.studyom`.
 
-> **Açık karar — uygulama içi satın alma:** Standart ve Pro planları dijital abonelik. Apple (3.1.1) ve
-> Google Play, uygulama içinde açılan dijital içerik için kendi ödeme sistemlerini ister; kullanıcıyı web
-> sitesine yönlendirmek reddedilme sebebidir. Gönderimden önce karar verilmeli: (a) mağaza sürümüne
-> uygulama içi satın alma eklemek, ya da (b) telefon sürümünden fiyat ve "web'den yükselt" notunu tamamen
-> kaldırmak. Şu an telefonda `NativeUpgradeNote` ("…masaüstü programından veya web sitemizden
-> yükseltebilirsiniz") görünüyor.
+> **Ödeme:** Telefon uygulamalarında Standart ve Pro planları **uygulama içi abonelik** olarak satılır
+> (Apple 3.1.1 / Google Play Billing). Altyapı: RevenueCat → Supabase `revenuecat-webhook` fonksiyonu →
+> `studios.plan`. Kurulum: aşağıdaki **7. bölüm**. Masaüstü/web tarafında satış şimdilik elle (plan
+> veritabanından verilir); telefonda alınan abonelik masaüstünde de otomatik açılır.
 
 ---
 
@@ -97,6 +95,13 @@ Anahtarları kimseye gönderme; doğrudan GitHub'a eklenir:
 >
 > Verileriniz şifreli bağlantıyla saklanır; dilediğinizde tüm kayıtlarınızı Excel olarak indirebilir,
 > hesabınızı uygulama içinden silebilirsiniz.
+>
+> **Planlar ve abonelik** — Basic ücretsizdir. Yeni hesaplar 1 ay boyunca tüm Pro özelliklerini ücretsiz
+> kullanır. Standart ve Pro aylık, otomatik yenilenen aboneliklerdir; ücret satın alma onayıyla mağaza
+> hesabınızdan alınır ve dönem bitiminden en az 24 saat önce iptal edilmezse yenilenir. Aboneliğinizi
+> mağaza hesap ayarlarından yönetebilir veya iptal edebilirsiniz.
+> Kullanım Koşulları: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+> Gizlilik: https://gesblabs.com/gizlilik
 
 **Bu sürümde yenilikler:** İlk sürüm.
 
@@ -105,6 +110,7 @@ Anahtarları kimseye gönderme; doğrudan GitHub'a eklenir:
 | Kategori | Apple: Business (ikinci: Productivity) · Play: Business |
 | Yaş sınırı | 4+ (Apple) · Everyone (Play) — şiddet, kumar, kullanıcılar arası açık sohbet yok |
 | Gizlilik politikası | https://gesblabs.com/gizlilik |
+| Kullanım koşulları (EULA) | Apple'ın standart sözleşmesi: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/ |
 | Destek adresi | https://gesblabs.com/studyom (e-posta: destek@gesblabs.com) |
 | Hesap silme (Play zorunlu) | https://gesblabs.com/gizlilik#hesap-silme — uygulama içinde de var: Ayarlar → Hesabımı Sil |
 
@@ -127,6 +133,7 @@ tutulur ve yalnızca uygulamanın çalışması için kullanılır.
 | User Content | Other User Content | Notlar, sözleşmeler, teklifler, mesajlar |
 | Financial Info | Other Financial Info | Ödeme ve gelir/gider kayıtları (kart bilgisi alınmaz) |
 | Identifiers | User ID | Hesap kimliği |
+| Purchases | Purchase History | Abonelik durumu (RevenueCat üzerinden; kart bilgisi Apple'da kalır) |
 
 - **Data Not Collected:** Location, Health, Browsing History, Search History, Diagnostics, Usage Data.
 - Konuşma tanıma (Sesli Randevu) Apple'ın sistem servisini kullanır; STÜDYOM ses kaydı saklamaz.
@@ -137,7 +144,9 @@ tutulur ve yalnızca uygulamanın çalışması için kullanılır.
 - Aktarımda şifreli: **Evet** (HTTPS) · Kullanıcı silme isteyebilir: **Evet** (uygulama içi + web adresi)
 - Toplanan türler (hepsi *App functionality*, *Account management*):
   Personal info → Name, Email address, Phone number · Photos and videos → Photos ·
-  Financial info → Other financial info · App activity → Other user-generated content · App info → yok
+  Financial info → Other financial info, **Purchase history** · App activity → Other user-generated content · App info → yok
+- Abonelik doğrulaması RevenueCat (hizmet sağlayıcı, bizim adımıza işler) ile yapılır; Play kurallarına
+  göre bu "paylaşım" sayılmaz.
 - Mikrofon: Sesli randevu için, isteğe bağlı; ses saklanmaz.
 
 ---
@@ -152,6 +161,8 @@ Apple incelemesi için **çalışan bir deneme hesabı** gerekir (App Store Conn
   > STÜDYOM is a business management app for photography studios. Sign in with the demo account above.
   > The microphone is used only by the optional "Sesli Randevu" (voice appointment) feature to transcribe
   > speech; no audio is stored. Accounts can be deleted in-app: Devamı → Ayarlar → Hesabımı Sil.
+  > Subscriptions (Standart, Pro) are offered in Devamı → plan card → "Planlar". New accounts start with a
+  > 1-month free trial of all Pro features; purchase buttons are shown on the Standart and Pro cards.
 
 ---
 
@@ -165,3 +176,64 @@ Apple incelemesi için **çalışan bir deneme hesabı** gerekir (App Store Conn
 | Play öne çıkan görsel | 1024 × 500 |
 
 Ekran görüntülerinde gerçek müşteri bilgisi kullanılmamalı; deneme hesabındaki örnek verilerle alınmalı.
+
+---
+
+## 7. Uygulama içi abonelik kurulumu (sen yaparsın, bir kez)
+
+Sıra önemli. Özellikle Google, uygulama paketi (AAB) yüklenmeden abonelik ürünü açtırmaz.
+
+### 7.1 Sözleşmeler (ödeme alabilmek için zorunlu)
+- **Apple:** App Store Connect → Business → **Paid Apps** sözleşmesini kabul et, banka hesabı ve vergi
+  formunu (Türkiye için W-8BEN) doldur. Bu bitmeden abonelikler test bile edilemez.
+- **Google:** Play Console → Setup → **Payments profile** (satıcı hesabı) oluştur.
+
+### 7.2 Mağaza ürünleri (adlar birebir aynı olmalı)
+| Ürün kimliği | Plan | Süre | Fiyat (TR) |
+|---|---|---|---|
+| `studyom_standart_aylik` | Standart | 1 ay, otomatik yenilenir | 599,99 ₺ |
+| `studyom_pro_aylik` | Pro | 1 ay, otomatik yenilenir | 999,99 ₺ |
+
+- **Apple:** Uygulama → Monetization → **Subscriptions** → grup oluştur ("STÜDYOM Planları") → iki
+  abonelik ekle. Grup içi sıralama: **Pro üstte (seviye 1), Standart altta (seviye 2)**. Her birine
+  Türkçe görünen ad/açıklama ve inceleme için Planlar ekranının bir görüntüsünü ekle.
+  Ardından Users and Access → Integrations → **In-App Purchase** → anahtar oluştur (`.p8`, bir kez
+  iner) — bu RevenueCat'e yüklenecek.
+- **Google:** (önce bir AAB'yi Internal testing'e yükle) Monetize → Products → **Subscriptions** →
+  iki ürün; her birine `aylik` adlı aylık, otomatik yenilenen temel plan (base plan) ekle ve etkinleştir.
+
+### 7.3 RevenueCat (app.revenuecat.com — hesabı sen açarsın, ücretsiz)
+1. Proje: **STÜDYOM**.
+2. **App Store** uygulaması ekle: bundle `com.gesblabs.studyom`, In-App Purchase anahtarı (`.p8`, Key ID, Issuer ID).
+3. **Play Store** uygulaması ekle: paket `com.gesblabs.studyom`, servis hesabı JSON'u (RevenueCat'in
+   "Google Play service credentials" adımlarını izle).
+4. **Entitlements:** kimlikleri tam olarak `standart` ve `pro` olan iki yetki.
+5. **Products:** iki mağazadaki ürünleri içe aktar; `studyom_standart_aylik` → `standart`,
+   `studyom_pro_aylik` → `pro` yetkisine bağla.
+6. **Offerings:** `default` (current) teklifine iki paket ekle (Standart ve Pro ürünleri).
+7. **API keys:** herkese açık anahtarları (`appl_…`, `goog_…`) GitHub'a **Variables** olarak ekle
+   (bunlar gizli değil, uygulamaya gömülür): github.com/bekir3535bekir-cmd/omnicod → Settings →
+   Secrets and variables → Actions → **Variables** sekmesi → `RC_APPLE_KEY`, `RC_GOOGLE_KEY`.
+   Tanımlı değilse yayın derlemesi bunu söyleyerek durur.
+
+### 7.4 Supabase webhook (planı sunucuya yazar)
+1. Rastgele bir parola üret (PowerShell; panoya kopyalar, kimseye gönderme):
+   ```powershell
+   $b = New-Object byte[] 36; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b) | Set-Clipboard
+   ```
+2. Supabase → proje `uyzuibdcopknklztpmzx` → **Edge Functions** → Secrets:
+   - `RC_WEBHOOK_AUTH` = az önce üretilen parola
+   - `RC_SECRET_KEY` = RevenueCat → Project settings → API keys → **Secret key** (`sk_…`)
+3. Edge Functions → **Deploy a new function** → Via editor → ad `revenuecat-webhook` → depodaki
+   `supabase/functions/revenuecat-webhook/index.ts` içeriğini yapıştır → Deploy. Fonksiyon ayarlarında
+   **Verify JWT: kapalı** (kimliği parolayla kendisi doğrular).
+4. RevenueCat → Integrations → **Webhooks** → URL:
+   `https://uyzuibdcopknklztpmzx.supabase.co/functions/v1/revenuecat-webhook` ·
+   Authorization header: aynı parola → **Send test event** → 200 dönmeli.
+
+### 7.5 Deneme satın alması (gerçek para çekilmez)
+- **Apple:** TestFlight'tan kurulan uygulamada satın almalar otomatik deneme (sandbox) modundadır.
+- **Google:** Play Console → Setup → **License testing** → kendi Gmail'ini ekle; Internal testing
+  sürümünde alınan abonelikler ücretlendirilmez.
+- Kontrol: satın almadan sonra Supabase → Table editor → `studios` → ilgili stüdyonun `plan` alanı
+  `pro`/`standart` olmalı; masaüstü programında da plan açılmalı.
