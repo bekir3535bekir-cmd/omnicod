@@ -31,10 +31,11 @@ TMP.mkdir(parents=True, exist_ok=True)
 
 
 def token():
-    key = Path(env["ASC_KEY_PATH"]).read_text()
-    now = int(time.time())
-    return jwt.encode({"iss": env["ASC_ISSUER_ID"], "iat": now, "exp": now + 1000, "aud": "appstoreconnect-v1"},
-                      key, algorithm="ES256", headers={"kid": env["ASC_KEY_ID"], "typ": "JWT"})
+    # Secret'lara yapıştırırken gelen boşluk/satır sonlarını temizle (Xcode bunları kendisi kırpıyor)
+    key = Path(env["ASC_KEY_PATH"]).read_text().strip() + chr(10)
+    now = int(time.time()) - 30  # saat farkına karşı küçük pay
+    return jwt.encode({"iss": env["ASC_ISSUER_ID"].strip(), "iat": now, "exp": now + 900, "aud": "appstoreconnect-v1"},
+                      key, algorithm="ES256", headers={"kid": env["ASC_KEY_ID"].strip(), "typ": "JWT"})
 
 
 def api(method, path, body=None):
@@ -142,7 +143,7 @@ def create():
     body = re.sub(r"\t\t\t\t(CODE_SIGN_STYLE|CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM|PROVISIONING_PROFILE_SPECIFIER|\"CODE_SIGN_IDENTITY\[sdk=iphoneos\*\]\") = [^\n]*;\n?", "", body)
     body = (f'\t\t\t\tCODE_SIGN_IDENTITY = "Apple Distribution";\n'
             f'\t\t\t\tCODE_SIGN_STYLE = Manual;\n'
-            f'\t\t\t\tDEVELOPMENT_TEAM = {env["APPLE_TEAM_ID"]};\n'
+            f'\t\t\t\tDEVELOPMENT_TEAM = {env["APPLE_TEAM_ID"].strip()};\n'
             f'\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "{name}";\n' + body)
     s = s[:target[0].start(1)] + body + s[target[0].end(1):]
     PBXPROJ.write_text(s)
