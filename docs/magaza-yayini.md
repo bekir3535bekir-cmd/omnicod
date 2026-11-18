@@ -228,7 +228,8 @@ Sıra önemli. Özellikle Google, uygulama paketi (AAB) yüklenmeden abonelik ü
    `supabase/functions/revenuecat-webhook/index.ts` içeriğini yapıştır → Deploy. Fonksiyon ayarlarında
    **Verify JWT: kapalı** (kimliği parolayla kendisi doğrular).
 4. RevenueCat → Integrations → **Webhooks** → URL:
-   `https://uyzuibdcopknklztpmzx.supabase.co/functions/v1/revenuecat-webhook` ·
+   `https://uyzuibdcopknklztpmzx.supabase.co/functions/v1/bright-function` (canlıdaki fonksiyonun adresi;
+   Supabase adı otomatik verdi, adres sonradan değişmez — kod `revenuecat-webhook` klasöründeki) ·
    Authorization header: aynı parola → **Send test event** → 200 dönmeli.
 
 ### 7.5 Deneme satın alması (gerçek para çekilmez)
