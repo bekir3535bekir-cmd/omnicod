@@ -78,9 +78,19 @@ jobs:
           KEY: ${{ secrets.ASC_API_KEY_P8 }}
         run: printf '%s\n' "$KEY" > "$RUNNER_TEMP/AuthKey.p8"
 
-      # Arşiv imzasız alınır: hesapta kayıtlı cihaz olmadığı için geliştirme profili üretilemez.
-      # Asıl (App Store dağıtım) imzası aşağıdaki dışa aktarımda otomatik atılır; o cihaz istemez.
-      - name: 🗄️ Arşiv
+      # Ekipte Mac ve kayıtlı cihaz yok: dağıtım sertifikası ve App Store profili her derlemede
+      # API ile oluşturulur, uygulama doğrudan bunlarla imzalanır (.github/scripts/apple_signing.py)
+      - name: 🪪 Dağıtım sertifikası ve profili
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check --break-system-packages "pyjwt[crypto]==2.10.1"
+          python3 .github/scripts/apple_signing.py create
+
+      - name: 🗄️ Arşiv (App Store imzalı)
         env:
           TEAM: ${{ secrets.APPLE_TEAM_ID }}
           KID: ${{ secrets.ASC_KEY_ID }}
@@ -93,14 +103,7 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/Studyom.xcarchive" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
-            -authenticationKeyID "$KID" \
-            -authenticationKeyIssuerID "$ISS" \
-            DEVELOPMENT_TEAM="$TEAM" \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
+            OTHER_CODE_SIGN_FLAGS="--keychain $SIGN_KEYCHAIN" \
             MARKETING_VERSION="${{ inputs.version_name }}" \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}" > archive.log 2>&1 || status=$?
           grep -E "ARCHIVE (SUCCEEDED|FAILED)" archive.log || true
@@ -121,7 +124,10 @@ jobs:
             <key>method</key><string>app-store-connect</string>
             <key>destination</key><string>upload</string>
             <key>teamID</key><string>$TEAM</string>
-            <key>signingStyle</key><string>automatic</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict><key>com.gesblabs.studyom</key><string>$SIGN_PROFILE_NAME</string></dict>
             <key>manageAppVersionAndBuildNumber</key><false/>
           </dict>
           </plist>
@@ -131,7 +137,6 @@ jobs:
             -archivePath "$RUNNER_TEMP/Studyom.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
             -exportPath "$RUNNER_TEMP/export" \
-            -allowProvisioningUpdates \
             -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
             -authenticationKeyID "$KID" \
             -authenticationKeyIssuerID "$ISS" > export.log 2>&1 || status=$?
@@ -141,4 +146,7 @@ jobs:
 
       - name: 🧹 Anahtarı sil
         if: always()
-        run: rm -f "$RUNNER_TEMP/AuthKey.p8"
+        run: |
+          rm -f "$RUNNER_TEMP/AuthKey.p8"
+          python3 .github/scripts/apple_signing.py teardown || true
+          rm -rf "$RUNNER_TEMP/signing"
