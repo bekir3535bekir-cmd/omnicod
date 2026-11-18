@@ -1,4 +1,4 @@
-package com.omnicod.app;
+package com.gesblabs.studyom;
 
 import com.getcapacitor.BridgeActivity;
 

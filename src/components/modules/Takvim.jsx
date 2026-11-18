@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { sb, fromDB, toDB } from "../../services/supabase";
 import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
@@ -62,7 +62,7 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
 
         {/* Ay + Yıl navigasyonu */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-          <button onClick={prevMonth}
+          <button aria-label="Önceki ay" onClick={prevMonth}
             style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:99, width:40, height:40,
               display:"flex", alignItems:"center", justifyContent:"center" }}>
             <Ic n="back" s={18} c={T.text}/>
@@ -71,7 +71,7 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
             <div style={{ fontFamily:"Playfair Display", fontSize:24, fontWeight:600, color:T.goldL }}>{MN[curMonth]}</div>
             <div style={{ fontSize:13, color:T.text3, fontWeight:500 }}>{curYear}</div>
           </div>
-          <button onClick={nextMonth}
+          <button aria-label="Sonraki ay" onClick={nextMonth}
             style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:99, width:40, height:40,
               display:"flex", alignItems:"center", justifyContent:"center" }}>
             <Ic n="back" s={18} c={T.text} style={{ transform:"rotate(180deg)" }}/>
@@ -157,7 +157,7 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
           return (
             <div style={{ marginTop:20, padding:"0 20px" }}>
               <div style={{ fontSize:13, fontWeight:700, color:T.text, marginBottom:12 }}>
-                🗓 {yr} Yoğunluk Haritası
+                {yr} Yoğunluk Haritası
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:6 }}>
                 {monthCounts.map(({m,cnt})=>{
@@ -168,7 +168,7 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
                     : T.gold;
                   const isNow = m===new Date().getMonth();
                   return (
-                    <div key={m} onClick={()=>{ setCurMonth(m); setCurYear(yr); }}
+                    <div role="button" tabIndex={0} key={m} onClick={()=>{ setCurMonth(m); setCurYear(yr); }}
                       style={{ background:bg, borderRadius:10, padding:"8px 4px",
                         textAlign:"center", cursor:"pointer",
                         border:`1.5px solid ${isNow?T.goldL:"transparent"}` }}>
@@ -226,7 +226,7 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
                   </div>
                 </div>
                 <div style={{ marginTop:8 }}><Pill label={a.package} color={pkgColor(a.package)}/></div>
-                {a.notes && <div style={{ marginTop:8, fontSize:12, color:T.text3 }}>📝 {a.notes}</div>}
+                {a.notes && <div style={{ marginTop:8, fontSize:12, color:T.text3 }}>{a.notes}</div>}
               </Card>
             ))}
           </div>
@@ -250,7 +250,7 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
                 {MN[curMonth]} {curYear} — {monthApts.length} randevu
               </div>
               {monthApts.map(a=>(
-                <div key={a.id} onClick={()=>setShowDetail(a)}
+                <div role="button" tabIndex={0} key={a.id} onClick={()=>setShowDetail(a)}
                   style={{ display:"flex", gap:12, alignItems:"center", cursor:"pointer",
                   borderBottom:`1px solid ${T.border}`, paddingBottom:12, marginBottom:12 }}>
                   <div style={{ background:pkgColor(a.package)+"1A", borderRadius:10, padding:"8px 10px",
@@ -288,8 +288,8 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
                 <Pill label={apt.package} color={pkgColor(apt.package)}/>
                 {showDetail.isExtraDate && <Pill label={showDetail.extraDateLabel} color={T.blueL}/>}
               </div>
-              {[["📅 Ana Tarih", fmtDate(apt.date)],["⏰ Saat", apt.time||"—"],
-                ["📍 Konum", apt.location||"—"],["🎯 Tür", apt.type||"—"]].map(([l,v])=>(
+              {[["Ana Tarih", fmtDate(apt.date)],["Saat", apt.time||"—"],
+                ["Konum", apt.location||"—"],["Tür", apt.type||"—"]].map(([l,v])=>(
                 <div key={l} style={{ display:"flex", justifyContent:"space-between",
                   borderBottom:`1px solid ${T.border}`, paddingBottom:10 }}>
                   <span style={{ fontSize:13, color:T.text3 }}>{l}</span>
@@ -300,7 +300,7 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
               {/* Ek Günler / İkinci Çekim Tarihleri */}
               {allExtraDates.length > 0 && (
                 <div style={{ background:T.card2, borderRadius:12, padding:"12px 14px" }}>
-                  <div style={{ fontSize:12, color:T.text3, fontWeight:600, marginBottom:8 }}>📅 Ek Çekim Günleri</div>
+                  <div style={{ fontSize:12, color:T.text3, fontWeight:600, marginBottom:8 }}>Ek Çekim Günleri</div>
                   <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                     {allExtraDates.map((ed, idx) => (
                       <div key={idx} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", fontSize:13 }}>
@@ -315,7 +315,7 @@ export const Takvim = ({ data, setActive, setDetailClientId }) => {
               {/* Notlar & İkinci Açıklamalar */}
               {noteText && (
                 <div style={{ background:T.card2, borderRadius:12, padding:"12px 14px" }}>
-                  <div style={{ fontSize:11, color:T.text3, marginBottom:4 }}>📝 Çekim Notları / Açıklamalar</div>
+                  <div style={{ fontSize:11, color:T.text3, marginBottom:4 }}>Çekim Notları / Açıklamalar</div>
                   <div style={{ fontSize:13, color:T.text, whiteSpace:"pre-wrap", lineHeight:1.5 }}>{noteText}</div>
                 </div>
               )}

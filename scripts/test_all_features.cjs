@@ -30,7 +30,7 @@ function assert(condition, message) {
 }
 
 async function runTests() {
-  console.log('\n🚀 OMNICOD — TÜM ÖZELLİK & SAAS TESTLERİ BAŞLIYOR...\n');
+  console.log('\n🚀 STÜDYOM — TÜM ÖZELLİK & SAAS TESTLERİ BAŞLIYOR...\n');
 
   // Load plan module dynamically
   // Since plan.js uses import.meta.env, we will test the logic directly using a bundle or direct module execution

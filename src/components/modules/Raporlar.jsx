@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { sb, fromDB, toDB } from "../../services/supabase";
 import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
@@ -171,7 +171,7 @@ export const Raporlar = ({ data }) => {
               <div key={s.label} style={{ marginBottom:18 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8, alignItems:"center" }}>
                   <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                    <span style={{ fontSize:18 }}>{s.emoji}</span>
+                    {!T.flat && <span style={{ fontSize:18 }}>{s.emoji}</span>}
                     <span style={{ fontSize:14, fontWeight:600 }}>{s.label}</span>
                   </div>
                   <div style={{ display:"flex", gap:12, alignItems:"center" }}>
@@ -208,7 +208,7 @@ export const Raporlar = ({ data }) => {
               if(busiest.apts===0) return <div style={{ fontSize:13, color:T.text3, marginTop:8 }}>Veri yok</div>;
               return (
                 <div style={{ marginTop:12, display:"flex", alignItems:"center", gap:14 }}>
-                  <div style={{ background:T.gold+"1A", borderRadius:14, padding:"12px 16px",
+                  <div style={{ background: T.flat ? T.card2 : T.gold+"1A", borderRadius:14, padding:"12px 16px",
                     fontFamily:"Playfair Display", fontSize:28, fontWeight:700, color:T.gold }}>
                     {MN[monthly.indexOf(busiest)].slice(0,3)}
                   </div>
@@ -234,7 +234,7 @@ export const Raporlar = ({ data }) => {
                     return (
                       <div key={s.label} style={{ marginBottom:14 }}>
                         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-                          <span style={{ fontSize:13, fontWeight:600 }}>{icons[s.label]||"📌"} {s.label}</span>
+                          <span style={{ fontSize:13, fontWeight:600 }}>{!T.flat && <>{icons[s.label]||"📌"} </>}{s.label}</span>
                           <span style={{ fontSize:13, color:T.gold, fontWeight:600 }}>{s.count} müşteri</span>
                         </div>
                         <div style={{ background:T.card2, borderRadius:99, height:8 }}>
@@ -248,13 +248,13 @@ export const Raporlar = ({ data }) => {
               )}
               {topReferrerList.length>0 && (
                 <Card>
-                  <div style={{ fontWeight:600, color:T.text2, marginBottom:16, fontSize:14 }}>🏆 En İyi Referanslar</div>
+                  <div style={{ fontWeight:600, color:T.text2, marginBottom:16, fontSize:14 }}>En İyi Referanslar</div>
                   {topReferrerList.map(([name,count],i)=>(
                     <div key={name} style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
                       borderBottom:i<topReferrerList.length-1?`1px solid ${T.border}`:"none",
                       paddingBottom:12, marginBottom:12 }}>
                       <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-                        <div style={{ background:T.gold+"22", borderRadius:99, width:32, height:32,
+                        <div style={{ background: T.flat ? T.card2 : T.gold+"22", borderRadius:99, width:32, height:32,
                           display:"flex", alignItems:"center", justifyContent:"center",
                           fontFamily:"Playfair Display", fontWeight:700, color:T.gold, fontSize:14 }}>
                           {i+1}
@@ -280,10 +280,10 @@ export const Raporlar = ({ data }) => {
                   {/* Özet kartlar */}
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
                     {[
-                      ["👥 Toplam Personel", ekipStats.length, T.blueL],
-                      ["📸 Toplam Shift", ekipStats.reduce((a,m)=>a+m.shiftCount,0), T.gold],
-                      ["✅ Tamamlanan", ekipStats.reduce((a,m)=>a+m.completedCount,0), T.greenL],
-                      ["💰 Toplam Hak Ediş", fmt(ekipStats.reduce((a,m)=>a+m.earned,0)), T.orangeL],
+                      ["Toplam Personel", ekipStats.length, T.blueL],
+                      ["Toplam Shift", ekipStats.reduce((a,m)=>a+m.shiftCount,0), T.gold],
+                      ["Tamamlanan", ekipStats.reduce((a,m)=>a+m.completedCount,0), T.greenL],
+                      ["Toplam Hak Ediş", fmt(ekipStats.reduce((a,m)=>a+m.earned,0)), T.orangeL],
                     ].map(([l,v,c])=>(
                       <Card key={l} style={{ textAlign:"center", padding:"14px 10px" }}>
                         <div style={{ fontSize:11, color:T.text3, marginBottom:6 }}>{l}</div>
@@ -364,9 +364,9 @@ export const Raporlar = ({ data }) => {
             <Card style={{ marginBottom:16 }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
                 <div>
-                  <div style={{ fontSize:14, fontWeight:700, color:T.text }}>💱 Güncel USD/TRY Kuru</div>
+                  <div style={{ fontSize:14, fontWeight:700, color:T.text }}>Güncel USD/TRY Kuru</div>
                   <div style={{ fontSize:11, color:rateError?T.redL:T.greenL, marginTop:3 }}>
-                    {rateLoading ? "🔄 Kur çekiliyor..." : rateError ? "⚠️ Otomatik çekilemedi — manuel giriş" : "✅ Otomatik güncellendi"}
+                    {rateLoading ? "Kur çekiliyor..." : rateError ? "Otomatik çekilemedi — manuel giriş" : "Otomatik güncellendi"}
                   </div>
                 </div>
                 <button onClick={()=>setEditRate(e=>!e)}
@@ -382,7 +382,7 @@ export const Raporlar = ({ data }) => {
                     style={{ flex:1, background:T.card2, border:`1px solid ${T.gold}44`, borderRadius:12,
                       padding:"11px 14px", color:T.text, fontSize:16, fontWeight:700, outline:"none" }}/>
                   <button onClick={()=>setEditRate(false)}
-                    style={{ background:`linear-gradient(135deg,${T.goldL},${T.goldD})`,
+                    style={{ background:`${T.gold}`,
                       borderRadius:12, padding:"11px 18px", fontSize:13, fontWeight:700, color:T.bg }}>
                     Kaydet
                   </button>
@@ -390,8 +390,8 @@ export const Raporlar = ({ data }) => {
               ) : (
                 <div style={{ display:"flex", alignItems:"baseline", gap:8 }}>
                   {rateLoading
-                    ? <div style={{ fontSize:28, color:T.text3 }}>⏳ Yükleniyor...</div>
-                    : <><span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:36, fontWeight:700, color:T.goldL }}>₺{parseFloat(currentRate).toFixed(2)}</span>
+                    ? <div style={{ fontSize:28, color:T.text3 }}>Yükleniyor...</div>
+                    : <><span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:36, fontWeight:700, color:T.goldL }}>{parseFloat(currentRate).toFixed(2)}</span>
                        <span style={{ fontSize:14, color:T.text3 }}>= 1 USD</span></>
                   }
                 </div>
@@ -403,7 +403,7 @@ export const Raporlar = ({ data }) => {
 
             {/* Hesap Makinesi */}
             <Card style={{ marginBottom:16 }}>
-              <div style={{ fontSize:14, fontWeight:700, color:T.text, marginBottom:14 }}>🧮 TL → USD Çevirici</div>
+              <div style={{ fontSize:14, fontWeight:700, color:T.text, marginBottom:14 }}>TL → USD Çevirici</div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
                 <div>
                   <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:6 }}>Yıl</div>
@@ -411,7 +411,7 @@ export const Raporlar = ({ data }) => {
                     style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:12,
                       padding:"12px 14px", color:T.text, fontSize:14, width:"100%" }}>
                     {Object.keys(USD_TRY_RATES).map(y=>(
-                      <option key={y} value={y}>{y} (₺{USD_TRY_RATES[y]})</option>
+                      <option key={y} value={y}>{y} ({USD_TRY_RATES[y]})</option>
                     ))}
                   </select>
                 </div>
@@ -430,14 +430,14 @@ export const Raporlar = ({ data }) => {
                     <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:22, fontWeight:700, color:T.blueL }}>
                       ${Math.round(usdAtYear).toLocaleString("tr-TR")}
                     </div>
-                    <div style={{ fontSize:11, color:T.text3, marginTop:3 }}>kur: ₺{historicRate}</div>
+                    <div style={{ fontSize:11, color:T.text3, marginTop:3 }}>kur: {historicRate}</div>
                   </div>
                   <div style={{ background:T.gold+"1A", border:`1px solid ${T.gold}33`, borderRadius:12, padding:14, textAlign:"center" }}>
                     <div style={{ fontSize:11, color:T.text3, marginBottom:4 }}>Bugünkü Değeri</div>
                     <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:22, fontWeight:700, color:T.goldL }}>
                       ${Math.round(usdToday).toLocaleString("tr-TR")}
                     </div>
-                    <div style={{ fontSize:11, color:T.text3, marginTop:3 }}>kur: ₺{rate}</div>
+                    <div style={{ fontSize:11, color:T.text3, marginTop:3 }}>kur: {rate}</div>
                   </div>
                 </div>
               ) : (
@@ -448,7 +448,7 @@ export const Raporlar = ({ data }) => {
 
             {/* Portföy Analizi */}
             <Card style={{ marginBottom:16 }}>
-              <div style={{ fontSize:14, fontWeight:700, color:T.text, marginBottom:4 }}>📊 Portföy — Dolar Bazlı</div>
+              <div style={{ fontSize:14, fontWeight:700, color:T.text, marginBottom:4 }}>Portföy — Dolar Bazlı</div>
               <div style={{ fontSize:12, color:T.text3, marginBottom:14 }}>Müşterilerin TL geliri, çekim yılının kuruyla hesaplandı</div>
               {portfolio.length === 0 ? (
                 <div style={{ textAlign:"center", color:T.text3, fontSize:13, padding:20 }}>Henüz müşteri kaydı yok</div>
@@ -472,7 +472,7 @@ export const Raporlar = ({ data }) => {
                             <span style={{ fontSize:13, fontWeight:600 }}>{c.name}</span>
                           </div>
                           <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-                            <span style={{ fontSize:11, color:T.text3 }}>{yr} · ₺{USD_TRY_RATES[yr]}</span>
+                            <span style={{ fontSize:11, color:T.text3 }}>{yr} · {USD_TRY_RATES[yr]}</span>
                             <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:700, color:T.blueL }}>
                               ${c.usd.toLocaleString("tr-TR")}
                             </span>
@@ -495,7 +495,7 @@ export const Raporlar = ({ data }) => {
 
             {/* Tarihsel Kurlar */}
             <Card style={{ marginBottom:16 }}>
-              <div style={{ fontSize:14, fontWeight:700, color:T.text, marginBottom:14 }}>📅 USD/TRY Tarihsel Kurlar</div>
+              <div style={{ fontSize:14, fontWeight:700, color:T.text, marginBottom:14 }}>USD/TRY Tarihsel Kurlar</div>
               {Object.entries(USD_TRY_RATES).map(([y,r])=>{
                 const maxR = 38.50;
                 return (
@@ -504,7 +504,7 @@ export const Raporlar = ({ data }) => {
                     <div style={{ flex:1, background:T.card2, borderRadius:99, height:6 }}>
                       <div style={{ background:T.gold, borderRadius:99, height:"100%", width:`${r/maxR*100}%`, transition:"width 0.4s" }}/>
                     </div>
-                    <span style={{ fontSize:12, fontWeight:600, color:T.goldL, fontFamily:"'DM Sans',sans-serif", minWidth:44, textAlign:"right" }}>₺{r}</span>
+                    <span style={{ fontSize:12, fontWeight:600, color:T.goldL, fontFamily:"'DM Sans',sans-serif", minWidth:44, textAlign:"right" }}>{r}</span>
                   </div>
                 );
               })}

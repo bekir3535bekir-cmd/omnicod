@@ -62,7 +62,8 @@ const RealQRCode = ({ text, size = 190 }) => {
   );
 };
 
-export const DijitalKartvizit = () => {
+export const DijitalKartvizit = ({ role = "admin" }) => {
+  const isAdmin = role === "admin";
   const [profile, setProfile] = useState(() => getStudioProfile());
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState(profile);
@@ -87,7 +88,6 @@ TEL;TYPE=CELL,VOICE:${profile.phone}
 EMAIL:${profile.email}
 ADR;TYPE=WORK:;;${profile.address};;;Turkey
 NOTE:Düğün, Nişan, Dış Çekim ve Özel Gün Fotoğrafçılığı
-URL:https://studyoapp.com
 END:VCARD`;
 
     const blob = new Blob([vCardData], { type: "text/vcard;charset=utf-8;" });
@@ -161,8 +161,8 @@ END:VCARD`;
         sub="Düğün salonlarında ve çekimlerde davetlilerle tek tıkla paylaşabileceğiniz akıllı QR kartvizit"
       />
 
-      {/* Üst Düzenle Butonu */}
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+      {/* Üst Düzenle Butonu — stüdyo/fatura bilgilerini yalnızca yönetici değiştirebilir */}
+      {isAdmin && <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
         <button
           onClick={() => { setEditForm(profile); setShowEdit(true); }}
           style={{
@@ -179,9 +179,9 @@ END:VCARD`;
             gap: 6
           }}
         >
-          <span>✏️</span> Bilgilerimi Düzenle
+          Bilgilerimi Düzenle
         </button>
-      </div>
+      </div>}
 
       {/* Apple Liquid Glass Kartvizit */}
       <div style={{
@@ -241,7 +241,7 @@ END:VCARD`;
             justifyContent: "center",
             fontSize: 22
           }}>
-            📸
+            <Ic n="camera" s={22} c="#FFFFFF"/>
           </div>
         </div>
 
@@ -273,7 +273,7 @@ END:VCARD`;
                 transition: "all 0.2s"
               }}
             >
-              📇 Rehbere Kaydet
+              Rehbere Kaydet
             </button>
             <button
               onClick={() => setQrType("wa")}
@@ -289,7 +289,7 @@ END:VCARD`;
                 transition: "all 0.2s"
               }}
             >
-              💬 WhatsApp
+              WhatsApp
             </button>
           </div>
 
@@ -316,7 +316,7 @@ END:VCARD`;
             padding: "9px 12px",
             borderRadius: 12
           }}>
-            <span style={{ fontSize: 16 }}>📞</span>
+            <Ic n="phone" s={16} c={T.text2}/>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 10, color: T.text3 }}>TELEFON</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{profile.phone}</div>
@@ -332,7 +332,7 @@ END:VCARD`;
             padding: "9px 12px",
             borderRadius: 12
           }}>
-            <span style={{ fontSize: 16 }}>✉️</span>
+            <Ic n="mail" s={16} c={T.text2}/>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 10, color: T.text3 }}>E-POSTA</div>
               <div style={{ fontSize: 12.5, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -351,7 +351,7 @@ END:VCARD`;
               padding: "9px 12px",
               borderRadius: 12
             }}>
-              <span style={{ fontSize: 16 }}>📍</span>
+              <Ic n="pin" s={16} c={T.text2}/>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 10, color: T.text3 }}>ADRES & BÖLGE</div>
                 <div style={{ fontSize: 12, color: T.text2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -368,7 +368,7 @@ END:VCARD`;
         <button
           onClick={downloadVCard}
           style={{
-            background: `linear-gradient(135deg, ${T.gold}, ${T.goldD})`,
+            background: `${T.gold}`,
             color: "#000",
             fontWeight: 700,
             fontSize: 13,
@@ -383,7 +383,7 @@ END:VCARD`;
             boxShadow: `0 6px 20px ${T.gold}44`
           }}
         >
-          <span>📲</span> Rehbere Kaydet
+          Rehbere Kaydet
         </button>
 
         <button
@@ -403,7 +403,7 @@ END:VCARD`;
             gap: 6
           }}
         >
-          <span>🔗</span> {copied ? "Kopyalandı! ✅" : "Kartı Paylaş"}
+          {copied ? "Kopyalandı!" : "Kartı Paylaş"}
         </button>
       </div>
 
@@ -429,7 +429,7 @@ END:VCARD`;
           boxShadow: "0 6px 20px rgba(37, 211, 102, 0.3)"
         }}
       >
-        <span>💬</span> Müşteri WhatsApp İletişim Hattı
+        Müşteri WhatsApp İletişim Hattı
       </button>
 
       {/* Bilgileri Düzenleme BottomSheet */}
@@ -467,6 +467,28 @@ END:VCARD`;
               value={editForm.address}
               onChange={v => setEditForm(p => ({ ...p, address: v }))}
               placeholder="İlçe / İl"
+            />
+
+            <div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>
+              Fatura & sözleşme bilgileri (belgelerde görünür, isteğe bağlı)
+            </div>
+            <Field
+              label="Vergi Dairesi"
+              value={editForm.vdaire || ""}
+              onChange={v => setEditForm(p => ({ ...p, vdaire: v }))}
+              placeholder="Örn: Gebze Vergi Dairesi"
+            />
+            <Field
+              label="Vergi No"
+              value={editForm.vno || ""}
+              onChange={v => setEditForm(p => ({ ...p, vno: v }))}
+              placeholder="Vergi / TC Kimlik No"
+            />
+            <Field
+              label="IBAN"
+              value={editForm.iban || ""}
+              onChange={v => setEditForm(p => ({ ...p, iban: v }))}
+              placeholder="TR.. .... .... .... .... .... .."
             />
 
             <GoldButton label="Kaydet ve Güncelle" onClick={handleSaveEdit} full style={{ marginTop: 8 }} />

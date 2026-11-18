@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>OmniCod</string>
+        <string>STÜDYOM</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -66,5 +66,12 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!-- Yalnızca standart HTTPS kullanılır: ihracat şifreleme beyanı gerekmez -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Sesli asistanla randevu ve not eklerken sesinizi dinlemek için mikrofon kullanılır. Ses kaydı saklanmaz.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Söylediklerinizi yazıya çevirmek için konuşma tanıma kullanılır. Ses, tanıma için Apple'a gönderilebilir; STÜDYOM ses kaydı saklamaz.</string>
 </dict>
 </plist>

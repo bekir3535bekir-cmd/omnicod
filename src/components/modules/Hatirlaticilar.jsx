@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { sb, fromDB, toDB } from "../../services/supabase";
 import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
@@ -14,12 +14,23 @@ export const Hatirlaticilar = ({ data, setData, role }) => {
   const [form, setForm] = useState(F);
   const f = k => v => setForm(p=>({...p,[k]:v}));
   const save = () => {
-    const newRem = {...form, id:uid()};
+    if(!form.title.trim() || !form.triggerDate) return;
+    // Hatırlatma, seçilen tarihten "kaç gün önce" seçimi kadar önce tetiklenir (Ajanda ile aynı mantık)
+    const trig = new Date(form.triggerDate+"T12:00:00");
+    trig.setDate(trig.getDate() - (Number(form.daysBefore)||0));
+    const triggerDate = `${trig.getFullYear()}-${String(trig.getMonth()+1).padStart(2,"0")}-${String(trig.getDate()).padStart(2,"0")}`;
+    const newRem = {...form, title:form.title.trim(), triggerDate, id:uid()};
     setData(p=>({...p, reminders:[...p.reminders, newRem]}));
     sb.upsert("reminders", toDB.reminders(newRem)).catch(()=>{});
     setShowAdd(false); setForm(F);
   };
-  const toggle = id => setData(p=>({...p,reminders:p.reminders.map(r=>r.id===id?{...r,done:!r.done}:r)}));
+  const toggle = id => {
+    const cur = data.reminders.find(r=>r.id===id);
+    if(!cur) return;
+    const updated = {...cur, done:!cur.done};
+    setData(p=>({...p,reminders:p.reminders.map(r=>r.id===id?updated:r)}));
+    sb.upsert("reminders", toDB.reminders(updated)).catch(()=>{});
+  };
   const del    = id => { sb.delete("reminders", id).catch(()=>{}); setData(p=>({...p,reminders:p.reminders.filter(r=>r.id!==id)})); };
 
   const active = data.reminders.filter(r=>!r.done).sort((a,b)=>new Date(a.triggerDate)-new Date(b.triggerDate));

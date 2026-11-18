@@ -1,7 +1,7 @@
 {
-  "name": "StudyoApp — Fotoğrafçılık & Stüdyo Yönetim Sistemi",
-  "short_name": "StudyoApp",
-  "description": "StudyoApp Profesyonel Fotoğraf Stüdyosu CRM, Ajanda, Muhasebe ve Müşteri Takip Sistemi",
+  "name": "STÜDYOM — Fotoğrafçılık & Stüdyo Yönetim Sistemi",
+  "short_name": "STÜDYOM",
+  "description": "STÜDYOM Profesyonel Fotoğraf Stüdyosu CRM, Ajanda, Muhasebe ve Müşteri Takip Sistemi",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0A0A0B",
@@ -9,10 +9,22 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "/logo192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

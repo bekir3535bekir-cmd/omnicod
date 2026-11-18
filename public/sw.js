@@ -1,9 +1,9 @@
-// GESES Studio Service Worker
-const CACHE_NAME = 'geses-studio-v1';
+// STÜDYOM Service Worker
+const CACHE_NAME = 'studyom-v2'; // ikon/marka değişince artırılır
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/favicon.svg',
+  '/favicon.png',
   '/manifest.json'
 ];
 

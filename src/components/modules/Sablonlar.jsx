@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
-import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
+import { fmt, fmtTL, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
+import { getPass, setPass, getSession, saveSession, clearSession, getStudioInfo } from "../../services/storage";
 
 export const Sablonlar = ({ data }) => {
   const [copied, setCopied] = useState(null);
@@ -20,7 +20,8 @@ export const Sablonlar = ({ data }) => {
       .replace("{saat}",  apt.time||"{saat}")
       .replace("{konum}", apt.location||"{konum}")
       .replace("{tip}",   apt.type||"{tip}")
-      .replace("{tutar}", client.totalAmount>0 ? fmt(client.totalAmount-client.paid) : "{tutar}");
+      .replace("{tutar}", client.totalAmount>0 ? fmtTL(client.totalAmount-client.paid) : "{tutar}")
+      .replace(/\{studyo\}/g, getStudioInfo().unvan || "Stüdyomuz");
   };
 
   const copyText = (text, id) => {
@@ -30,9 +31,9 @@ export const Sablonlar = ({ data }) => {
   };
 
   const CATEGORIES = [
-    { label:"📅 Randevu", templates: MSG_TEMPLATES.filter((_,i)=>i<2) },
-    { label:"🔔 Hatırlatma", templates: MSG_TEMPLATES.filter((_,i)=>i===2||i===4) },
-    { label:"🎉 Teşekkür & Teslimat", templates: MSG_TEMPLATES.filter((_,i)=>i===3||i===5) },
+    { label:"Randevu", templates: MSG_TEMPLATES.filter((_,i)=>i<2) },
+    { label:"Hatırlatma", templates: MSG_TEMPLATES.filter((_,i)=>i===2||i===4) },
+    { label:"Teşekkür & Teslimat", templates: MSG_TEMPLATES.filter((_,i)=>i===3||i===5) },
   ];
 
   return (
@@ -42,7 +43,7 @@ export const Sablonlar = ({ data }) => {
         {/* Müşteri seç */}
         <Card style={{ marginBottom:20, padding:16 }}>
           <div style={{ fontSize:13, color:T.text2, fontWeight:500, marginBottom:10 }}>
-            💡 Müşteri seçersen bilgiler otomatik dolar
+            Müşteri seçersen bilgiler otomatik dolar
           </div>
           <select value={selClient} onChange={e=>setSelClient(e.target.value)}
             style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:12,

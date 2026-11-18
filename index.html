@@ -2,10 +2,10 @@
 <html lang="tr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/favicon.svg" />
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0A0A0B" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -32,13 +32,21 @@
         position: relative;
         background-color: #0A0A0B;
       }
+      /* Masaüstü düzeni (geniş ekran) */
+      html.desktop body, html.desktop #root { max-width: none; }
+      html.desktop { --fab-right: 28px; --fab-bottom-1: 24px; --fab-bottom-2: 82px; }
+      /* Masaüstünde kart listeleri iki sütun */
+      html.desktop .card-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+      html.desktop .card-list > * { margin-bottom: 0 !important; }
+      html.desktop .card-list > :only-child { grid-column: 1 / -1; }
     </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
-      if ('serviceWorker' in navigator) {
+      // Service Worker yalnızca web sürümünde (masaüstü/telefon uygulamasında gerekmez)
+      if ('serviceWorker' in navigator && location.protocol === 'https:' && !window.studyomDesktop) {
         if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
           // Localhost / geliştirme ortamında Service Worker'ı temizle (beyaz ekran ve önbellek sorunlarını önler)
           navigator.serviceWorker.getRegistrations().then(registrations => {
@@ -54,7 +62,7 @@
         } else {
           // Canlı ortamda Service Worker'ı kaydet
           window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').catch(() => {});
+            navigator.serviceWorker.register('sw.js').catch(() => {});
           });
         }
       }

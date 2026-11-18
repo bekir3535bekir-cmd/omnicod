@@ -169,8 +169,8 @@ const toDBExtracted = extractBetween('const toDB = {', '// ═══════
 const supabaseCode = `import { createClient } from "@supabase/supabase-js";
 
 export const IS_DEV = import.meta.env.VITE_DEV_MODE !== "false";
-export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://jlnodwzhljbzevasdhtd.supabase.co";
-export const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_3xYfYyHGjy3Fx6MqDWFPpw_Wgt1KHFm";
+export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
+export const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
 export const supabase = (SUPABASE_URL && SUPABASE_KEY && !IS_DEV) 
   ? createClient(SUPABASE_URL, SUPABASE_KEY)

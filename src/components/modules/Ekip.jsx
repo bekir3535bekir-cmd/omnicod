@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
 import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { UsageBadge, ProGate } from "../common/ProGate";
 import { canAddTeamMember } from "../../services/plan";
-import { sb, fromDB, toDB } from "../../services/supabase";
+import { sb, fromDB, toDB, IS_CLOUD } from "../../services/supabase";
+import { fetchStaffAccounts, createStaffAccount, setStaffPassword, removeStaffAccount, normalizePhone } from "../../services/auth";
 import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
 
 export const Ekip = ({ data, setData, role, plan, setActive }) => {
@@ -18,6 +19,24 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
   const [showPay,    setShowPay]    = useState(false);
   const [confirmDel, setConfirmDel] = useState(null);
   const [selMember,  setSelMember]  = useState(null);
+  // Personel uygulama girişi (bulut): hangi üyenin hesabı var
+  const [accounts, setAccounts] = useState({});        // team_id → telefon
+  const [accessFor, setAccessFor] = useState(null);    // pencerede düzenlenen üye
+  const [accForm, setAccForm] = useState({ phone:"", password:"" });
+  const [accMsg, setAccMsg] = useState(null);
+  const [accBusy, setAccBusy] = useState(false);
+  const loadAccounts = () => {
+    if (!IS_CLOUD || role !== "admin") return;
+    fetchStaffAccounts().then(list => setAccounts(Object.fromEntries((list || []).map(a => [String(a.team_id), a.phone])))).catch(() => {});
+  };
+  useEffect(loadAccounts, []);
+  const openAccess = (m) => { setAccessFor(m); setAccForm({ phone: m.phone || "", password: "" }); setAccMsg(null); };
+  const accRun = async (fn, okText) => {
+    setAccBusy(true); setAccMsg(null);
+    try { await fn(); setAccMsg({ ok: true, text: okText }); loadAccounts(); setAccForm(f => ({ ...f, password: "" })); }
+    catch (e) { setAccMsg({ ok: false, text: e.message }); }
+    finally { setAccBusy(false); }
+  };
   const [weekOffset, setWeekOffset] = useState(0);
   const FM = { name:"", role:"Fotoğrafçı", phone:"", color:T.blue, salary:0, totalEarned:0, totalPaid:0 };
   const FS = { teamId:"", title:"", date:"", start:"08:00", end:"18:00", location:"", note:"" };
@@ -51,6 +70,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
     setShowMember(false); setMForm(FM);
   };
   const delMember = (id) => {
+    if (IS_CLOUD && accounts[String(id)]) removeStaffAccount(id).then(loadAccounts).catch(()=>{});
     sb.delete("team", id).catch(()=>{});
     setData(p => {
       const memberShifts = p.shifts.filter(s=>s.teamId===id);
@@ -70,7 +90,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
   };
   const savePayment = () => {
     const amt = Number(pForm.amount)||0;
-    if(!amt || !selMember) return;
+    if(!(amt > 0) || !selMember) return;
     setData(p=>({...p,
       team:p.team.map(m=>m.id===selMember?.id
         ? {...m, totalPaid:pForm.type==="Ödeme"?(m.totalPaid||0)+amt:m.totalPaid,
@@ -134,7 +154,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                 <Card key={m.id} style={{ marginBottom:12 }}>
                   {/* Header */}
                   <div style={{ display:"flex", gap:12, alignItems:"center", marginBottom:14 }}>
-                    <div style={{ background:m.color+"22", borderRadius:99, width:50, height:50, flexShrink:0,
+                    <div style={{ background: T.flat ? T.card2 : m.color+"22", borderRadius:99, width:50, height:50, flexShrink:0,
                       display:"flex", alignItems:"center", justifyContent:"center",
                       ...NUM_FONT, fontSize:20, fontWeight:700, color:m.color }}>
                       {m.name.charAt(0)}
@@ -144,14 +164,14 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                       <div style={{ fontSize:12, color:T.text2, marginTop:2 }}>{m.role}</div>
                       <div style={{ fontSize:11, color:T.text3, marginTop:1 }}>{m.phone}</div>
                     </div>
-                    <div style={{ background:m.color+"1A", borderRadius:12, padding:"8px 14px", textAlign:"center" }}>
+                    <div style={{ background: T.flat ? T.card2 : m.color+"1A", borderRadius:12, padding:"8px 14px", textAlign:"center" }}>
                       <div style={{ ...NUM_FONT, fontSize:18, fontWeight:700, color:m.color }}>{ms.length}</div>
                       <div style={{ fontSize:10, color:T.text3 }}>shift</div>
                     </div>
                   </div>
 
-                  {/* Finance */}
-                  <div style={{ borderTop:`1px solid ${T.border}`, paddingTop:12, marginBottom:12 }}>
+                  {/* Finance — ücret bilgileri yalnızca yöneticiye görünür */}
+                  {isAdmin && <div style={{ borderTop:`1px solid ${T.border}`, paddingTop:12, marginBottom:12 }}>
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:10 }}>
                       {[["Kazanç",fmt(earned),T.gold],["Ödenen",fmt(paid),T.greenL],["Kalan",fmt(debt),debt>0?T.orangeL:T.text3]].map(([l,v,c])=>(
                         <div key={l} style={{ background:T.card2, borderRadius:10, padding:"8px", textAlign:"center" }}>
@@ -169,14 +189,14 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                         <div style={{ fontSize:11, color:T.text3, marginTop:4, textAlign:"right" }}>{pct}% ödendi</div>
                       </div>
                     )}
-                  </div>
+                  </div>}
 
                   {/* Actions */}
                   <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                     {isAdmin && <button onClick={()=>{ setShiftForm({...FS, teamId:m.id}); setShowShift(true); }}
                       style={{ flex:1, background:T.blue+"1A", border:`1px solid ${T.blue}33`,
                         borderRadius:10, padding:"9px", fontSize:12, fontWeight:600, color:T.blueL }}>
-                      📅 Shift Ekle
+                      Shift Ekle
                     </button>}
                     {isAdmin && <button onClick={()=>{setSelMember(m);setPForm({...FP,type:"Kazanç"});setShowPay(true);}}
                       style={{ flex:1, background:T.gold+"1A", border:`1px solid ${T.gold}33`,
@@ -188,7 +208,12 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                         borderRadius:10, padding:"9px", fontSize:12, fontWeight:600, color:T.greenL }}>
                       + Ödeme Yap
                     </button>}
-                    {isAdmin && <button onClick={()=>setConfirmDel(m.id)}
+                    {isAdmin && IS_CLOUD && <button onClick={()=>openAccess(m)}
+                      style={{ flex:"1 1 100%", background:accounts[String(m.id)]?T.green+"1A":T.card2, border:`1px solid ${accounts[String(m.id)]?T.green+"55":T.border}`,
+                        borderRadius:10, padding:"9px", fontSize:12, fontWeight:600, color:accounts[String(m.id)]?T.greenL:T.text2 }}>
+                      {accounts[String(m.id)] ? `Uygulama girişi açık · 0${accounts[String(m.id)]}` : "Uygulama Girişi Oluştur"}
+                    </button>}
+                    {isAdmin && <button aria-label="Sil" onClick={()=>setConfirmDel(m.id)}
                       style={{ background:T.red+"1A", border:`1px solid ${T.red}33`,
                         borderRadius:10, padding:"9px 12px", fontSize:12, fontWeight:600, color:T.redL }}>
                       <Ic n="trash" s={15} c={T.redL}/>
@@ -241,7 +266,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
               return (
                 <Card style={{ marginBottom:16 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-                    <button onClick={()=>setWeekOffset(w=>w-1)}
+                    <button aria-label="Önceki hafta" onClick={()=>setWeekOffset(w=>w-1)}
                       style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:99,
                         width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center" }}>
                       <Ic n="back" s={14} c={T.text}/>
@@ -250,7 +275,7 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                       <div style={{ fontSize:13, fontWeight:600, color:T.goldL }}>{startLabel} – {endLabel}</div>
                       {weekOffset===0 && <div style={{ fontSize:10, color:T.text3 }}>Bu Hafta</div>}
                     </div>
-                    <button onClick={()=>setWeekOffset(w=>w+1)}
+                    <button aria-label="Sonraki hafta" onClick={()=>setWeekOffset(w=>w+1)}
                       style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:99,
                         width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center" }}>
                       <Ic n="back" s={14} c={T.text} style={{transform:"rotate(180deg)"}}/>
@@ -340,12 +365,12 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                           <button onClick={()=>setEditShift({...s})}
                             style={{ flex:1, background:T.gold+"22", border:`1px solid ${T.gold}44`,
                               borderRadius:10, padding:"7px", fontSize:12, fontWeight:600, color:T.goldL }}>
-                            ✏️ Düzenle
+                            Düzenle
                           </button>
                           <button onClick={()=>delShift(s.id)}
                             style={{ flex:1, background:T.red+"1A", border:`1px solid ${T.red}33`,
                               borderRadius:10, padding:"7px", fontSize:12, fontWeight:600, color:T.redL }}>
-                            🗑 Sil
+                            Sil
                           </button>
                         </div>
                       )}
@@ -363,8 +388,8 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
             <Field label="Ad Soyad" value={mForm.name} onChange={mf("name")} placeholder="Ad Soyad" required/>
             <Field label="Rol" value={mForm.role} onChange={mf("role")} options={["Baş Fotoğrafçı","Fotoğrafçı","Kameraman","Video Editörü","Asistan","Diğer"]}/>
             <Field label="Telefon" type="tel" value={mForm.phone} onChange={mf("phone")} placeholder="05xx xxx xx xx"/>
-            <Field label="Başlangıç Kazanç (₺)" type="number" value={mForm.totalEarned} onChange={mf("totalEarned")} placeholder="0" note="Opsiyonel"/>
-            <Field label="Başlangıç Ödenen (₺)" type="number" value={mForm.totalPaid} onChange={mf("totalPaid")} placeholder="0" note="Opsiyonel"/>
+            <Field label="Başlangıç Kazanç" type="number" value={mForm.totalEarned} onChange={mf("totalEarned")} placeholder="0" note="Opsiyonel"/>
+            <Field label="Başlangıç Ödenen" type="number" value={mForm.totalPaid} onChange={mf("totalPaid")} placeholder="0" note="Opsiyonel"/>
             <GoldButton label="Üyeyi Kaydet" icon="check" onClick={saveMember} full/>
           </div>
         </BottomSheet>
@@ -427,11 +452,11 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
                   style={{ flex:1, background:pForm.type===t?T.gold:T.card2,
                     color:pForm.type===t?T.bg:T.text2, border:`1px solid ${pForm.type===t?T.gold:T.border}`,
                     borderRadius:10, padding:"10px", fontSize:13, fontWeight:600 }}>
-                  {t==="Kazanç"?"💰 Kazanç Ekle":"✅ Ödeme Yap"}
+                  {t==="Kazanç"?"Kazanç Ekle":"Ödeme Yap"}
                 </button>
               ))}
             </div>
-            <Field label="Tutar (₺)" type="number" value={pForm.amount} onChange={pf("amount")} placeholder="0" required/>
+            <Field label="Tutar" type="number" value={pForm.amount} onChange={pf("amount")} placeholder="0" required/>
             <Field label="Tarih" type="date" value={pForm.date} onChange={pf("date")}/>
             <Field label="Not" value={pForm.note} onChange={pf("note")} placeholder="Açıklama..."/>
             <GoldButton label="Kaydet" icon="check" onClick={savePayment} full/>
@@ -443,6 +468,50 @@ export const Ekip = ({ data, setData, role, plan, setActive }) => {
       {showLimitModal && (
         <BottomSheet title="Ekip Limiti" onClose={()=>setShowLimitModal(false)}>
           <ProGate check={teamLimitCheck} featureLabel="Ekip Üyesi" onUpgrade={()=>{ setShowLimitModal(false); setActive && setActive("planyonetimi"); }} />
+        </BottomSheet>
+      )}
+      {accessFor && (
+        <BottomSheet title={`${accessFor.name} — Uygulama Girişi`} onClose={()=>!accBusy && setAccessFor(null)}>
+          {(() => {
+            const has = accounts[String(accessFor.id)];
+            const inp = { background:T.card2, border:`1px solid ${T.border}`, borderRadius:12, padding:"12px 14px", color:T.text, fontSize:14, width:"100%", outline:"none", boxSizing:"border-box" };
+            return (
+              <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                <div style={{ fontSize:12.5, color:T.text3, lineHeight:1.6 }}>
+                  {has
+                    ? <>Bu personel STÜDYOM uygulamasına <b style={{ color:T.text }}>0{has}</b> numarası ve sizin belirlediğiniz şifreyle giriş yapıyor. Kendisine atanan görevleri ve bildirimleri görür; gelir-gider ve firma bilgilerini göremez.</>
+                    : <>Personel uygulamayı telefonuna veya bilgisayarına indirip <b style={{ color:T.text }}>"Personel girişi"</b> ekranından bu telefon numarası ve şifreyle girer.</>}
+                </div>
+                {!has && (
+                  <input type="tel" value={accForm.phone} onChange={e=>setAccForm(f=>({ ...f, phone:e.target.value }))} placeholder="Telefon (05xx xxx xx xx)" style={inp}/>
+                )}
+                <input type="text" value={accForm.password} onChange={e=>setAccForm(f=>({ ...f, password:e.target.value }))}
+                  placeholder={has ? "Yeni şifre (en az 6 karakter)" : "Şifre (en az 6 karakter)"} style={inp} autoComplete="new-password"/>
+                {accMsg && <div style={{ fontSize:12.5, color:accMsg.ok?T.greenL:T.redL, lineHeight:1.5 }}>{accMsg.text}</div>}
+                {!has ? (
+                  <GoldButton label={accBusy ? "Oluşturuluyor..." : "Girişi Oluştur"} full onClick={()=>!accBusy && accRun(async () => {
+                    await createStaffAccount(accessFor.id, accForm.phone, accForm.password);
+                    // Telefon numarası ekip kaydına da yazılır
+                    const ph = normalizePhone(accForm.phone);
+                    if (!normalizePhone(accessFor.phone || "")) {
+                      const upd = { ...accessFor, phone: "0" + ph };
+                      setData(p => ({ ...p, team: p.team.map(x => x.id === upd.id ? upd : x) }));
+                      sb.upsert("team", toDB.team(upd)).catch(()=>{});
+                    }
+                  }, `Giriş oluşturuldu. Personel "Personel girişi" ekranından 0${normalizePhone(accForm.phone)} numarası ve belirlediğiniz şifreyle girebilir.`)}/>
+                ) : (
+                  <>
+                    <GoldButton label={accBusy ? "Kaydediliyor..." : "Şifreyi Değiştir"} full onClick={()=>!accBusy && accRun(
+                      () => setStaffPassword(accessFor.id, accForm.password), "Şifre değiştirildi. Personel yeni şifreyle giriş yapmalı.")}/>
+                    <button onClick={()=>{ if (!accBusy && confirm(`${accessFor.name} uygulamaya artık giriş yapamayacak. Devam edilsin mi?`)) accRun(() => removeStaffAccount(accessFor.id), "Uygulama erişimi kaldırıldı."); }}
+                      style={{ background:"transparent", border:`1px solid ${T.red}55`, color:T.redL, borderRadius:12, padding:"11px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+                      Uygulama Erişimini Kaldır
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })()}
         </BottomSheet>
       )}
     </div>

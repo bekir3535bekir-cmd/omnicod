@@ -1,6 +1,6 @@
 {
-  "appId": "com.omnicod.app",
-  "appName": "StudyoApp",
+  "appId": "com.gesblabs.studyom",
+  "appName": "STÜDYOM",
   "webDir": "dist",
   "bundledWebRuntime": false,
   "server": {

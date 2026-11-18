@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
-import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE , initProcess, isComplete } from "../../constants/templates";
+import { fmt, fmtTL, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT, publicAppUrl } from "../../utils/helpers";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, initProcess, isComplete } from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo, Toast } from "../common";
 import { UsageBadge, ProGate } from "../common/ProGate";
 import { MusteriPortali } from "./AppModals";
 import { canAddClient } from "../../services/plan";
-import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
+import { sb, IS_DEV, fromDB, toDB } from "../../services/supabase";
+import { getPass, setPass, getSession, saveSession, clearSession, getStudioInfo, getCurrentStudio } from "../../services/storage";
 
 // Canvas tabanlı hafifleştirilmiş resim sıkıştırma (localStorage taşmasını önler)
 const compressImage = (file) => {
@@ -187,7 +187,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
     setShowEditClient(false);
     setEditClientForm(null);
     setEditError(null);
-    setToast({ message: `✅ ${editClientForm.name} bilgileri güncellendi!`, type: "success" });
+    setToast({ message: `${editClientForm.name} bilgileri güncellendi!`, type: "success" });
   };
 
   // Müşteriye Fotoğraf Yükleme
@@ -219,7 +219,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
           ...prev,
           gallery: [...(prev.gallery || []), ...newItems]
         }));
-        setToast({ message: `📸 ${newItems.length} fotoğraf başarıyla yüklendi!`, type: "success" });
+        setToast({ message: `${newItems.length} fotoğraf başarıyla yüklendi!`, type: "success" });
       }
     } catch(err) {
       console.error("Fotoğraf yükleme hatası:", err);
@@ -252,7 +252,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
       ...prev,
       gallery: [...(prev.gallery || []), ...newItems]
     }));
-    setToast({ message: `✨ ${newItems.length} örnek fotoğraf yüklendi!`, type: "success" });
+    setToast({ message: `${newItems.length} örnek fotoğraf yüklendi!`, type: "success" });
   };
 
   // Fotoğrafı Silme
@@ -262,7 +262,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
       gallery: (prev.gallery || []).filter(g => g.id !== photoId)
     }));
     sb.delete("gallery", photoId).catch(()=>{});
-    setToast({ message: "🗑️ Fotoğraf silindi.", type: "success" });
+    setToast({ message: "Fotoğraf silindi.", type: "success" });
   };
 
   const save = () => {
@@ -302,7 +302,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
       const remD = new Date(trigDate + "T12:00:00");
       remD.setDate(remD.getDate() - 7);
       anniversaryReminders.push({
-        id: uid(), title: `💍 ${form.name} — Yıldönümü (${annDD}/${annMM})`,
+        id: uid(), title: `${form.name} — Yıldönümü (${annDD}/${annMM})`,
         linkedType: "manual", linkedId: newClientId,
         triggerDate: remD.toISOString().split("T")[0],
         triggerTime: "09:00", daysBefore: 7, done: false, recurring: true
@@ -369,11 +369,11 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
     setShowAdd(false);
     setForm(F);
     setAddError(null);
-    setToast({ message: `🎉 ${clientName} başarıyla kaydedildi!`, type: "success" });
+    setToast({ message: `${clientName} başarıyla kaydedildi!`, type: "success" });
   };
 
   const savePayment = () => {
-    if(!pForm.amount || !detail) return;
+    if(!(Number(pForm.amount) > 0) || !detail) return;
     const amt     = Number(pForm.amount);
     const payId   = uid();
     const payDate = pForm.payDate || todayStr();
@@ -383,7 +383,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
 
     let newReminder = null;
     if(pForm.type==="Ödeme Sözü" && pForm.promiseDate) {
-      newReminder = { id:uid(), title:`💰 ${detail.name} — Ödeme Günü`,
+      newReminder = { id:uid(), title:`${detail.name} — Ödeme Günü`,
         linkedType:"payment", triggerDate:pForm.promiseDate,
         triggerTime:"09:00", daysBefore:0, done:false };
     }
@@ -407,7 +407,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
     if(newIncome) sb.upsert("incomes", toDB.incomes(newIncome)).catch(()=>{});
     setShowPayment(false);
     setPForm(FP);
-    setToast({ message: `💰 ${fmt(amt)} ödeme başarıyla kaydedildi!`, type: "success" });
+    setToast({ message: `${fmt(amt)} ödeme başarıyla kaydedildi!`, type: "success" });
   };
 
   const saveEditPayment = () => {
@@ -501,9 +501,9 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
 
   const SMART_FILTERS = [
     { id:"Tümü",            label:"Tümü" },
-    { id:"bekleyen_odeme",  label:"💰 Bekleyen Ödeme" },
-    { id:"bekleyen_teslim", label:"📦 Bekleyen Teslim" },
-    { id:"tamamlandi",      label:"✅ Tamamlandı" },
+    ...(isAdmin ? [{ id:"bekleyen_odeme",  label:"Bekleyen Ödeme" }] : []),
+    { id:"bekleyen_teslim", label:"Bekleyen Teslim" },
+    { id:"tamamlandi",      label:"Tamamlandı" },
     ...data.packages.map(p=>({ id:p.name, label:p.name })),
   ];
 
@@ -546,12 +546,12 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
           <p style={{ fontSize:13, color:T.text3, marginTop:5 }}>{data.clients.length} kayıtlı müşteri</p>
         </div>
         <div style={{ display:"flex", gap:8 }}>
-          <button onClick={()=>{setSearchOpen(s=>!s);setSearch("");}}
+          <button aria-label="Ara" onClick={()=>{setSearchOpen(s=>!s);setSearch("");}}
             style={{ background:searchOpen?T.gold:T.card2, border:`1px solid ${searchOpen?T.gold:T.border}`,
               borderRadius:99, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center" }}>
             <Ic n="eye" s={16} c={searchOpen?T.bg:T.text2}/>
           </button>
-          <GoldButton label="Ekle" icon="plus" onClick={handleOpenAdd} sm/>
+          {isAdmin && <GoldButton label="Ekle" icon="plus" onClick={handleOpenAdd} sm/>}
         </div>
       </div>
 
@@ -606,12 +606,10 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
           <span style={{ fontSize:11, color:T.text3, fontWeight:600, flexShrink:0 }}>Sırala:</span>
           {[
             {id:"isim",      label:"A-Z"},
-            {id:"tarih",     label:"📅 Tarih"},
-            {id:"fiyat_cok", label:"💰 ↓"},
-            {id:"fiyat_az",  label:"💰 ↑"},
-            {id:"kalan",     label:"⏳ Borç"},
-            {id:"tur",       label:"🎯 Tür"},
-            {id:"paket",     label:"📦 Paket"},
+            {id:"tarih",     label:"Tarih"},
+            ...(isAdmin ? [{id:"fiyat_cok", label:"Fiyat ↓"}, {id:"fiyat_az",  label:"Fiyat ↑"}, {id:"kalan",     label:"Borç"}] : []),
+            {id:"tur",       label:"Tür"},
+            {id:"paket",     label:"Paket"},
           ].map(s=>(
             <button key={s.id} onClick={()=>setSortBy(s.id)}
               style={{ background:sortBy===s.id?T.gold+"33":"transparent",
@@ -626,7 +624,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
       )}
 
       {/* Müşteri kartları */}
-      <div style={{ padding:"0 20px" }}>
+      <div className="card-list" style={{ padding:"0 20px" }}>
         {filtered.length === 0 ? (
           <EmptyState icon="users" title={search?"Müşteri Bulunamadı":"Henüz Müşteri Yok"}
             sub={search?`"${search}" ile eşleşen müşteri yok.`:"İlk müşterini ekleyerek başla."}
@@ -640,7 +638,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
             <Card key={c.id} onClick={()=>setDetailId(c.id)} style={{ marginBottom:12 }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
                 <div style={{ display:"flex", gap:12, alignItems:"center" }}>
-                  <div style={{ background:pkgColor+"22", borderRadius:99, width:48, height:48, flexShrink:0,
+                  <div style={{ background: T.flat ? T.card2 : pkgColor+"22", borderRadius:99, width:48, height:48, flexShrink:0,
                     display:"flex", alignItems:"center", justifyContent:"center",
                     ...NUM_FONT, fontSize:20, fontWeight:700, color:pkgColor }}>
                     {c.name.charAt(0).toUpperCase()}
@@ -652,7 +650,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
                 </div>
                 <div style={{ display:"flex", flexDirection:"column", gap:5, alignItems:"flex-end" }}>
                   <Pill label={c.package} color={pkgColor}/>
-                  <Pill label={c.status} color={STATUS_COLORS[c.status]||T.text3}/>
+                  {c.status && <Pill label={c.status} color={STATUS_COLORS[c.status]||T.text3}/>}
                 </div>
               </div>
 {isAdmin && (
@@ -678,12 +676,12 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
               </div>)}
 
               {c.phone && (
-                <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
+                <div role="button" tabIndex={0} style={{ marginTop: 10, display: "flex", justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       const ph = c.phone.replace(/\D/g, "").replace(/^0/, "");
-                      const msg = `Merhaba ${c.name}! StudyoApp üzerinden fotoğraf çekimi ve süreciniz hakkında bilgilendirme yapmak istedik. Nasıl yardımcı olabiliriz?`;
+                      const msg = `Merhaba ${c.name}! ${getStudioInfo().unvan || "Stüdyomuz"} olarak fotoğraf çekimi ve süreciniz hakkında bilgilendirme yapmak istedik. Nasıl yardımcı olabiliriz?`;
                       window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`, "_blank");
                     }}
                     style={{
@@ -700,7 +698,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
                       gap: 6
                     }}
                   >
-                    <span>💬</span> WhatsApp
+                    WhatsApp
                   </button>
                 </div>
               )}
@@ -740,7 +738,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
                     </div>
                   );
                 })}
-                {isComplete(c) && <Pill label="Tamamlandı ✓" color={T.greenL}/>}
+                {isComplete(c) && <Pill label="Tamamlandı" color={T.greenL}/>}
               </div>
               <div style={{ marginTop:12, display:"flex", justifyContent:"flex-end" }}>
                 <button onClick={(e)=>{ e.stopPropagation(); setDetailId(c.id); }}
@@ -775,7 +773,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
           </div>
 
           {/* İletişim bilgileri */}
-          {[["📧 E-Posta",detail.email||"—"],["🎯 Tür",detail.type],["📅 Etkinlik",fmtDate(detail.date)]].map(([l,v])=>(
+          {[["E-Posta",detail.email||"—"],["Tür",detail.type],["Etkinlik",fmtDate(detail.date)]].map(([l,v])=>(
             <div key={l} style={{ display:"flex", justifyContent:"space-between",
               borderBottom:`1px solid ${T.border}`, paddingBottom:12, marginBottom:12 }}>
               <span style={{ fontSize:13, color:T.text3 }}>{l}</span>
@@ -785,7 +783,7 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
           {/* Ek Günler */}
           {(detail.extraDates||[]).filter(Boolean).length > 0 && (
             <div style={{ borderBottom:`1px solid ${T.border}`, paddingBottom:12, marginBottom:12 }}>
-              <div style={{ fontSize:13, color:T.text3, marginBottom:8 }}>📅 Ek Günler</div>
+              <div style={{ fontSize:13, color:T.text3, marginBottom:8 }}>Ek Günler</div>
               <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
                 {detail.extraDates.filter(Boolean).map((d,i)=>(
                   <div key={i} style={{ background:T.card2, borderRadius:10, padding:"8px 12px",
@@ -799,19 +797,19 @@ export const Musteriler = ({ data, setData, role, plan, setActive, initialClient
           {/* Telefon - WhatsApp ile */}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
             borderBottom:`1px solid ${T.border}`, paddingBottom:12, marginBottom:12 }}>
-            <span style={{ fontSize:13, color:T.text3 }}>📱 Telefon</span>
+            <span style={{ fontSize:13, color:T.text3 }}>Telefon</span>
             <div style={{ display:"flex", gap:8, alignItems:"center" }}>
               <span style={{ fontSize:14, fontWeight:500 }}>{detail.phone||"—"}</span>
               {detail.phone && (
                 <button onClick={()=>{
                   const ph = detail.phone.replace(/\D/g,"").replace(/^0/,"");
-                  const msg = `Merhaba ${detail.name.split(" ")[0]} hanım/bey 👋
+                  const msg = `Merhaba ${detail.name.split(" ")[0]} hanım/bey
 
-OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olabiliriz?`;
+${getStudioInfo().unvan || "Bizi"} tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olabiliriz?`;
                   window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`,"_blank");
                 }} style={{ background:"#25D36622", border:"1px solid #25D36644", borderRadius:8,
                   padding:"4px 10px", fontSize:12, color:"#25D366", fontWeight:600 }}>
-                  WA 💬
+                  WA
                 </button>
               )}
             </div>
@@ -819,14 +817,14 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
           {detail.anniversaryDate && (
             <div style={{ display:"flex", justifyContent:"space-between",
               borderBottom:`1px solid ${T.border}`, paddingBottom:12, marginBottom:12 }}>
-              <span style={{ fontSize:13, color:T.text3 }}>💍 Yıldönümü</span>
+              <span style={{ fontSize:13, color:T.text3 }}>Yıldönümü</span>
               <span style={{ fontSize:14, fontWeight:500 }}>{fmtDate(detail.anniversaryDate)}</span>
             </div>
           )}
           {detail.referralSource && (
             <div style={{ display:"flex", justifyContent:"space-between",
               borderBottom:`1px solid ${T.border}`, paddingBottom:12, marginBottom:12 }}>
-              <span style={{ fontSize:13, color:T.text3 }}>📣 Kaynak</span>
+              <span style={{ fontSize:13, color:T.text3 }}>Kaynak</span>
               <span style={{ fontSize:14, fontWeight:500, color:T.gold }}>
                 {detail.referralSource}{detail.referralName ? ` — ${detail.referralName}` : ""}
               </span>
@@ -839,7 +837,7 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
                 background:"#25D366"+"22", border:`1px solid #25D366`+"44", borderRadius:14,
                 padding:"13px 20px", marginBottom:16, textDecoration:"none",
                 color:"#25D366", fontWeight:600, fontSize:14 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366">
+              <svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24" fill="#25D366">
                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
               </svg>
               WhatsApp'ta Mesaj Gönder
@@ -892,17 +890,17 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
                       <span style={{ fontSize:14, fontWeight:700,
                         color:p.type==="Ödeme Alındı"?T.greenL:T.orangeL }}>{fmt(p.amount)}</span>
                     </div>
-                    {p.promiseDate && <div style={{ fontSize:11, color:T.orangeL }}>🗓 Söz: {fmtDate(p.promiseDate)}</div>}
-                    {p.note && <div style={{ fontSize:11, color:T.text3, marginTop:2 }}>📝 {p.note}</div>}
+                    {p.promiseDate && <div style={{ fontSize:11, color:T.orangeL }}>Söz: {fmtDate(p.promiseDate)}</div>}
+                    {p.note && <div style={{ fontSize:11, color:T.text3, marginTop:2 }}>{p.note}</div>}
                     <div style={{ fontSize:10, color:T.text3, marginTop:2 }}>Kayıt: {fmtDate(p.date)}</div>
                   </div>
                   {isAdmin && <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                    <button onClick={()=>setEditPayment({...p})}
+                    <button aria-label="Düzenle" onClick={()=>setEditPayment({...p})}
                       style={{ background:T.card2, border:`1px solid ${T.border}`, borderRadius:8,
                         width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center" }}>
                       <Ic n="edit" s={13} c={T.text2}/>
                     </button>
-                    <button onClick={()=>deletePayment(p)}
+                    <button aria-label="Sil" onClick={()=>deletePayment(p)}
                       style={{ background:T.red+"1A", border:`1px solid ${T.red}33`, borderRadius:8,
                         width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center" }}>
                       <Ic n="trash" s={13} c={T.redL}/>
@@ -918,7 +916,7 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
             <button onClick={isAdmin ? ()=>setEditTotal(String(detail.totalAmount||"")) : undefined}
               style={{ background:"transparent", border:`1px dashed ${T.border}`, borderRadius:10,
                 padding:"10px 14px", width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <span style={{ fontSize:12, color:T.text3 }}>✏️ Toplam tutarı düzelt</span>
+              <span style={{ fontSize:12, color:T.text3 }}>Toplam tutarı düzelt</span>
               <span style={{ ...NUM_FONT, fontSize:13, fontWeight:600, color:T.text2 }}>{fmt(detail.totalAmount)}</span>
             </button>
           </div>
@@ -952,7 +950,7 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
             {isComplete(detail) && (
               <div className="fade-in" style={{ background:T.green+"1A", border:`1px solid ${T.green}33`,
                 borderRadius:12, padding:"12px 16px", textAlign:"center", marginTop:8 }}>
-                <div style={{ fontSize:14, fontWeight:700, color:T.greenL }}>🎉 Tüm Süreç Tamamlandı!</div>
+                <div style={{ fontSize:14, fontWeight:700, color:T.greenL }}>Tüm Süreç Tamamlandı!</div>
                 <div style={{ fontSize:12, color:T.text3, marginTop:4 }}>Bu müşteri aktif listelerden çıkar.</div>
               </div>
             )}
@@ -963,7 +961,7 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
           {/* FOTOĞRAFLAR & MÜŞTERİ SEÇİMİ (PROOFING) BÖLÜMÜ */}
           {(() => {
             const clientPhotos = (data.gallery || []).filter(g => String(g.clientId) === String(detail.id));
-            const proofUrl = `${window.location.origin}/?proof=${detail.id}`;
+            const proofUrl = publicAppUrl() ? `${publicAppUrl()}/?proof=${detail.id}` : "";
             const clientSelectionsKey = `studyo_selections_${detail.id}`;
             let savedSelections = {};
             try {
@@ -1022,11 +1020,11 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
                       <span style={{ fontSize: 16 }}>💖</span>
                       <div style={{ fontSize: 12, fontWeight: 600, color: "#ff80ab" }}>
                         Müşteri {selectedCount} fotoğraf seçti!
-                        {coverPhoto && <span style={{ color: T.goldL, marginLeft: 6 }}>⭐ Kapak: {coverPhoto.title}</span>}
+                        {coverPhoto && <span style={{ color: T.goldL, marginLeft: 6 }}>Kapak: {coverPhoto.title}</span>}
                       </div>
                     </div>
                     <span style={{ fontSize: 11, background: "rgba(233,30,99,0.3)", padding: "2px 8px", borderRadius: 99, color: "#fff", fontWeight: 700 }}>
-                      ✓ Onaylandı
+                      Onaylandı
                     </span>
                   </div>
                 )}
@@ -1084,12 +1082,12 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
                           </button>
                           {isCover && (
                             <div style={{ position: "absolute", bottom: 4, left: 4, background: T.gold, color: "#000", padding: "2px 5px", borderRadius: 4, fontSize: 8, fontWeight: 800 }}>
-                              ⭐ KAPAK
+                              KAPAK
                             </div>
                           )}
                           {!isCover && isSelected && (
                             <div style={{ position: "absolute", bottom: 4, left: 4, background: "#e91e63", color: "#fff", padding: "2px 5px", borderRadius: 4, fontSize: 8, fontWeight: 800 }}>
-                              ❤️ SEÇİLDİ
+                              SEÇİLDİ
                             </div>
                           )}
                         </div>
@@ -1105,10 +1103,9 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
                     textAlign: "center",
                     marginBottom: 14
                   }}>
-                    <div style={{ fontSize: 26, marginBottom: 6 }}>🖼️</div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: T.text2 }}>Henüz Fotoğraf Yüklenmedi</div>
                     <div style={{ fontSize: 11, color: T.text3, marginTop: 4, lineHeight: 1.5 }}>
-                      Cihazınızdan çekim fotoğraflarını seçip yükleyin veya test etmek için tek tıkla 8 örnek fotoğraf ekleyin.
+                      Müşterinin seçim yapabilmesi için çekim fotoğraflarını cihazınızdan yükleyin.
                     </div>
                   </div>
                 )}
@@ -1124,7 +1121,7 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
                 />
 
                 {/* Yükleme Butonları */}
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom: 10 }}>
+                <div style={{ display:"grid", gridTemplateColumns: IS_DEV ? "1fr 1fr" : "1fr", gap:8, marginBottom: 10 }}>
                   <button
                     onClick={() => photoInputRef.current?.click()}
                     disabled={uploadingPhotos}
@@ -1143,28 +1140,31 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
                       gap: 6
                     }}
                   >
-                    {uploadingPhotos ? "⏳ Yükleniyor..." : "📁 Fotoğraf Yükle"}
+                    {uploadingPhotos ? "Yükleniyor..." : "Fotoğraf Yükle"}
                   </button>
 
-                  <button
-                    onClick={handleAddSamplePhotos}
-                    style={{
-                      background: T.card2,
-                      border: `1px solid ${T.border}`,
-                      borderRadius: 12,
-                      padding: "11px 8px",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: T.text2,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 6
-                    }}
-                  >
-                    ✨ 8 Örnek Foto
-                  </button>
+                  {/* Örnek fotoğraflar yalnızca yerel deneme sürümünde */}
+                  {IS_DEV && (
+                    <button
+                      onClick={handleAddSamplePhotos}
+                      style={{
+                        background: T.card2,
+                        border: `1px solid ${T.border}`,
+                        borderRadius: 12,
+                        padding: "11px 8px",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: T.text2,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6
+                      }}
+                    >
+                      8 Örnek Foto
+                    </button>
+                  )}
                 </div>
 
                 {/* Müşteri Seçim & Paylaşım Aksiyonları */}
@@ -1187,19 +1187,20 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
                       boxShadow: "0 4px 16px rgba(233,30,99,0.35)"
                     }}
                   >
-                    ✨ Fotoğraf Seçimini Başlat (Müşteri Önizleme)
+                    Fotoğraf Seçimini Başlat (Müşteri Önizleme)
                   </button>
 
                   <div style={{ display:"flex", gap:8 }}>
                     <button
                       onClick={() => {
+                        if (!proofUrl) return alert("Müşteri linki oluşturulamadı: web sürümünün adresi ayarlanmamış (.env → VITE_PUBLIC_URL).");
                         const ph = detail.phone ? detail.phone.replace(/\D/g,"").replace(/^0/,"") : "";
-                        const msg = `Merhaba ${detail.name.split(" ")[0]} Hanım/Bey 🌸\n\n${detail.date ? fmtDate(detail.date) + " tarihli " : ""}${detail.type} çekiminizin fotoğrafları hazırlandı! 📸✨\n\nAşağıdaki bağlantıdan fotoğraflarınızı inceleyebilir, beğendiklerinizi albümünüz için kolayca seçebilirsiniz:\n\n👉 ${proofUrl}\n\nKeyifli seçimler dileriz! 🙏\nOmniCod StudyoApp`;
+                        const msg = `Merhaba ${detail.name.split(" ")[0]} Hanım/Bey 🌸\n\n${detail.date ? fmtDate(detail.date) + " tarihli " : ""}${detail.type} çekiminizin fotoğrafları hazırlandı! 📸✨\n\nAşağıdaki bağlantıdan fotoğraflarınızı inceleyebilir, beğendiklerinizi albümünüz için kolayca seçebilirsiniz:\n\n👉 ${proofUrl}${getCurrentStudio()?.portal_code ? `\n\nLink açılmazsa: STÜDYOM → Müşteri Portalı → Stüdyo kodu: ${getCurrentStudio().portal_code}` : ""}\n\nKeyifli seçimler dileriz! 🙏\n${getStudioInfo().unvan || "Stüdyomuz"}`;
                         if (ph) {
                           window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`,"_blank");
                         } else {
                           navigator.clipboard.writeText(proofUrl);
-                          setToast({ message: "🔗 Seçim linki panoya kopyalandı!", type: "success" });
+                          setToast({ message: "Seçim linki panoya kopyalandı!", type: "success" });
                         }
                       }}
                       style={{
@@ -1218,13 +1219,14 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
                         gap: 6
                       }}
                     >
-                      💬 WhatsApp ile Gönder
+                      WhatsApp ile Gönder
                     </button>
 
                     <button
                       onClick={() => {
+                        if (!proofUrl) return alert("Müşteri linki oluşturulamadı: web sürümünün adresi ayarlanmamış (.env → VITE_PUBLIC_URL).");
                         navigator.clipboard.writeText(proofUrl);
-                        setToast({ message: "📋 Seçim linki panoya kopyalandı!", type: "success" });
+                        setToast({ message: "Seçim linki panoya kopyalandı!", type: "success" });
                       }}
                       style={{
                         background: T.card2,
@@ -1242,7 +1244,7 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
                       }}
                       title="Linki Kopyala"
                     >
-                      📋 Kopyala
+                      Kopyala
                     </button>
                   </div>
                 </div>
@@ -1253,7 +1255,7 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
           {isAdmin && <GoldButton label="Ödeme / Söz Ekle" icon="money" onClick={()=>setShowPayment(true)} full/>}
           {detail.notes && (
             <div style={{ marginTop:14, background:T.card2, borderRadius:12, padding:"12px 14px",
-              fontSize:13, color:T.text2, lineHeight:1.6 }}>📝 {detail.notes}</div>
+              fontSize:13, color:T.text2, lineHeight:1.6 }}>{detail.notes}</div>
           )}
           {/* WhatsApp Hızlı Eylemler */}
           {detail.phone && (() => {
@@ -1262,23 +1264,21 @@ OmniCod'u tercih ettiğiniz için teşekkür ederiz. Size nasıl yardımcı olab
             return (
               <div style={{ display:"flex", gap:10, marginTop:14 }}>
                 <button onClick={()=>{
-                  const msg = `Merhaba ${detail.name.split(" ")[0]} hanım/bey 👋
+                  const msg = `Merhaba ${detail.name.split(" ")[0]} hanım/bey Size ${fmtDate(detail.date)} tarihli ${detail.type} çekiminizle ilgili bilgi vermek istedik.
 
-Size ${fmtDate(detail.date)} tarihli ${detail.type} çekiminizle ilgili bilgi vermek istedik.
-
-OmniCod 📸`;
+${getStudioInfo().unvan || ""}`;
                   window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`,"_blank");
                 }} style={{ flex:1, background:"#25D36622", border:"1px solid #25D36644", borderRadius:12,
                   padding:"12px 8px", fontSize:12, fontWeight:700, color:"#25D366" }}>
-                  💬 Hızlı Mesaj
+                  Hızlı Mesaj
                 </button>
                 {kalan > 0 && isAdmin && (
                   <button onClick={()=>{
-                    const msg = `Merhaba ${detail.name.split(" ")[0]} hanım/bey 👋\n\n${fmtDate(detail.date)} tarihli çekiminize ait ${fmt(kalan)} tutarındaki ödemenizin hatırlatmasını yapmak istedik.\n\nKolaylıklar dileriz 🙏\nOmniCod 📸`;
+                    const msg = `Merhaba ${detail.name.split(" ")[0]} hanım/bey 👋\n\n${fmtDate(detail.date)} tarihli çekiminize ait ${fmtTL(kalan)} tutarındaki ödemenizin hatırlatmasını yapmak istedik.\n\nKolaylıklar dileriz 🙏\n${getStudioInfo().unvan || "Stüdyomuz"}`;
                     window.open(`https://wa.me/90${ph}?text=${encodeURIComponent(msg)}`,"_blank");
                   }} style={{ flex:1, background:T.orange+"22", border:`1px solid ${T.orange}44`, borderRadius:12,
                     padding:"12px 8px", fontSize:12, fontWeight:700, color:T.orangeL }}>
-                    💰 Ödeme Hatırlatma
+                    Ödeme Hatırlatma
                   </button>
                 )}
               </div>
@@ -1326,7 +1326,7 @@ OmniCod 📸`;
             {/* Ek Günler */}
             <div>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                <span style={{ fontSize:12, color:T.text2, fontWeight:500 }}>📅 Ek Günler</span>
+                <span style={{ fontSize:12, color:T.text2, fontWeight:500 }}>Ek Günler</span>
                 <button onClick={()=>setEditClientForm(p=>({...p, extraDates:[...(p.extraDates||[]),""]}))}
                   style={{ background:T.gold+"22", border:`1px solid ${T.gold}44`, borderRadius:8,
                     padding:"5px 12px", fontSize:12, color:T.goldL, fontWeight:600 }}>
@@ -1354,7 +1354,7 @@ OmniCod 📸`;
                 placeholder="Müşteri adı..." options={["", ...data.clients.map(c=>c.name)]}/>
             )}
             {(editClientForm.type==="Düğün"||editClientForm.type==="Nişan") && (
-              <DatePicker label="💍 Evlilik / Etkinlik Yıldönümü" value={editClientForm.anniversaryDate||""} onChange={ecf("anniversaryDate")}/>
+              <DatePicker label="Evlilik / Etkinlik Yıldönümü" value={editClientForm.anniversaryDate||""} onChange={ecf("anniversaryDate")}/>
             )}
           </div>
         </BottomSheet>
@@ -1364,7 +1364,6 @@ OmniCod 📸`;
       {confirmDelete && detail && (
         <BottomSheet title="Müşteriyi Sil" onClose={()=>setConfirmDelete(false)}>
             <div style={{ textAlign:"center", padding:"8px 0 16px" }}>
-              <div style={{ fontSize:40, marginBottom:12 }}>⚠️</div>
               <div style={{ fontWeight:600, fontSize:16, marginBottom:8 }}>{detail.name}</div>
               <div style={{ fontSize:13, color:T.text3, lineHeight:1.6, marginBottom:24 }}>
                 Bu müşteri kalıcı olarak silinecek.<br/>Tüm ödeme geçmişi de silinir.<br/>Bu işlem geri alınamaz!
@@ -1376,9 +1375,13 @@ OmniCod 📸`;
                   Vazgeç
                 </button>
                 <button onClick={()=>{
-                  const deletedClient = {...detail, deletedAt: todayStr()};
                   // Bu müşteriye bağlı randevuları da bul
                   const linkedApts = data.appointments.filter(a => a.clientId===detail.id || a.clientName===detail.name);
+                  // Geri alınabilmesi için bağlı kayıtların kopyası da çöp kutusunda saklanır
+                  const deletedClient = {...detail, deletedAt: todayStr(),
+                    _apts: linkedApts,
+                    _incomes: data.incomes.filter(i=>(detail.payments||[]).some(pp=>pp.id===i.id)),
+                    _reminders: data.reminders.filter(r=>linkedApts.some(a=>a.id===r.linkedId)) };
                   // Supabase'den direkt sil — müşteri + ödemeler + bağlı randevular + hatırlatıcılar
                   sb.delete("clients", detail.id).catch(e=>console.error("Müşteri sil hatası:", e));
                   (detail.payments||[]).forEach(p => {
@@ -1398,7 +1401,7 @@ OmniCod 📸`;
                   }));
                   setConfirmDelete(false);
                   setDetailId(null);
-                  setToast({ message: `🗑️ ${detail.name} silindi.`, type: "success" });
+                  setToast({ message: `${detail.name} silindi.`, type: "success" });
                 }}
                   style={{ flex:1, background:T.red, border:"none", borderRadius:14,
                     padding:"14px", fontSize:15, fontWeight:700, color:"#fff" }}>
@@ -1415,7 +1418,7 @@ OmniCod 📸`;
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
             <div style={{ background:T.orange+"1A", border:`1px solid ${T.orange}33`, borderRadius:12,
               padding:"12px 14px", fontSize:13, color:T.orangeL }}>
-              ⚠️ Tutarı veya notu düzeltebilirsin.
+              Tutarı veya notu düzeltebilirsin.
             </div>
             <div>
               <div style={{ fontSize:12, color:T.text2, fontWeight:500, marginBottom:10 }}>İşlem Türü</div>
@@ -1426,12 +1429,12 @@ OmniCod 📸`;
                       color:editPayment.type===t?(t==="Ödeme Alındı"?T.greenL:T.orangeL):T.text2,
                       border:`1px solid ${editPayment.type===t?(t==="Ödeme Alındı"?T.green:T.orange)+"66":T.border}`,
                       borderRadius:12, padding:"12px 8px", fontSize:13, fontWeight:600 }}>
-                    {t==="Ödeme Alındı"?"✅ Ödeme Alındı":"🗓 Ödeme Sözü"}
+                    {t==="Ödeme Alındı"?"Ödeme Alındı":"Ödeme Sözü"}
                   </button>
                 ))}
               </div>
             </div>
-            <Field label="Tutar (₺)" type="number" value={String(editPayment.amount)}
+            <Field label="Tutar" type="number" value={String(editPayment.amount)}
               onChange={v=>setEditPayment(p=>({...p,amount:v}))} required/>
             {editPayment.type==="Ödeme Sözü" && (
               <DatePicker label="Söz Verilen Tarih" value={editPayment.promiseDate}
@@ -1452,7 +1455,7 @@ OmniCod 📸`;
               padding:"12px 14px", fontSize:13, color:T.blueL }}>
               ℹ️ Sadece toplam sözleşme tutarını düzeltir. Alınan ödemeler değişmez.
             </div>
-            <Field label="Yeni Toplam Tutar (₺)" type="number" value={editTotal}
+            <Field label="Yeni Toplam Tutar" type="number" value={editTotal}
               onChange={setEditTotal} placeholder="0" required/>
             <div style={{ background:T.card2, borderRadius:12, padding:14 }}>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
@@ -1484,19 +1487,19 @@ OmniCod 📸`;
                       color:pForm.type===t?(t==="Ödeme Alındı"?T.greenL:T.orangeL):T.text2,
                       border:`1px solid ${pForm.type===t?(t==="Ödeme Alındı"?T.green:T.orange)+"66":T.border}`,
                       borderRadius:12, padding:"12px 8px", fontSize:13, fontWeight:600, textAlign:"center" }}>
-                    {t==="Ödeme Alındı"?"✅ Ödeme Alındı":"🗓 Ödeme Sözü"}
+                    {t==="Ödeme Alındı"?"Ödeme Alındı":"Ödeme Sözü"}
                   </button>
                 ))}
               </div>
             </div>
-            <Field label="Tutar (₺)" type="number" value={pForm.amount} onChange={pf("amount")} placeholder="Ne kadar?" required/>
+            <Field label="Tutar" type="number" value={pForm.amount} onChange={pf("amount")} placeholder="Ne kadar?" required/>
             {pForm.type==="Ödeme Alındı" && (
               <DatePicker label="Ödeme Tarihi" value={pForm.payDate} onChange={pf("payDate")}
                 note="Ödemenin gerçekleştiği tarih"/>
             )}
             {pForm.type==="Ödeme Sözü" && (
               <DatePicker label="Söz Verilen Tarih" value={pForm.promiseDate} onChange={pf("promiseDate")}
-                note="Hatırlatıcı otomatik eklenecek 🔔"/>
+                note="Hatırlatıcı otomatik eklenecek"/>
             )}
             <Field label="Not" value={pForm.note} onChange={pf("note")} textarea rows={2} placeholder="Nasıl ödeyecek, ne konuştunuz..."/>
             <div style={{ background:T.card2, borderRadius:12, padding:14 }}>
@@ -1547,13 +1550,20 @@ OmniCod 📸`;
                       </div>
                     </div>
                     <button onClick={()=>{
-                      const restored = Object.assign({}, c);
-                      delete restored.deletedAt;
+                      if(!clientLimitCheck.allowed) { setShowLimitModal(true); return; }
+                      const { deletedAt, _apts=[], _incomes=[], _reminders=[], ...restored } = c;
                       setData(p=>({
                         ...p,
                         clients: [...p.clients, restored],
+                        appointments: [...p.appointments, ..._apts.filter(a=>!p.appointments.some(x=>x.id===a.id))],
+                        incomes: [...p.incomes, ..._incomes.filter(i=>!p.incomes.some(x=>x.id===i.id))],
+                        reminders: [...p.reminders, ..._reminders.filter(r=>!p.reminders.some(x=>x.id===r.id))],
                         deletedClients: (p.deletedClients||[]).filter(x=>x.id!==c.id),
                       }));
+                      sb.upsert("clients", toDB.clients(restored)).catch(()=>{});
+                      _apts.forEach(a=>sb.upsert("appointments", toDB.appointments(a)).catch(()=>{}));
+                      _incomes.forEach(i=>sb.upsert("incomes", toDB.incomes(i)).catch(()=>{}));
+                      _reminders.forEach(r=>sb.upsert("reminders", toDB.reminders(r)).catch(()=>{}));
                     }}
                       style={{ background:T.green+"1A", border:`1px solid ${T.green}33`,
                         borderRadius:10, padding:"8px 12px", fontSize:12, fontWeight:600, color:T.greenL, flexShrink:0 }}>
@@ -1601,7 +1611,7 @@ OmniCod 📸`;
             {/* Ek Günler */}
             <div>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                <span style={{ fontSize:12, color:T.text2, fontWeight:500 }}>📅 Ek Günler</span>
+                <span style={{ fontSize:12, color:T.text2, fontWeight:500 }}>Ek Günler</span>
                 <button onClick={()=>setForm(p=>({...p, extraDates:[...(p.extraDates||[]),""]}))}
                   style={{ background:T.gold+"22", border:`1px solid ${T.gold}44`, borderRadius:8,
                     padding:"5px 12px", fontSize:12, color:T.goldL, fontWeight:600 }}>
@@ -1623,8 +1633,8 @@ OmniCod 📸`;
               ))}
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-              <Field label="Toplam Tutar (₺)" type="number" value={form.totalAmount} onChange={f("totalAmount")} placeholder="0"/>
-              <Field label="Alınan Kapora (₺)" type="number" value={form.paid} onChange={f("paid")} placeholder="0"/>
+              <Field label="Toplam Tutar" type="number" value={form.totalAmount} onChange={f("totalAmount")} placeholder="0"/>
+              <Field label="Alınan Kapora" type="number" value={form.paid} onChange={f("paid")} placeholder="0"/>
             </div>
             <Field label="Notlar" value={form.notes} onChange={f("notes")} textarea placeholder="Özel istekler, tercihler..."/>
             <Field label="Bizi Nereden Duydunuz?" value={form.referralSource} onChange={f("referralSource")} options={["","Instagram","Google","Tavsiye","Düğün Fuarı","Diğer"]}/>
@@ -1633,7 +1643,7 @@ OmniCod 📸`;
                 placeholder="Müşteri adı..." options={["", ...data.clients.map(c=>c.name)]}/>
             )}
             {(form.type==="Düğün"||form.type==="Nişan") && (
-              <DatePicker label="💍 Evlilik / Etkinlik Yıldönümü" value={form.anniversaryDate} onChange={f("anniversaryDate")}
+              <DatePicker label="Evlilik / Etkinlik Yıldönümü" value={form.anniversaryDate} onChange={f("anniversaryDate")}
                 note="Her yıl otomatik hatırlatıcı oluşturulur"/>
             )}
           </div>
@@ -1690,7 +1700,7 @@ OmniCod 📸`;
                 cursor: "pointer"
               }}
             >
-              ✕ Kapat
+              Kapat
             </button>
           </div>
           <div style={{ flex: 1 }}>

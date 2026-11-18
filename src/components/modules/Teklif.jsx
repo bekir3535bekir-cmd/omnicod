@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { T, STATUS_COLORS, PKG_COLORS, USD_TRY_RATES } from "../../constants/theme";
 import { Ic } from "../../constants/icons";
-import { fmt, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
-import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET, DEFAULT_ADMIN_PASS, DEFAULT_PERSONEL_PASS, MASTER_CODE } from "../../constants/templates";
+import { fmt, fmtTL, fmtShort, fmtDate, fmtDateSh, todayStr, daysLeft, MN, monthOf, yearOf, uid, NUM_FONT } from "../../utils/helpers";
+import { MSG_TEMPLATES, PROCESS_STEPS, CEKIM_CHECKLIST, SIRKET} from "../../constants/templates";
 import { Card, Pill, GoldButton, Field, DatePicker, BottomSheet, EmptyState, PageHeader, Divider, Logo } from "../common";
 import { sb, fromDB, toDB } from "../../services/supabase";
-import { getPass, setPass, getSession, saveSession, clearSession } from "../../services/storage";
+import { getPass, setPass, getSession, saveSession, clearSession, getStudioInfo } from "../../services/storage";
 
 export const Teklif = ({ data, setData, role }) => {
   const isAdmin = role === "admin";
@@ -74,25 +74,27 @@ export const Teklif = ({ data, setData, role }) => {
 
   const sendWA = (q) => {
     const client = data.clients.find(c=>c.name.toLowerCase()===q.clientName.toLowerCase());
-    const phone  = client?.phone?.replace(/\D/g,"").replace(/^0/,"");
+    const digits = (client?.phone||"").replace(/\D/g,"").replace(/^0/,"");
+    const phone  = digits && (digits.startsWith("90") ? digits : "90"+digits);
+    const studio = getStudioInfo().unvan || "Stüdyomuz";
     const lines  = [
       `Merhaba ${q.clientName} hanım/bey,`,
       ``,
-      `OmniCod olarak hazırladığımız fiyat teklifimiz:`,
+      `${studio} olarak hazırladığımız fiyat teklifimiz:`,
       ``,
-      q.package ? `📦 Paket: ${q.package} — ${fmt(q.basePrice)}` : "",
-      ...q.items.map(i=>`➕ ${i.label}: ${fmt(i.amount)}`),
-      q.discount>0 ? `🎁 İndirim: -${fmt(q.discount)}` : "",
+      q.package ? `Paket: ${q.package} — ${fmtTL(q.basePrice)}` : "",
+      ...q.items.map(i=>`${i.label}: ${fmtTL(i.amount)}`),
+      q.discount>0 ? `İndirim: -${fmtTL(q.discount)}` : "",
       ``,
-      `💰 TOPLAM: ${fmt(q.total)}`,
+      `TOPLAM: ${fmtTL(q.total)}`,
       ``,
-      q.note ? `📝 Not: ${q.note}` : "",
+      q.note ? `Not: ${q.note}` : "",
       ``,
-      `Sorularınız için her zaman ulaşabilirsiniz. 📸`,
-    ].filter(l=>l!==null&&l!==undefined&&!(l===""&&lines?.[lines.indexOf(l)-1]==="")).join("\n");
+      `Sorularınız için her zaman ulaşabilirsiniz.`,
+    ].filter((l,i,arr)=>l!=null && !(l==="" && arr[i-1]==="")).join("\n");
 
     const url = phone
-      ? `https://wa.me/90${phone}?text=${encodeURIComponent(lines)}`
+      ? `https://wa.me/${phone}?text=${encodeURIComponent(lines)}`
       : `https://wa.me/?text=${encodeURIComponent(lines)}`;
     window.open(url, "_blank");
   };
@@ -105,7 +107,7 @@ export const Teklif = ({ data, setData, role }) => {
 
       {/* Ana Sekmeler */}
       <div style={{ display:"flex", gap:8, padding:"0 20px 16px" }}>
-        {[["teklifler","📋 Teklifler"],["simulatör","🧮 Simülatör"]].map(([id,l])=>(
+        {[["teklifler","Teklifler"],["simulatör","Simülatör"]].map(([id,l])=>(
           <button key={id} onClick={()=>setMainTab(id)}
             style={{ flex:1, background:mainTab===id?T.gold:"transparent",
               color:mainTab===id?T.bg:T.text2, border:`1px solid ${mainTab===id?T.gold:T.border}`,
@@ -172,7 +174,7 @@ export const Teklif = ({ data, setData, role }) => {
                   style={{ background:simExtras[e.id]?T.blue+"22":T.card,
                     border:`1.5px solid ${simExtras[e.id]?T.blueL:T.border}`,
                     borderRadius:12, padding:"12px 10px", textAlign:"left" }}>
-                  <div style={{ fontSize:18, marginBottom:4 }}>{e.icon}</div>
+                  {!T.flat && <div style={{ fontSize:18, marginBottom:4 }}>{e.icon}</div>}
                   <div style={{ fontSize:12, fontWeight:600, color:simExtras[e.id]?T.blueL:T.text, lineHeight:1.3 }}>{e.label}</div>
                   <div style={{ ...NUM_FONT, fontSize:12, color:T.text3, marginTop:3 }}>+{fmt(e.price)}</div>
                 </button>
@@ -184,7 +186,7 @@ export const Teklif = ({ data, setData, role }) => {
           <div style={{ marginBottom:16 }}>
             <div style={{ fontSize:13, fontWeight:600, color:T.text, marginBottom:10 }}>3. İndirim (opsiyonel)</div>
             <input type="number" value={simDiscount} onChange={e=>setSimDiscount(e.target.value)}
-              placeholder="İndirim tutarı ₺"
+              placeholder="İndirim tutarı"
               style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12,
                 padding:"12px 14px", color:T.text, fontSize:14, width:"100%", outline:"none" }}/>
           </div>
@@ -209,7 +211,7 @@ export const Teklif = ({ data, setData, role }) => {
 
           {/* Fiyat Özeti */}
           <div style={{ background:T.card, border:`1.5px solid ${T.gold}44`, borderRadius:16, padding:16, marginBottom:16 }}>
-            <div style={{ fontSize:13, fontWeight:600, color:T.text, marginBottom:12 }}>💰 Fiyat Özeti</div>
+            <div style={{ fontSize:13, fontWeight:600, color:T.text, marginBottom:12 }}>Fiyat Özeti</div>
             {simPkg && (
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                 <span style={{ fontSize:13, color:T.text2 }}>{simPkg}</span>
@@ -224,7 +226,7 @@ export const Teklif = ({ data, setData, role }) => {
             ))}
             {Number(simDiscount)>0 && (
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                <span style={{ fontSize:13, color:T.greenL }}>🎁 İndirim</span>
+                <span style={{ fontSize:13, color:T.greenL }}>İndirim</span>
                 <span style={{ ...NUM_FONT, fontSize:13, color:T.greenL }}>-{fmt(Number(simDiscount))}</span>
               </div>
             )}
@@ -258,19 +260,19 @@ export const Teklif = ({ data, setData, role }) => {
           <div style={{ background:T.card2, borderRadius:14, padding:14, marginBottom:16 }}>
             {detail.package && (
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:10, paddingBottom:10, borderBottom:`1px solid ${T.border}` }}>
-                <span style={{ fontSize:13, fontWeight:600 }}>📦 {detail.package}</span>
+                <span style={{ fontSize:13, fontWeight:600 }}>{detail.package}</span>
                 <span style={{ ...NUM_FONT, fontSize:14, fontWeight:600, color:T.gold }}>{fmt(detail.basePrice)}</span>
               </div>
             )}
             {(detail.items||[]).map(i=>(
               <div key={i.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                <span style={{ fontSize:13, color:T.text2 }}>➕ {i.label}</span>
+                <span style={{ fontSize:13, color:T.text2 }}>{i.label}</span>
                 <span style={{ ...NUM_FONT, fontSize:13, fontWeight:600 }}>{fmt(i.amount)}</span>
               </div>
             ))}
             {detail.discount>0 && (
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8, color:T.greenL }}>
-                <span style={{ fontSize:13 }}>🎁 İndirim</span>
+                <span style={{ fontSize:13 }}>İndirim</span>
                 <span style={{ ...NUM_FONT, fontSize:13, fontWeight:600 }}>-{fmt(detail.discount)}</span>
               </div>
             )}
@@ -279,7 +281,7 @@ export const Teklif = ({ data, setData, role }) => {
               <span style={{ ...NUM_FONT, fontSize:20, fontWeight:700, color:T.gold }}>{fmt(detail.total)}</span>
             </div>
           </div>
-          {detail.note && <div style={{ background:T.card2, borderRadius:12, padding:"12px 14px", fontSize:13, color:T.text2, marginBottom:16 }}>📝 {detail.note}</div>}
+          {detail.note && <div style={{ background:T.card2, borderRadius:12, padding:"12px 14px", fontSize:13, color:T.text2, marginBottom:16 }}>{detail.note}</div>}
           <div style={{ display:"flex", gap:8, marginBottom:8 }}>
             {["taslak","gönderildi","onaylandı","reddedildi"].map(s=>(
               <button key={s} onClick={()=>setData(p=>({...p,quotes:p.quotes.map(q=>q.id===detail.id?{...q,status:s}:q)}))}
@@ -334,12 +336,12 @@ export const Teklif = ({ data, setData, role }) => {
                   placeholder="Kalem adı (Drone, Albüm...)"
                   style={{ flex:2, background:T.card3, border:`1px solid ${T.border}`, borderRadius:10, padding:"10px 12px", color:T.text, fontSize:13 }}/>
                 <input value={customItem.amount} onChange={e=>setCustomItem(p=>({...p,amount:e.target.value}))}
-                  placeholder="₺" type="number"
+                  placeholder="Tutar" type="number"
                   style={{ flex:1, background:T.card3, border:`1px solid ${T.border}`, borderRadius:10, padding:"10px 12px", color:T.text, fontSize:13 }}/>
                 <button onClick={addItem} style={{ background:T.gold+"22", border:`1px solid ${T.gold}44`, borderRadius:10, padding:"0 12px", color:T.gold, fontWeight:700, fontSize:18 }}>+</button>
               </div>
             </div>
-            <Field label="İndirim (₺)" type="number" value={form.discount} onChange={f("discount")} placeholder="0"/>
+            <Field label="İndirim" type="number" value={form.discount} onChange={f("discount")} placeholder="0"/>
             <Field label="Not" value={form.note} onChange={f("note")} textarea rows={2} placeholder="Geçerlilik süresi, özel şartlar..."/>
             <div style={{ background:T.gold+"1A", border:`1px solid ${T.gold}33`, borderRadius:12, padding:14 }}>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
