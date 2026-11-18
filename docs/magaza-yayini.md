@@ -20,7 +20,7 @@ Anahtarları kimseye gönderme; doğrudan GitHub'a eklenir:
 1. **Ekip kimliği:** developer.apple.com → Account → Membership → *Team ID* (10 karakter).
    Secret adı: `APPLE_TEAM_ID`
 2. **API anahtarı:** App Store Connect → Users and Access → Integrations → App Store Connect API →
-   Team Keys → (+). Rol: **App Manager**. `.p8` dosyası **yalnızca bir kez** indirilebilir, sakla.
+   Team Keys → (+). Rol: **Admin** (otomatik imzalamanın dağıtım sertifikası oluşturabilmesi için). `.p8` dosyası **yalnızca bir kez** indirilebilir, sakla.
    - Key ID → `ASC_KEY_ID`
    - Issuer ID (sayfanın üstünde) → `ASC_ISSUER_ID`
    - `.p8` dosyasının içeriği (Not Defteri ile aç, tamamını kopyala; BEGIN/END satırları dahil) → `ASC_API_KEY_P8`

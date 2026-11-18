@@ -15,7 +15,11 @@ on:
       version_name:
         description: "Sürüm (kullanıcıya görünen, örn. 1.0.1)"
         required: true
-        default: "1.0.0"
+        default: "1.0"
+      deneme:
+        description: "Deneme derlemesi (RevenueCat anahtarı olmadan; satın alma ekranı kapalı olur — mağaza incelemesine GÖNDERME)"
+        type: boolean
+        default: false
 
 jobs:
   release-ios:
@@ -57,7 +61,13 @@ jobs:
           # Uygulama içi satın alma: RevenueCat herkese açık (istemci) anahtarı — GitHub → Settings → Variables
           VITE_RC_APPLE_KEY: ${{ vars.RC_APPLE_KEY }}
         run: |
-          if [ -z "$VITE_RC_APPLE_KEY" ]; then echo "::error::GitHub Variables'ta RC_APPLE_KEY tanımlı değil (uygulama içi satın alma çalışmaz)"; exit 1; fi
+          if [ -z "$VITE_RC_APPLE_KEY" ]; then
+            if [ "${{ inputs.deneme }}" = "true" ]; then
+              echo "::warning::Deneme derlemesi: RC_APPLE_KEY yok, satın alma ekranı kapalı. Bu derlemeyi incelemeye gönderme."
+            else
+              echo "::error::GitHub Variables'ta RC_APPLE_KEY tanımlı değil (uygulama içi satın alma çalışmaz)"; exit 1
+            fi
+          fi
           npm run build
 
       - name: 🔄 Sync Capacitor iOS
