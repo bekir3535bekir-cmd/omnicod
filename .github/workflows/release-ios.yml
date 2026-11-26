@@ -58,8 +58,8 @@ jobs:
 
       - name: 🔨 Build Web Assets (Vite)
         env:
-          # Uygulama içi satın alma: RevenueCat herkese açık (istemci) anahtarı — GitHub → Settings → Variables
-          VITE_RC_APPLE_KEY: ${{ vars.RC_APPLE_KEY }}
+          # Uygulama içi satın alma: RevenueCat herkese açık (istemci) anahtarı — GitHub → Settings → Variables (ya da Secrets)
+          VITE_RC_APPLE_KEY: ${{ vars.RC_APPLE_KEY || secrets.RC_APPLE_KEY }}
         run: |
           if [ -z "$VITE_RC_APPLE_KEY" ]; then
             if [ "${{ inputs.deneme }}" = "true" ]; then
